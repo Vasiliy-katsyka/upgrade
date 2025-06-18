@@ -15,7 +15,7 @@
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #17212b;
             --tg-theme-header-bg-color: #17212b;
-            --tg-theme-accent-blue: #5288c1;
+            --tg-theme-accent-blue: #5288c1; /* Used for "Upgrade All" button */
             --tg-theme-border-color: #232d36;
 
             --app-modal-backdrop-color: rgba(0,0,0,0.7);
@@ -182,13 +182,19 @@
             align-items: center; padding: 12px 15px;
             background-color: var(--tg-theme-bg-color);
         }
-        .profile-gifts-actions .buy-gifts-button {
+        .profile-gifts-actions .buy-gifts-button { /* General style for buttons in this row */
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
             border: none; padding: 8px 18px;
             border-radius: 20px; font-size: 0.9em; cursor: pointer;
             font-weight: 500;
         }
+        /* Specific style for "Upgrade All" can be set via JS or more specific CSS if needed */
+        #upgrade-all-gifts-button {
+            /* background-color: var(--tg-theme-accent-blue); /* This is set in inline style now */
+            margin-right: 10px; /* Spacing between buttons */
+        }
+
 
         .gifts-grid {
             display: grid;
@@ -202,10 +208,10 @@
         .empty-grid-message {
             color: var(--tg-theme-hint-color);
             text-align: center;
-            padding: 20px 40px; /* More horizontal padding for narrower text block */
+            padding: 20px 40px; 
             font-size: 0.95em;
             line-height: 1.5;
-            width: 100%; /* Ensure it takes full width in flex container */
+            width: 100%; 
         }
 
 
@@ -259,8 +265,8 @@
             cursor: pointer; position: relative;
         }
         .buy-gift-item img {
-            width: 60%; /* Slightly smaller */
-            height: auto; max-height: 70px; /* Slightly smaller */
+            width: 60%; 
+            height: auto; max-height: 70px; 
             object-fit: contain; margin-bottom: 10px;
         }
         .buy-gift-item .gift-name {
@@ -379,8 +385,8 @@
         }
         .modal-collectible-visual .collectible-pattern-tile {
             position: absolute; top:0;left:0;right:0;bottom:0;
-            background-size: 25% auto; /* Adjusted for screenshot appearance */
-            background-repeat: repeat; opacity: 0.15; /* Adjusted for screenshot appearance */
+            background-size: 25% auto; 
+            background-repeat: repeat; opacity: 0.15; 
             z-index: 2;
         }
         .modal-collectible-visual .collectible-model-img {
@@ -459,7 +465,6 @@
             border-radius: 8px;
             font-size: 1em;
         }
-        /* Hide number input spinners */
         #buy-multiple-quantity::-webkit-outer-spin-button,
         #buy-multiple-quantity::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -468,7 +473,6 @@
         #buy-multiple-quantity[type=number] {
             -moz-appearance: textfield;
         }
-
 
         /* Spinner */
         .spinner {
@@ -520,6 +524,7 @@
             </div>
             
             <div class="profile-gifts-actions">
+                <button id="upgrade-all-gifts-button" class="buy-gifts-button" style="background-color: var(--tg-theme-accent-blue); display: none;">✨ Улучшить все</button>
                 <button id="go-to-buy-gifts" class="buy-gifts-button">🎁 Купить подарки</button>
             </div>
 
@@ -636,11 +641,11 @@
     <script>
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
-        const PIN_ICON_ON_CARD = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--tg-theme-link-color)" width="16px" height="16px" style="opacity:0.7;"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 2.99.71-.71L12 2z"/></svg>`; // Rocket/bookmark like icon
+        const PIN_ICON_ON_CARD = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--tg-theme-link-color)" width="16px" height="16px" style="opacity:0.7;"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 2.99.71-.71L12 2z"/></svg>`; 
 
         let allAvailableGifts = {};
-        let ownedGifts = []; // Array of gift objects
-        let pinnedGifts = []; // Array of instanceIds of pinned gifts
+        let ownedGifts = []; 
+        let pinnedGifts = []; 
         const MAX_PINS = 6;
         let tg = window.Telegram.WebApp;
 
@@ -656,6 +661,7 @@
         const profileTopPinnedGifts = document.getElementById('profile-top-pinned-gifts');
         const giftsGrid = document.getElementById('gifts-grid');
         const goToBuyGiftsButton = document.getElementById('go-to-buy-gifts');
+        const upgradeAllGiftsButton = document.getElementById('upgrade-all-gifts-button'); // New button
         
         const buyGiftsPage = document.getElementById('buy-gifts-page');
         const backToProfileBuyButton = document.getElementById('back-to-profile-buy');
@@ -735,7 +741,7 @@
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
             
             loadUserData();
-            loadState(); // Load and migrate if necessary
+            loadState(); 
             renderProfileGifts();
             setupEventListeners();
             fetchAvailableGifts();
@@ -754,9 +760,15 @@
                 setVar('--tg-theme-button-text-color', themeParams.button_text_color);
                 setVar('--tg-theme-secondary-bg-color', themeParams.secondary_bg_color);
                 setVar('--tg-theme-header-bg-color', themeParams.secondary_bg_color || themeParams.bg_color); 
+                setVar('--tg-theme-accent-blue', themeParams.accent_text_color || '#5288c1'); // Or use a specific theme key if available
                 
                 document.body.style.backgroundColor = themeParams.bg_color || 'var(--tg-theme-bg-color)';
                 document.body.style.color = themeParams.text_color || 'var(--tg-theme-text-color)';
+
+                if (upgradeAllGiftsButton) { // Update button color if theme changes
+                    upgradeAllGiftsButton.style.backgroundColor = themeParams.accent_text_color || 'var(--tg-theme-accent-blue)';
+                }
+
             } else {
                 console.log("Using default CSS variables as themeParams are empty.");
             }
@@ -773,8 +785,8 @@
             profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/120?u=fallback${generateUniqueId()}`; };
 
             profileUsername.textContent = user.username ? `@${user.username}` : `@${mockUser.username}`;
-            profileBio.textContent = user.bio || mockUser.bio; // Telegram User object doesn't typically include bio
-            profilePhone.textContent = user.phone || mockUser.phone; // Nor phone
+            profileBio.textContent = user.bio || mockUser.bio; 
+            profilePhone.textContent = user.phone || mockUser.phone; 
         }
 
         function saveState() {
@@ -785,7 +797,7 @@
             const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v3')) || [];
             ownedGifts = loadedOwnedGifts.map(gift => ({
                 ...gift,
-                instanceId: gift.instanceId || generateUniqueId() // Ensure all gifts have an instanceId
+                instanceId: gift.instanceId || generateUniqueId() 
             }));
             pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v3')) || [];
         }
@@ -832,21 +844,18 @@
                     <div class="limited-label">Ограничено</div>
                 `;
                 item.addEventListener('click', () => {
-                     // Default action: buy one. Or open "buy multiple" with qty 1.
-                     // For simplicity, click buys one. Long press for multiple.
                      buyGift(id, name, originalImageUrl, 1);
                 });
                 
-                // Setup long press for buying multiple
                 let buyItemLongPressTimer;
                 item.addEventListener('touchstart', (e) => {
                     buyItemLongPressTimer = window.setTimeout(() => {
                         openBuyMultipleModal(id, name, originalImageUrl);
-                    }, 700); // 700ms for long press
+                    }, 700); 
                 }, { passive: true });
                 item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
-                item.addEventListener('contextmenu', (e) => { // Desktop fallback
+                item.addEventListener('contextmenu', (e) => { 
                     e.preventDefault();
                     openBuyMultipleModal(id, name, originalImageUrl);
                 });
@@ -879,11 +888,11 @@
                 giftsGrid.style.justifyContent = 'center';
                 giftsGrid.innerHTML = `<p class="empty-grid-message">У вас пока нет подарков. Время что-нибудь купить!</p>`;
             } else {
-                giftsGrid.style.display = 'grid'; // Revert to grid display
+                giftsGrid.style.display = 'grid'; 
                 sortedGifts.forEach(gift => {
                     const card = document.createElement('div');
                     card.className = 'gift-card';
-                    card.dataset.instanceId = gift.instanceId; // Use instanceId for selection
+                    card.dataset.instanceId = gift.instanceId; 
 
                     const giftImage = document.createElement('img');
                     giftImage.className = 'gift-image';
@@ -929,11 +938,22 @@
                     }
 
                     card.addEventListener('click', () => openGiftDetailByInstanceId(gift.instanceId));
-                    setupLongPress(card, gift); // Pass the full gift object
+                    setupLongPress(card, gift); 
                     giftsGrid.appendChild(card);
                 });
             }
             renderTopPinnedGiftsPreview();
+
+            // Visibility for "Upgrade All" button
+            const hasNonCollectible = ownedGifts.some(g => !g.isCollectible);
+            if (upgradeAllGiftsButton) {
+                upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
+                // If button becomes hidden, reset its state (text, disabled)
+                if (!hasNonCollectible) {
+                     upgradeAllGiftsButton.textContent = '✨ Улучшить все';
+                     upgradeAllGiftsButton.disabled = false;
+                }
+            }
         }
         
         function createPlaceholderImage(isCardPlaceholder = false) {
@@ -984,8 +1004,8 @@
         function buyGift(id, name, originalImage, quantity = 1) {
             for (let i = 0; i < quantity; i++) {
                  ownedGifts.unshift({
-                    id, // type id
-                    instanceId: generateUniqueId(), // unique id for this specific instance
+                    id, 
+                    instanceId: generateUniqueId(), 
                     name, originalImage,
                     isCollectible: false, collectibleData: null,
                     acquiredDate: new Date().toISOString()
@@ -997,14 +1017,13 @@
             tg.HapticFeedback.notificationOccurred('success');
             const message = quantity > 1 ? `"${name}" (${quantity} шт.) добавлены в ваши подарки!` : `"${name}" добавлен в ваши подарки!`;
             tg.showAlert(message);
-            showPage('profile-page'); // Switch to profile page after buying
+            showPage('profile-page'); 
         }
 
         function openGiftDetailByInstanceId(instanceId) {
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift) return;
 
-            // Store current gift instance for upgrade button
             upgradeGiftButton.dataset.instanceId = gift.instanceId; 
 
             if (gift.isCollectible && gift.collectibleData) {
@@ -1078,7 +1097,62 @@
             }
         }
         
-        async function handleUpgradeGift(instanceId) {
+        async function upgradeSingleGiftLogic(giftToUpgrade) {
+            if (giftToUpgrade.isCollectible) { // Should not happen if called from upgradeAll or correctly from modal
+                return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'skipped' };
+            }
+
+            const giftNameEncoded = encodeURIComponent(giftToUpgrade.name);
+            try {
+                const [modelsRes, backdropsRes, patternsRes] = await Promise.all([
+                    fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`),
+                    fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`),
+                    fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`)
+                ]);
+
+                if (!modelsRes.ok) throw new Error(`Модели (${giftToUpgrade.name}) не найдены.`);
+                if (!backdropsRes.ok) throw new Error(`Фоны (${giftToUpgrade.name}) не найдены.`);
+                if (!patternsRes.ok) throw new Error(`Символы (${giftToUpgrade.name}) не найдены.`);
+
+                const [modelsData, backdropsData, patternsData] = await Promise.all([
+                    modelsRes.json(),
+                    backdropsRes.json(),
+                    patternsRes.json()
+                ]);
+
+                if (!modelsData?.length || !backdropsData?.length || !patternsData?.length) {
+                    throw new Error(`Отсутствуют необходимые данные для улучшения "${giftToUpgrade.name}".`);
+                }
+
+                const selectedModel = selectWeightedRandom(modelsData);
+                const selectedBackdrop = selectWeightedRandom(backdropsData);
+                const selectedPattern = selectWeightedRandom(patternsData);
+                const randomNumber = Math.floor(Math.random() * 2000) + 1;
+
+                const giftIndexInOwned = ownedGifts.findIndex(g => g.instanceId === giftToUpgrade.instanceId);
+                if (giftIndexInOwned !== -1) {
+                    ownedGifts[giftIndexInOwned] = {
+                        ...ownedGifts[giftIndexInOwned],
+                        isCollectible: true,
+                        collectibleData: {
+                            model: selectedModel, backdrop: selectedBackdrop, pattern: selectedPattern,
+                            number: randomNumber,
+                            modelImage: `${CDN_BASE_URL}models/${giftNameEncoded}/png/${encodeURIComponent(selectedModel.name)}.png`,
+                            patternImage: `${CDN_BASE_URL}patterns/${giftNameEncoded}/png/${encodeURIComponent(selectedPattern.name)}.png`,
+                            backdropColors: selectedBackdrop.hex,
+                        }
+                    };
+                    return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'success', collectibleData: ownedGifts[giftIndexInOwned].collectibleData };
+                } else {
+                    throw new Error(`Подарок "${giftToUpgrade.name}" не найден в массиве для обновления.`);
+                }
+            } catch (error) {
+                console.error(`Ошибка улучшения для "${giftToUpgrade.name}" (ID: ${giftToUpgrade.instanceId}):`, error);
+                return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'failed', error: error.message };
+            }
+        }
+
+        async function handleUpgradeGift(instanceId) { // For modal "Upgrade" button
             const giftIndex = ownedGifts.findIndex(g => g.instanceId === instanceId);
             if (giftIndex === -1) return;
             
@@ -1087,54 +1161,73 @@
 
             upgradeGiftButton.textContent = 'Улучшение...';
             upgradeGiftButton.disabled = true;
+            const uniquenessValueEl = document.getElementById('modal-uniqueness-value');
+            if(uniquenessValueEl) uniquenessValueEl.textContent = 'Обработка...';
 
-            try {
-                const giftNameEncoded = encodeURIComponent(gift.name);
-                const [modelsData, backdropsData, patternsData] = await Promise.all([
-                    fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`).then(res => res.ok ? res.json() : Promise.reject(new Error(`Модели для ${gift.name} не найдены.`))),
-                    fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`).then(res => res.ok ? res.json() : Promise.reject(new Error(`Фоны для ${gift.name} не найдены.`))),
-                    fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`).then(res => res.ok ? res.json() : Promise.reject(new Error(`Символы для ${gift.name} не найдены.`)))
-                ]);
+            const result = await upgradeSingleGiftLogic(gift);
 
-                if (!modelsData?.length || !backdropsData?.length || !patternsData?.length) {
-                    throw new Error("Отсутствуют необходимые данные для улучшения.");
-                }
-
-                const selectedModel = selectWeightedRandom(modelsData);
-                const selectedBackdrop = selectWeightedRandom(backdropsData);
-                const selectedPattern = selectWeightedRandom(patternsData);
-                const randomNumber = Math.floor(Math.random() * 2000) + 1;
-
-                // Update the gift in place
-                ownedGifts[giftIndex] = {
-                    ...gift, // keep instanceId, acquiredDate etc.
-                    isCollectible: true,
-                    collectibleData: {
-                        model: selectedModel, backdrop: selectedBackdrop, pattern: selectedPattern,
-                        number: randomNumber,
-                        modelImage: `${CDN_BASE_URL}models/${giftNameEncoded}/png/${encodeURIComponent(selectedModel.name)}.png`,
-                        patternImage: `${CDN_BASE_URL}patterns/${giftNameEncoded}/png/${encodeURIComponent(selectedPattern.name)}.png`,
-                        backdropColors: selectedBackdrop.hex,
-                    }
-                };
-                
-                document.getElementById('modal-uniqueness-value').textContent = `Коллекционный #${randomNumber}`;
+            if (result.status === 'success' && result.collectibleData) {
+                if(uniquenessValueEl) uniquenessValueEl.textContent = `Коллекционный #${result.collectibleData.number}`;
                 saveState();
                 renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('success');
                 setTimeout(() => {
                     closeModal(giftDetailModal);
-                    openGiftDetailByInstanceId(gift.instanceId); // Open the collectible view for the *same instance*
+                    openGiftDetailByInstanceId(gift.instanceId); 
                 }, 1200);
-
-            } catch (error) {
-                console.error("Ошибка улучшения:", error);
-                tg.showAlert(`Не удалось улучшить "${gift.name}". ${error.message}`);
-                document.getElementById('modal-uniqueness-value').textContent = 'Ошибка улучшения';
+            } else { 
+                tg.showAlert(`Не удалось улучшить "${gift.name}". ${result.error || 'Причина неизвестна.'}`);
+                if(uniquenessValueEl) uniquenessValueEl.textContent = 'Ошибка улучшения';
                 upgradeGiftButton.textContent = 'Улучшить';
                 upgradeGiftButton.disabled = false;
             }
         }
+        
+        async function handleUpgradeAllGifts() {
+            const giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible);
+
+            if (giftsToUpgrade.length === 0) {
+                tg.showAlert("Нет подарков для улучшения.");
+                return;
+            }
+
+            const originalButtonText = upgradeAllGiftsButton.textContent;
+            upgradeAllGiftsButton.disabled = true;
+            
+            let successCount = 0;
+            let failureCount = 0;
+
+            for (let i = 0; i < giftsToUpgrade.length; i++) {
+                const gift = giftsToUpgrade[i];
+                upgradeAllGiftsButton.textContent = `Улучшение (${i + 1}/${giftsToUpgrade.length})...`;
+                const result = await upgradeSingleGiftLogic(gift);
+                if (result.status === 'success') {
+                    successCount++;
+                } else if (result.status === 'failed') {
+                    failureCount++;
+                }
+                // Small delay to allow UI to update and not hammer CDN too hard
+                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length -1) await new Promise(resolve => setTimeout(resolve, 100)); 
+            }
+
+            saveState();
+            renderProfileGifts(); // This will also update button visibility if all are upgraded
+
+            let summaryMessage = `Процесс улучшения завершён.\nУспешно: ${successCount}`;
+            if (failureCount > 0) {
+                summaryMessage += `\nНе удалось: ${failureCount}`;
+            }
+            tg.showAlert(summaryMessage);
+            tg.HapticFeedback.notificationOccurred(successCount > 0 ? 'success' : (failureCount > 0 ? 'error' : 'warning'));
+
+            // renderProfileGifts will hide the button if no non-collectibles remain.
+            // If it's still visible (e.g., some failed), reset text.
+            if (upgradeAllGiftsButton.style.display !== 'none') {
+                 upgradeAllGiftsButton.textContent = originalButtonText;
+                 upgradeAllGiftsButton.disabled = false;
+            }
+        }
+
 
         function selectWeightedRandom(items) {
             if (!items || items.length === 0) return null;
@@ -1155,7 +1248,7 @@
         let currentLongPressGift = null;
         let longPressTimer;
 
-        function setupLongPress(element, gift) { // gift is the full object with instanceId
+        function setupLongPress(element, gift) { 
             element.addEventListener('touchstart', (e) => {
                 longPressTimer = window.setTimeout(() => {
                     openLongPressMenu(gift, e.touches[0]);
@@ -1171,7 +1264,7 @@
         }
         
         function openLongPressMenu(gift, eventCoords) {
-            currentLongPressGift = gift; // Store the full gift object
+            currentLongPressGift = gift; 
             
             if (!gift.isCollectible) {
                 menuPinAction.textContent = 'Закрепить (только коллекционные)';
@@ -1191,15 +1284,17 @@
         function closeLongPressMenuOnClickOutside(event) {
             if (!longPressMenu.contains(event.target) && event.target !== longPressMenu) {
                 longPressMenu.classList.add('hidden');
+                currentLongPressGift = null; // Reset when menu is closed
             }
         }
 
         function handlePinAction() {
-            if (!currentLongPressGift || !currentLongPressGift.isCollectible || menuPinAction.classList.contains('disabled')) {
+            if (!currentLongPressGift || menuPinAction.classList.contains('disabled')) { // No need to check !currentLongPressGift.isCollectible again as disabled class handles it
                 longPressMenu.classList.add('hidden');
                 if (currentLongPressGift && !currentLongPressGift.isCollectible) {
                     tg.showAlert("Только коллекционные подарки можно закреплять.");
                 }
+                currentLongPressGift = null;
                 return;
             }
 
@@ -1210,9 +1305,10 @@
                 pinnedGifts = pinnedGifts.filter(id => id !== giftInstanceId);
             } else {
                 if (pinnedGifts.length >= MAX_PINS) {
-                    showTooManyPinsModal(); // currentLongPressGift (the one we want to pin) is still stored
+                    showTooManyPinsModal(); 
                     longPressMenu.classList.add('hidden');
-                    return;
+                    // currentLongPressGift remains, as it's needed by showTooManyPinsModal
+                    return; 
                 }
                 pinnedGifts.push(giftInstanceId);
             }
@@ -1220,6 +1316,7 @@
             renderProfileGifts();
             longPressMenu.classList.add('hidden');
             tg.HapticFeedback.impactOccurred(isPinned ? 'light' : 'medium');
+            currentLongPressGift = null;
         }
         
         function showTooManyPinsModal() {
@@ -1236,9 +1333,7 @@
                     img.onerror = function() { this.parentNode.replaceChild(createPlaceholderImage(true), this); };
                     card.appendChild(img);
                     card.addEventListener('click', () => {
-                        // Unpin the clicked gift
                         pinnedGifts = pinnedGifts.filter(id => id !== pinnedInstanceId);
-                        // Pin the gift that triggered the "too many pins" modal (currentLongPressGift)
                         if (currentLongPressGift && currentLongPressGift.isCollectible && !pinnedGifts.includes(currentLongPressGift.instanceId)) {
                              pinnedGifts.push(currentLongPressGift.instanceId);
                         }
@@ -1246,6 +1341,7 @@
                         renderProfileGifts();
                         closeModal(tooManyPinsModal);
                         tg.HapticFeedback.impactOccurred('medium');
+                        currentLongPressGift = null; // Reset after use
                     });
                     unpinSelectionGrid.appendChild(card);
                 }
@@ -1255,6 +1351,9 @@
 
         function setupEventListeners() {
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
+            if (upgradeAllGiftsButton) { // Ensure button exists before adding listener
+                 upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
+            }
             backToProfileBuyButton.addEventListener('click', () => showPage('profile-page'));
 
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
@@ -1264,7 +1363,10 @@
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
             
             menuPinAction.addEventListener('click', handlePinAction);
-            cancelUnpinModal.addEventListener('click', () => closeModal(tooManyPinsModal));
+            cancelUnpinModal.addEventListener('click', () => {
+                closeModal(tooManyPinsModal);
+                currentLongPressGift = null; // Also reset if cancelled
+            });
 
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
             cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
@@ -1272,7 +1374,12 @@
             [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal].forEach(modal => {
                 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
             });
-            giftsGrid.addEventListener('scroll', () => { if(!longPressMenu.classList.contains('hidden')) longPressMenu.classList.add('hidden'); });
+            giftsGrid.addEventListener('scroll', () => { 
+                if(!longPressMenu.classList.contains('hidden')) {
+                    longPressMenu.classList.add('hidden'); 
+                    currentLongPressGift = null;
+                }
+            });
         }
         
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
