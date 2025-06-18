@@ -35,6 +35,10 @@ if not all([DATABASE_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBAPP_URL, SERVER_BASE_U
     if not TELEGRAM_BOT_USERNAME: logging.error("TELEGRAM_BOT_USERNAME is missing")
     exit(1)
 
+app = Flask(__name__)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 try:
     init_db() # Call it here
     logger.info("Database initialization check complete on app startup.")
@@ -46,10 +50,6 @@ except psycopg2.Error as e:
 except Exception as e:
     logger.error(f"CRITICAL: An unexpected error occurred during database initialization: {e}")
 
-# --- FLASK APP SETUP ---
-app = Flask(__name__)
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # --- CORS SETUP ---
 CORS(app, resources={r"/api/*": {"origins": FRONTEND_ORIGIN}}, supports_credentials=True)
