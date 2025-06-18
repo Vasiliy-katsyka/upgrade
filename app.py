@@ -39,17 +39,6 @@ app = Flask(__name__)
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-try:
-    init_db() # Call it here
-    logger.info("Database initialization check complete on app startup.")
-except psycopg2.Error as e:
-    logger.error(f"CRITICAL: Database initialization failed on app startup: {e}")
-    # Depending on your desired behavior, you might want to prevent the app from starting
-    # or have it run in a degraded state. For now, it will log and continue.
-    # raise RuntimeError(f"Database initialization failed: {e}") # This would stop the app
-except Exception as e:
-    logger.error(f"CRITICAL: An unexpected error occurred during database initialization: {e}")
-
 
 # --- CORS SETUP ---
 CORS(app, resources={r"/api/*": {"origins": FRONTEND_ORIGIN}}, supports_credentials=True)
@@ -148,6 +137,18 @@ def init_db():
     conn.close()
     logger.info("Database initialized/checked.")
 
+
+try:
+    init_db() # Call it here
+    logger.info("Database initialization check complete on app startup.")
+except psycopg2.Error as e:
+    logger.error(f"CRITICAL: Database initialization failed on app startup: {e}")
+    # Depending on your desired behavior, you might want to prevent the app from starting
+    # or have it run in a degraded state. For now, it will log and continue.
+    # raise RuntimeError(f"Database initialization failed: {e}") # This would stop the app
+except Exception as e:
+    logger.error(f"CRITICAL: An unexpected error occurred during database initialization: {e}")
+    
 # --- TELEGRAM USER DATA VERIFICATION ---
 def verify_telegram_data(init_data_str: str, bot_token: str) -> dict | None:
     try:
