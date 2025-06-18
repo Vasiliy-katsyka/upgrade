@@ -14,16 +14,14 @@
             --tg-theme-button-color: #3e97f0;
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #17212b;
-            /* --tg-theme-header-bg-color: #17212b; Removed, will be dynamic or transparent */
             --tg-theme-accent-blue: #5288c1;
-            /* --tg-theme-border-color: #232d36; Removed for borderless look */
 
             --app-modal-backdrop-color: rgba(0,0,0,0.7);
-            --app-rarity-chip-bg: rgba(0,0,0,0.2); /* Adjusted for borderless */
-            --app-rarity-chip-text: var(--tg-theme-text-color); /* Brighter for contrast */
+            --app-rarity-chip-bg: rgba(0,0,0,0.2); 
+            --app-rarity-chip-text: var(--tg-theme-text-color);
             --app-action-button-bg: #232e3a;
             --app-action-button-text: var(--tg-theme-link-color);
-            --app-profile-gradient-fallback: var(--tg-theme-bg-color); /* Fallback for header */
+            --app-profile-gradient-fallback: var(--tg-theme-secondary-bg-color); /* Fallback for header area */
             --app-clear-data-color: #ff3b30;
         }
 
@@ -62,21 +60,31 @@
             display: flex;
         }
 
-        .page-header {
+        .page-header { /* General page header, e.g., for Buy Gifts */
             display: flex;
             align-items: center;
             padding: 10px 15px;
-            background-color: var(--tg-theme-secondary-bg-color); /* Kept for buy gifts page header */
+            background-color: var(--tg-theme-secondary-bg-color);
             min-height: 56px;
             position: sticky; top: 0; z-index: 10;
         }
+         /* Profile Page Specific Header (for back button) */
+        #profile-page > .page-header { 
+            background-color: transparent; 
+            position: absolute; /* Overlays the top section */
+            top: 0; left:0; right:0;
+            z-index: 100; /* Above profile top section content */
+        }
+
         .page-header .back-button {
             background: none; border: none;
-            color: var(--tg-theme-link-color);
+            color: var(--tg-theme-link-color); /* Default, can be overridden if needed for profile */
             cursor: pointer;
             padding: 5px; margin-right: 15px;
             display: flex; align-items: center; justify-content: center;
         }
+        #profile-page > .page-header .back-button { color: var(--tg-theme-text-color); } /* Ensure visibility on gradient */
+
         .page-header .back-button svg { width: 24px; height: 24px; fill: currentColor; }
         .page-header h2 {
             font-size: 1.15em;
@@ -92,16 +100,7 @@
             padding: 5px;
         }
 
-        /* Profile Page Specific Header Styling */
-        #profile-page .page-header {
-            background-color: transparent;
-            position: absolute; /* Keep it absolute for overlaying buttons */
-            top: 10px; /* Add small margin from top of screen */
-            left: 0;
-            right: 0;
-            z-index: 100;
-        }
-        
+
         .profile-page-content {
             flex-grow: 1;
             display: flex;
@@ -109,23 +108,13 @@
             position: relative;
         }
         
-        .profile-top-section {
+        .profile-top-section { /* Container for gradient, pinned gifts, avatar/name */
             position: relative;
-            /* padding-top: 56px; /* Remove this if page-header is not part of its flow */
-            /* background: var(--app-profile-gradient-fallback); /* REMOVE gradient from here */
-            transition: background 0.3s ease; /* Keep transition if you plan to change its bg */
-            padding-top: 10px; /* Small margin-top for the whole block */
+            padding-top: 56px; /* Space for absolute positioned header buttons */
+            background: var(--app-profile-gradient-fallback);
+            transition: background 0.3s ease;
         }
-        
-        /* This new wrapper will hold the gradient and the pattern overlay */
-        .profile-main-interactive-area {
-            position: relative; /* For pattern overlay to be contained */
-            background: var(--app-profile-gradient-fallback); /* Gradient applied HERE */
-            padding: 0 15px; /* Horizontal padding for the content within gradient area */
-            /* Add any other specific styling for this gradient block */
-        }
-        
-        #profile-header-pattern-overlay { /* Will be child of profile-main-interactive-area now */
+        .profile-header-pattern-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             background-repeat: repeat;
@@ -134,77 +123,75 @@
             pointer-events: none;
             z-index: 0;
         }
-        
-        .profile-header-content {
-            position: relative; /* Keep for z-indexing if needed */
-            z-index: 1; /* Ensure content is above pattern if pattern is on profile-top-section */
-            padding: 0 15px; /* For consistent padding of pinned gifts and details */
-            background-color: var(--tg-theme-bg-color); /* Details section will have main bg color */
+        .profile-header-content-wrapper { /* Wraps content inside top section for padding */
+             position: relative; z-index: 1;
+             padding: 0 15px;
         }
-        
-        
+
         .profile-top-pinned-gifts {
             display: flex;
             justify-content: center;
             gap: 8px;
-            padding: 15px 0 15px 0; /* Adjust as needed */
+            padding: 15px 0 15px 0;
             min-height: 30px;
-            /* This section is now inside profile-header-content, so it will NOT have the gradient */
         }
-        
-        /* profile-main-info is now inside profile-main-interactive-area */
-        #profile-main-info-block { /* Changed ID selector to match HTML */
+        .profile-top-pinned-gifts img {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .profile-main-info { /* Avatar, Name, Status block */
             display: flex;
             align-items: center;
-            padding: 12px 0; /* Vertical padding within the gradient block */
-            position: relative; /* To be above the pattern overlay */
-            z-index: 1;
+            padding: 12px 0 20px 0; /* More bottom padding after avatar block */
         }
         .profile-avatar {
-            width: 70px; /* Larger avatar */
-            height: 70px;
+            width: 70px; height: 70px;
             border-radius: 50%;
             background-color: var(--tg-theme-hint-color);
             margin-right: 15px;
             object-fit: cover;
-            border: 3px solid rgba(255,255,255,0.1); /* Subtle border for avatar */
+            border: 3px solid rgba(255,255,255,0.1);
         }
         .profile-name-status { display: flex; flex-direction: column; }
         .profile-name-status .name-line { display: flex; align-items: center; }
         .profile-name-status h1 {
-            font-size: 1.4em; /* Larger name */
-            font-weight: 600;
+            font-size: 1.4em; font-weight: 600;
             color: var(--tg-theme-text-color);
         }
         #worn-gift-icon {
             width: 24px; height: 24px; margin-left: 8px; object-fit: contain;
         }
         .profile-name-status p { font-size: 0.95em; color: var(--tg-theme-text-color); opacity: 0.7; margin-top: 3px; }
-        .profile-name-status p.online { opacity: 1; color: var(--tg-theme-link-color); } /* Online status more prominent */
+        .profile-name-status p.online { opacity: 1; color: var(--tg-theme-link-color); }
         
-        .profile-details {
-            padding: 15px 0;
+        .profile-details-section { /* New wrapper for Bio, Phone, Username */
+            background-color: var(--tg-theme-bg-color); /* Separate from gradient */
+            padding: 15px 15px 5px 15px; /* Top padding, less bottom before tabs */
+        }
+        .profile-details { /* Removed background, using wrapper's */
+            /* padding: 15px 0; Removed, handled by wrapper */
         }
         .profile-details p { margin-bottom: 12px; font-size: 0.95em; }
         .profile-details p:last-child { margin-bottom: 0; }
         .profile-details p strong {
-            display: block; color: var(--tg-theme-text-color); opacity: 0.6;
+            display: block; color: var(--tg-theme-hint-color); /* Hint color for labels */
             font-weight: normal; font-size: 0.9em; margin-bottom: 4px;
         }
         .profile-details p span { color: var(--tg-theme-text-color); }
         .profile-details p span#profile-username { color: var(--tg-theme-link-color); }
 
         .profile-tabs {
-            display: flex;
-            justify-content: space-around;
+            display: flex; justify-content: space-around;
             background-color: var(--tg-theme-bg-color);
             padding: 5px 0 0 0;
-            /* border-top: 1px solid var(--tg-theme-border-color); /* Optional: if you want a separator after details */
         }
         .profile-tabs button {
             background: none; border: none;
             color: var(--tg-theme-hint-color);
-            padding: 14px 10px; font-size: 1em; /* Larger tab text */
+            padding: 14px 10px; font-size: 1em;
             cursor: pointer; flex-grow: 1;
             border-bottom: 3px solid transparent; position: relative;
             font-weight: 500;
@@ -212,26 +199,23 @@
         .profile-tabs button.active { color: var(--tg-theme-link-color); }
         .profile-tabs button.active::after {
             content: ''; position: absolute;
-            bottom: 0px; /* Align with bottom */
-            left: 0; right: 0;
+            bottom: 0px; left: 0; right: 0;
             height: 3px; background-color: var(--tg-theme-link-color);
         }
         
         .profile-gifts-actions-wrapper {
             display: flex;
             align-items: center;
-            background-color: var(--tg-theme-bg-color); /* Match main app bg */
+            background-color: var(--tg-theme-bg-color);
             padding: 12px 15px;
         }
         #filter-long-press-target {
-            flex-grow: 1; /* Takes up empty space */
-            height: 36px; /* Matches button height */
-            cursor: pointer; /* Indicates interactivity */
+            flex-grow: 1; height: 36px; cursor: pointer;
         }
         .profile-gifts-actions {
             display: flex; justify-content: flex-end;
             align-items: center;
-            margin-left: 10px; /* Space between target and buttons */
+            margin-left: 10px;
         }
         .profile-gifts-actions .action-button {
             background-color: var(--tg-theme-button-color);
@@ -265,7 +249,7 @@
             align-items: center; justify-content: center;
             aspect-ratio: 1 / 1; cursor: pointer;
             position: relative; overflow: hidden;
-            transition: transform 0.1s ease-out; /* For live update feedback */
+            transition: transform 0.1s ease-out;
         }
         .gift-card.is-updating { transform: scale(0.95); opacity: 0.7; }
 
@@ -357,7 +341,6 @@
         }
         .modal-header-bar {
             padding: 15px 20px; text-align: center;
-            /* border-bottom: 1px solid var(--tg-theme-border-color); Removed */
             position: sticky; top: 0; background-color: var(--tg-theme-secondary-bg-color); z-index: 1;
         }
         .modal-header-bar h3 { font-size: 1.1em; font-weight: 500; }
@@ -365,7 +348,6 @@
         .modal-scrollable-content { overflow-y: auto; padding: 15px 20px; flex-grow: 1; }
         .modal-buttons-footer {
             padding: 15px 20px;
-            /* border-top: 1px solid var(--tg-theme-border-color); Removed */
             background-color: var(--tg-theme-secondary-bg-color);
             position: sticky; bottom: 0; z-index: 1;
         }
@@ -394,9 +376,8 @@
         #gift-detail-modal .modal-info-table .info-row {
             display: flex; justify-content: space-between; align-items: center;
             padding: 12px 0; font-size: 0.95em;
-            /* border-bottom: 1px solid var(--tg-theme-border-color); Removed */
         }
-        #gift-detail-modal .modal-info-table .info-row:not(:last-child) { margin-bottom: 2px; } /* Minimal spacing */
+        #gift-detail-modal .modal-info-table .info-row:not(:last-child) { margin-bottom: 2px; }
         #gift-detail-modal .modal-info-table .info-label { color: var(--tg-theme-text-color); }
         #gift-detail-modal .modal-info-table .info-value { color: var(--tg-theme-hint-color); }
         #gift-detail-modal .info-value-with-action { display: flex; align-items: center; }
@@ -416,7 +397,6 @@
             border-top-left-radius: 12px;
             border-top-right-radius: 12px;
             background-color: var(--tg-theme-secondary-bg-color);
-            /* border-bottom: none; Removed */
         }
         #collectible-detail-modal .modal-scrollable-content { padding: 0; }
         .collectible-display-area {
@@ -468,9 +448,8 @@
         .collectible-info-section .info-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 0; font-size: 0.95em;
-            /* border-bottom: 1px solid var(--tg-theme-border-color); Removed */
         }
-        .collectible-info-section .info-row:not(:last-child) { margin-bottom: 2px; } /* Minimal spacing */
+        .collectible-info-section .info-row:not(:last-child) { margin-bottom: 2px; }
         .collectible-info-section .info-label { color: var(--tg-theme-text-color); }
         .collectible-info-section .info-value { color: var(--tg-theme-hint-color); display: flex; align-items: center; }
         .collectible-info-section .info-value img.owner-avatar { width: 24px; height: 24px; border-radius: 50%; margin-right: 8px; }
@@ -499,13 +478,13 @@
         #long-press-menu ul { list-style: none; }
         #long-press-menu li { padding: 10px 20px; cursor: pointer; color: var(--tg-theme-text-color); font-size: 0.95em; }
         #long-press-menu li.disabled { color: var(--tg-theme-hint-color); cursor: default; }
-        #long-press-menu li:not(.disabled):hover { background-color: rgba(255,255,255,0.05); } /* Subtle hover */
+        #long-press-menu li:not(.disabled):hover { background-color: rgba(255,255,255,0.05); }
         
         #buy-multiple-quantity {
             width: 80px; padding: 10px; text-align: center; margin-bottom:15px; 
             background-color: var(--tg-theme-bg-color); 
             color: var(--tg-theme-text-color); 
-            border: 1px solid var(--tg-theme-hint-color); /* Kept for input clarity */
+            border: 1px solid var(--tg-theme-hint-color);
             border-radius: 8px; font-size: 1em;
         }
         #buy-multiple-quantity::-webkit-outer-spin-button,
@@ -528,7 +507,7 @@
             background-color: var(--tg-theme-bg-color);
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; border: 2px solid transparent;
-            overflow: hidden; /* For images/gradients */
+            overflow: hidden;
         }
         #filter-popup .filter-option.selected { border-color: var(--tg-theme-link-color); }
         #filter-popup .filter-option img { max-width: 80%; max-height: 80%; object-fit: contain; }
@@ -564,18 +543,16 @@
     <div class="app-container">
         <!-- Profile Page -->
         <div id="profile-page" class="page active">
-            <div class="page-header"> <!-- For back button if profile is not root -->
+             <div class="page-header"> <!-- This is for the back button, visibility controlled by JS -->
                 <button id="profile-back-button" class="back-button hidden"></button>
-                <h2 id="profile-page-title"></h2> <!-- Can be dynamic -->
+                <!-- Optional title for profile if needed, also controlled by JS -->
+                <!-- <h2 id="profile-page-title"></h2> -->
             </div>
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
                     <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
-                    <div class="profile-header-content"> <!-- This might not be strictly needed if top-pinned are outside gradient too -->
+                    <div class="profile-header-content-wrapper">
                         <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div>
-                    </div>
-                    <!-- NEW WRAPPER FOR GRADIENT AREA -->
-                    <div id="profile-main-interactive-area" class="profile-main-interactive-area">
                         <div id="profile-main-info-block" class="profile-main-info">
                             <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
                             <div class="profile-name-status">
@@ -588,15 +565,14 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Profile Details OUTSIDE the gradient wrapper, but still within top-section or a new sibling -->
-                    <div class="profile-header-content"> <!-- Re-use for padding or create new -->
-                        <div id="profile-details" class="profile-details">
-                            <p><strong>Телефон</strong><span id="profile-phone"></span></p>
-                            <p><strong>О себе</strong><span id="profile-bio"></span></p>
-                            <p><strong>Имя пользователя</strong><span id="profile-username"></span></p>
-                        </div>
-                    </div>
                 </div>
+
+                <div class="profile-details-section">
+                    <div id="profile-details" class="profile-details">
+                        <p><strong>Телефон</strong><span id="profile-phone"></span></p>
+                        <p><strong>О себе</strong><span id="profile-bio"></span></p>
+                        <p><strong>Имя пользователя</strong><span id="profile-username"></span></p>
+                    </div>
                 </div>
 
                 <div class="profile-tabs">
