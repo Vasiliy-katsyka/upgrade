@@ -93,9 +93,15 @@
         }
 
         /* Profile Page Specific Header Styling */
-        #profile-page .page-header { background-color: transparent; position: absolute; z-index: 100;}
-
-
+        #profile-page .page-header {
+            background-color: transparent;
+            position: absolute; /* Keep it absolute for overlaying buttons */
+            top: 10px; /* Add small margin from top of screen */
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
         .profile-page-content {
             flex-grow: 1;
             display: flex;
@@ -105,43 +111,54 @@
         
         .profile-top-section {
             position: relative;
-            padding-top: 56px; /* Space for absolute positioned header buttons */
-            background: var(--app-profile-gradient-fallback); /* Fallback, dynamic gradient here */
-            transition: background 0.3s ease;
+            /* padding-top: 56px; /* Remove this if page-header is not part of its flow */
+            /* background: var(--app-profile-gradient-fallback); /* REMOVE gradient from here */
+            transition: background 0.3s ease; /* Keep transition if you plan to change its bg */
+            padding-top: 10px; /* Small margin-top for the whole block */
         }
-        .profile-header-pattern-overlay {
+        
+        /* This new wrapper will hold the gradient and the pattern overlay */
+        .profile-main-interactive-area {
+            position: relative; /* For pattern overlay to be contained */
+            background: var(--app-profile-gradient-fallback); /* Gradient applied HERE */
+            padding: 0 15px; /* Horizontal padding for the content within gradient area */
+            /* Add any other specific styling for this gradient block */
+        }
+        
+        #profile-header-pattern-overlay { /* Will be child of profile-main-interactive-area now */
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             background-repeat: repeat;
             background-size: 30% auto;
-            opacity: 0.07; /* Subtle pattern */
+            opacity: 0.07;
             pointer-events: none;
             z-index: 0;
         }
+        
         .profile-header-content {
-            position: relative; z-index: 1;
-            padding: 0 15px;
+            position: relative; /* Keep for z-indexing if needed */
+            z-index: 1; /* Ensure content is above pattern if pattern is on profile-top-section */
+            padding: 0 15px; /* For consistent padding of pinned gifts and details */
+            background-color: var(--tg-theme-bg-color); /* Details section will have main bg color */
         }
-
+        
+        
         .profile-top-pinned-gifts {
             display: flex;
-            justify-content: center; /* Center pinned gifts */
-            gap: 8px; /* Increased gap */
-            padding: 15px 0 15px 0; /* Padding around pinned gifts */
-            min-height: 30px; /* Adjusted height */
+            justify-content: center;
+            gap: 8px;
+            padding: 15px 0 15px 0; /* Adjust as needed */
+            min-height: 30px;
+            /* This section is now inside profile-header-content, so it will NOT have the gradient */
         }
-        .profile-top-pinned-gifts img {
-            width: 30px; /* Larger pinned icons */
-            height: 30px;
-            border-radius: 8px; /* More rounded */
-            object-fit: contain;
-            background-color: rgba(0,0,0,0.1); /* Subtle background for images */
-        }
-
-        .profile-main-info {
+        
+        /* profile-main-info is now inside profile-main-interactive-area */
+        #profile-main-info-block { /* Changed ID selector to match HTML */
             display: flex;
             align-items: center;
-            padding: 12px 0;
+            padding: 12px 0; /* Vertical padding within the gradient block */
+            position: relative; /* To be above the pattern overlay */
+            z-index: 1;
         }
         .profile-avatar {
             width: 70px; /* Larger avatar */
@@ -178,9 +195,11 @@
         .profile-details p span#profile-username { color: var(--tg-theme-link-color); }
 
         .profile-tabs {
-            display: flex; justify-content: space-around;
-            background-color: var(--tg-theme-bg-color); /* Match main app bg */
-            padding: 5px 0 0 0; /* Reduced padding, rely on buttons */
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--tg-theme-bg-color);
+            padding: 5px 0 0 0;
+            /* border-top: 1px solid var(--tg-theme-border-color); /* Optional: if you want a separator after details */
         }
         .profile-tabs button {
             background: none; border: none;
@@ -552,9 +571,12 @@
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
                     <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
-                    <div class="profile-header-content">
+                    <div class="profile-header-content"> <!-- This might not be strictly needed if top-pinned are outside gradient too -->
                         <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div>
-                        <div id="profile-main-info-block" class="profile-main-info"> <!-- Renamed for clarity -->
+                    </div>
+                    <!-- NEW WRAPPER FOR GRADIENT AREA -->
+                    <div id="profile-main-interactive-area" class="profile-main-interactive-area">
+                        <div id="profile-main-info-block" class="profile-main-info">
                             <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
                             <div class="profile-name-status">
                                 <div class="name-line">
@@ -565,12 +587,16 @@
                                 <p id="profile-status" class="online">в сети</p>
                             </div>
                         </div>
+                    </div>
+                    <!-- Profile Details OUTSIDE the gradient wrapper, but still within top-section or a new sibling -->
+                    <div class="profile-header-content"> <!-- Re-use for padding or create new -->
                         <div id="profile-details" class="profile-details">
                             <p><strong>Телефон</strong><span id="profile-phone"></span></p>
                             <p><strong>О себе</strong><span id="profile-bio"></span></p>
                             <p><strong>Имя пользователя</strong><span id="profile-username"></span></p>
                         </div>
                     </div>
+                </div>
                 </div>
 
                 <div class="profile-tabs">
