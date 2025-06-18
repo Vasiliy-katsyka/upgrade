@@ -1675,12 +1675,12 @@
         
         // --- START APP ---
         if (tg.initData && tg.initDataUnsafe) {
-             initializeApp();
+             await initializeApp(); // <--- CORRECTED LINE: Added 'await'
         } else {
             // Fallback for local development if Telegram WebApp script fails or not in TG env
             console.warn("Telegram WebApp not fully initialized. Using mock init or limited functionality.");
-            tg.initData = "mock_init_data_string_for_dev_if_needed_for_auth_header"; // For API calls
-            tg.initDataUnsafe = { user: { id: 0, first_name: "DevUser", username: "devuser" } }; // Mock user
+            tg.initData = "mock_init_data_string_for_dev_if_needed_for_auth_header"; 
+            tg.initDataUnsafe = { start_param: null, user: { id: 0, first_name: "DevUser", username: "devuser" } };
             tg.themeParams = { /* default theme from CSS */ };
             tg.showAlert = (message) => alert(message);
             tg.HapticFeedback = {
@@ -1688,9 +1688,9 @@
                 notificationOccurred: (type) => console.log(`Haptic notification: ${type}`),
             };
             tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = ()=>{};
-            tg.WebApp = {url: "http://localhost:8080/index.html"}; // mock URL
+            tg.WebApp = {url: "http://localhost:8080/index.html", initDataUnsafe: tg.initDataUnsafe}; // mock URL and initDataUnsafe for fallback
 
-            document.addEventListener('DOMContentLoaded', initializeApp);
+            document.addEventListener('DOMContentLoaded', async () => await initializeApp()); // Use async here too for fallback
         }
 
     </script>
