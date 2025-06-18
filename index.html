@@ -14,15 +14,16 @@
             --tg-theme-button-color: #3e97f0;
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #17212b;
-            --tg-theme-header-bg-color: #17212b;
-            --tg-theme-accent-blue: #5288c1; /* Used for "Upgrade All" button */
-            --tg-theme-border-color: #232d36;
+            --tg-theme-header-bg-color: #17212b; /* Adjusted for profile header based on screenshots */
+            --tg-theme-accent-blue: #5288c1; /* Used for "Upgrade All" button and other accents */
+            --tg-theme-border-color: #232d36; /* Subtle border */
 
             --app-modal-backdrop-color: rgba(0,0,0,0.7);
-            --app-rarity-chip-bg: #2b3540;
-            --app-rarity-chip-text: #a3b6c9;
-            --app-action-button-bg: #232e3a;
+            --app-rarity-chip-bg: #2b3540; /* Darker chip bg */
+            --app-rarity-chip-text: #a3b6c9; /* Lighter chip text */
+            --app-action-button-bg: #232e3a; /* For modal secondary buttons */
             --app-action-button-text: var(--tg-theme-link-color);
+            --app-profile-gradient-fallback: var(--tg-theme-header-bg-color);
         }
 
         * {
@@ -64,18 +65,19 @@
             display: flex;
             align-items: center;
             padding: 10px 15px;
-            background-color: var(--tg-theme-header-bg-color);
+            background-color: var(--tg-theme-secondary-bg-color); /* Matches screenshot header */
             border-bottom: 1px solid var(--tg-theme-border-color);
             min-height: 56px;
+            position: sticky; top: 0; z-index: 10;
         }
         .page-header .back-button {
             background: none; border: none;
             color: var(--tg-theme-link-color);
-            font-size: 1.8em;
-            margin-right: 15px;
             cursor: pointer;
-            padding: 5px;
+            padding: 5px; margin-right: 15px;
+            display: flex; align-items: center; justify-content: center;
         }
+        .page-header .back-button svg { width: 24px; height: 24px; fill: currentColor; }
         .page-header h2 {
             font-size: 1.15em;
             color: var(--tg-theme-text-color);
@@ -84,24 +86,28 @@
         .page-header .menu-button {
             background: none; border: none;
             color: var(--tg-theme-link-color);
-            font-size: 1.5em;
+            font-size: 1.8em; /* Adjusted for typical three-dot icon size */
             margin-left: auto;
             cursor: pointer;
             padding: 5px;
         }
 
         /* Profile Page */
+        .profile-page-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
         .profile-header-area {
-            background-color: var(--tg-theme-header-bg-color);
-            padding: 15px;
+            background-color: var(--tg-theme-header-bg-color); /* Matches screenshots */
+            padding: 0 15px; /* Removed top/bottom padding to integrate with main-info */
             border-bottom: 1px solid var(--tg-theme-border-color);
         }
         .profile-top-pinned-gifts {
             display: flex;
             justify-content: flex-start;
             gap: 6px;
-            margin-bottom: 8px;
-            padding-left: 70px;
+            padding: 10px 0 8px 0; /* Padding around pinned gifts */
             min-height: 24px;
         }
         .profile-top-pinned-gifts img {
@@ -115,7 +121,9 @@
         .profile-main-info {
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
+            padding: 12px 0; /* Padding for the main block */
+            background: var(--app-profile-gradient-fallback); /* Fallback, dynamic gradient here */
+            transition: background 0.3s ease;
         }
         .profile-avatar {
             width: 60px;
@@ -124,39 +132,39 @@
             background-color: var(--tg-theme-hint-color);
             margin-right: 15px;
             object-fit: cover;
-            border: 2px solid var(--tg-theme-bg-color);
+            border: 2px solid var(--tg-theme-header-bg-color); /* Border color same as header for seamless look */
         }
+        .profile-name-status { display: flex; flex-direction: column; }
+        .profile-name-status .name-line { display: flex; align-items: center; }
         .profile-name-status h1 {
             font-size: 1.3em;
             font-weight: 600;
-            margin-bottom: 2px;
+            color: var(--tg-theme-text-color);
         }
-        .profile-name-status p {
-            font-size: 0.9em;
-            color: var(--tg-theme-hint-color);
+        #worn-gift-icon {
+            width: 22px; height: 22px; margin-left: 8px; object-fit: contain;
         }
-        .profile-name-status p.online {
-             color: var(--tg-theme-link-color);
-        }
+        .profile-name-status p { font-size: 0.9em; color: var(--tg-theme-hint-color); margin-top: 2px; }
+        .profile-name-status p.online { color: var(--tg-theme-link-color); }
         
-        .profile-action-icons {
-            margin-left: auto; display: flex; gap: 20px;
-            font-size: 1.4em; color: var(--tg-theme-link-color);
+        .profile-details { /* Info block */
+            padding: 15px 0; /* Vertical padding for info block */
+            background-color: var(--tg-theme-header-bg-color);
         }
-        .profile-action-icons span { cursor: pointer; }
-
         .profile-details p {
-            margin-bottom: 8px; font-size: 0.95em;
+            margin-bottom: 10px; font-size: 0.95em;
         }
-        .profile-details p strong {
+        .profile-details p:last-child { margin-bottom: 0; }
+        .profile-details p strong { /* Label like "Mobile", "Bio" */
             display: block; color: var(--tg-theme-hint-color);
-            font-weight: normal; font-size: 0.85em; margin-bottom: 2px;
+            font-weight: normal; font-size: 0.85em; margin-bottom: 3px;
         }
+        .profile-details p span { color: var(--tg-theme-text-color); } /* Value */
         .profile-details p span#profile-username { color: var(--tg-theme-link-color); }
 
         .profile-tabs {
             display: flex; justify-content: space-around;
-            background-color: var(--tg-theme-header-bg-color);
+            background-color: var(--tg-theme-header-bg-color); /* Match header */
             padding: 0;
             border-bottom: 1px solid var(--tg-theme-border-color);
         }
@@ -166,54 +174,48 @@
             padding: 14px 10px; font-size: 0.95em;
             cursor: pointer; flex-grow: 1;
             border-bottom: 3px solid transparent; position: relative;
+            font-weight: 500; /* Bolder tabs like screenshots */
         }
         .profile-tabs button.active {
             color: var(--tg-theme-link-color);
-            font-weight: 500;
         }
         .profile-tabs button.active::after {
             content: ''; position: absolute;
-            bottom: 0; left: 0; right: 0;
+            bottom: -1px; /* Align with border-bottom */
+            left: 0; right: 0;
             height: 3px; background-color: var(--tg-theme-link-color);
         }
         
         .profile-gifts-actions {
             display: flex; justify-content: flex-end;
             align-items: center; padding: 12px 15px;
-            background-color: var(--tg-theme-bg-color);
+            background-color: var(--tg-theme-bg-color); /* Main app bg */
         }
-        .profile-gifts-actions .buy-gifts-button { /* General style for buttons in this row */
+        .profile-gifts-actions .action-button {
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
             border: none; padding: 8px 18px;
             border-radius: 20px; font-size: 0.9em; cursor: pointer;
             font-weight: 500;
         }
-        /* Specific style for "Upgrade All" can be set via JS or more specific CSS if needed */
         #upgrade-all-gifts-button {
-            /* background-color: var(--tg-theme-accent-blue); /* This is set in inline style now */
-            margin-right: 10px; /* Spacing between buttons */
+            background-color: var(--tg-theme-accent-blue);
+            margin-right: 10px;
         }
-
 
         .gifts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Adjusted for screenshot look */
+            gap: 5px; /* Smaller gap */
             padding: 10px;
             flex-grow: 1;
             overflow-y: auto;
             background-color: var(--tg-theme-bg-color);
         }
         .empty-grid-message {
-            color: var(--tg-theme-hint-color);
-            text-align: center;
-            padding: 20px 40px; 
-            font-size: 0.95em;
-            line-height: 1.5;
-            width: 100%; 
+            color: var(--tg-theme-hint-color); text-align: center;
+            padding: 30px 40px; font-size: 0.95em; line-height: 1.5; width: 100%; 
         }
-
 
         .gift-card {
             background-color: var(--tg-theme-secondary-bg-color);
@@ -224,50 +226,55 @@
             aspect-ratio: 1 / 1; cursor: pointer;
             position: relative; overflow: hidden;
         }
-        
         .gift-card-bg-pattern {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-size: cover; pointer-events: none;
+            background-size: cover; pointer-events: none; z-index: 0;
         }
         .gift-card-pattern-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-repeat: repeat;
-            background-size: 25% auto;
+            background-size: 30% auto; /* Slightly larger pattern */
             background-position: center;
-            opacity: 0.1;
-            pointer-events: none;
+            opacity: 0.1; /* Subtler pattern */
+            pointer-events: none; z-index: 1;
         }
-
         .gift-card img.gift-image {
-            max-width: 75%; max-height: 75%;
-            object-fit: contain; z-index: 1;
+            max-width: 70%; max-height: 70%; /* Adjusted size */
+            object-fit: contain; z-index: 2;
         }
-        
-        .gift-card .collectible-number-badge {
-            position: absolute; top: 6px; right: 6px;
-            background-color: rgba(0,0,0,0.3);
+        .gift-card .collectible-number-badge { /* For #JK style numbers */
+            position: absolute; top: 5px; right: 5px;
+            background-color: rgba(0,0,0,0.35);
             color: var(--tg-theme-text-color);
-            font-size: 0.7em; padding: 2px 6px;
-            border-radius: 8px; z-index: 2; font-weight: 500;
+            font-size: 0.65em; padding: 2px 5px;
+            border-radius: 8px; z-index: 3; font-weight: 500;
         }
-
+        .gift-card .gift-rarity-badge { /* For "1 of X.XK" */
+            position: absolute; bottom: 5px; left:0; right: 0;
+            text-align: center;
+            background-color: rgba(0,0,0,0.25);
+            color: var(--tg-theme-text-color);
+            font-size: 0.6em; padding: 2px 0;
+            z-index: 3; font-weight: 400;
+        }
         .gift-card .pin-indicator {
-            position: absolute; top: 6px; left: 6px;
-            font-size: 1.1em;
-            z-index: 2;
+            position: absolute; top: 5px; left: 5px;
+            z-index: 3; display: flex; align-items: center; justify-content: center;
         }
+        .gift-card .pin-indicator svg { width: 18px; height: 18px; fill: var(--tg-theme-link-color); opacity: 0.8; }
+
 
         /* Buy Gifts Page */
         .buy-gift-item {
             background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 10px; padding: 10px;
             display: flex; flex-direction: column; align-items: center;
-            cursor: pointer; position: relative;
+            cursor: pointer; position: relative; aspect-ratio: 1/1.1; /* To make them slightly taller */
         }
         .buy-gift-item img {
-            width: 60%; 
-            height: auto; max-height: 70px; 
-            object-fit: contain; margin-bottom: 10px;
+            width: 65%; /* Slightly larger image */
+            max-height: 60px; /* Constrain height */
+            object-fit: contain; margin-bottom: 8px;
         }
         .buy-gift-item .gift-name {
             font-size: 0.8em; text-align: center;
@@ -279,20 +286,19 @@
             font-size: 0.9em; color: var(--tg-theme-hint-color);
         }
         .buy-gift-item .gift-price .star-icon { color: #f5a623; margin-right: 3px;}
-
         .limited-label {
             position: absolute; top: 6px; right: 6px;
             background-color: var(--tg-theme-accent-blue);
             color: var(--tg-theme-button-text-color);
-            font-size: 0.65em; padding: 3px 8px;
-            border-radius: 10px; font-weight: 500;
+            font-size: 0.6em; padding: 2px 6px; /* Smaller label */
+            border-radius: 8px; font-weight: 500;
         }
 
         /* Modals Generic */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background-color: var(--app-modal-backdrop-color);
-            display: flex; align-items: flex-end;
+            display: flex; align-items: flex-end; /* Modals slide from bottom */
             justify-content: center; z-index: 1000;
             opacity: 0; visibility: hidden;
             transition: opacity 0.25s ease, transform 0.25s ease;
@@ -304,7 +310,7 @@
         }
         .modal-content {
             background-color: var(--tg-theme-secondary-bg-color);
-            padding-top: 10px;
+            padding-top: 0; /* Header bar will have its own padding */
             border-top-left-radius: 12px;
             border-top-right-radius: 12px;
             width: 100%; max-width: 600px;
@@ -312,19 +318,22 @@
             display: flex; flex-direction: column;
             max-height: 90vh;
         }
+        /* Modal Header Bar (common for non-collectible) */
         .modal-header-bar {
-            padding: 10px 20px 15px 20px; text-align: center;
+            padding: 15px 20px; text-align: center;
             border-bottom: 1px solid var(--tg-theme-border-color);
+            position: sticky; top: 0; background-color: var(--tg-theme-secondary-bg-color); z-index: 1;
         }
         .modal-header-bar h3 { font-size: 1.1em; font-weight: 500; }
         
         .modal-scrollable-content {
-            overflow-y: auto; padding: 20px; flex-grow: 1;
+            overflow-y: auto; padding: 15px 20px; flex-grow: 1;
         }
         .modal-buttons-footer {
             padding: 15px 20px;
             border-top: 1px solid var(--tg-theme-border-color);
-            background-color: var(--tg-theme-secondary-bg-color);
+            background-color: var(--tg-theme-secondary-bg-color); /* Match modal bg */
+            position: sticky; bottom: 0; z-index: 1;
         }
         .modal-button {
             background-color: var(--tg-theme-button-color);
@@ -339,42 +348,62 @@
             margin-top: 10px;
         }
 
-        /* Gift Detail Modal (Non-Collectible) */
+        /* Gift Detail Modal (Non-Collectible) - "Saved Gift" style */
         #gift-detail-modal .modal-gift-image {
-            width: 100px; height: 100px; object-fit: contain;
-            margin: 0 auto 20px auto; display: block;
+            width: 120px; height: 120px; object-fit: contain; /* Larger image */
+            margin: 10px auto 15px auto; display: block;
+        }
+        #gift-detail-modal .modal-gift-description {
+            font-size: 0.9em; color: var(--tg-theme-hint-color);
+            margin-bottom: 8px; text-align: center; line-height: 1.5;
         }
         #gift-detail-modal .modal-info-table .info-row {
-            display: flex; justify-content: space-between;
-            padding: 10px 0; font-size: 0.95em;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; font-size: 0.95em;
             border-bottom: 1px solid var(--tg-theme-border-color);
         }
         #gift-detail-modal .modal-info-table .info-row:last-child { border-bottom: none; }
-        #gift-detail-modal .modal-info-table .info-label { color: var(--tg-theme-hint-color); }
+        #gift-detail-modal .modal-info-table .info-label { color: var(--tg-theme-text-color); } /* Darker labels based on screenshot */
+        #gift-detail-modal .modal-info-table .info-value { color: var(--tg-theme-hint-color); }
+
+        #gift-detail-modal .info-value-with-action {
+            display: flex; align-items: center;
+        }
+        #gift-detail-modal .info-value-with-action span { margin-right: 10px; color: var(--tg-theme-hint-color); }
+        #gift-detail-modal .button-link-styled { /* For "Улучшить" */
+            background: none; border: none;
+            color: var(--tg-theme-link-color);
+            font-size: 0.95em; font-weight: 500;
+            padding: 5px; cursor: pointer;
+        }
+        #gift-detail-modal .button-link-styled:disabled { color: var(--tg-theme-hint-color); }
+
 
         /* Collectible Detail Modal Specific Styles */
         #collectible-detail-modal .modal-content {
-             padding-top: 0;
+             padding-top: 0; /* page-header handles top */
         }
-        #collectible-detail-modal .page-header {
+        #collectible-detail-modal .page-header { /* This is the modal's header */
             border-top-left-radius: 12px;
             border-top-right-radius: 12px;
+            background-color: var(--tg-theme-secondary-bg-color); /* Match modal bg */
         }
         #collectible-detail-modal .modal-scrollable-content {
-            padding: 0;
+            padding: 0; /* Content sections will have their own padding */
         }
         .collectible-display-area {
-            background-color: var(--tg-theme-bg-color);
+            background-color: var(--tg-theme-bg-color); /* Matches profile grid bg */
             padding: 20px; text-align: center;
         }
-        .collectible-display-area h3 {
-            font-size: 1.4em; font-weight: 600; margin-top: 10px;
+        .collectible-display-area h3 { /* Snake Box etc. */
+            font-size: 1.4em; font-weight: 600; margin-top: 15px; /* More space for image */
+            color: var(--tg-theme-text-color);
         }
-        .collectible-display-area p {
-            font-size: 0.9em; color: var(--tg-theme-hint-color); margin-bottom: 20px;
+        .collectible-display-area p { /* Collectible #xxx */
+            font-size: 0.95em; color: var(--tg-theme-hint-color); margin-bottom: 10px; /* Reduced bottom margin */
         }
         .modal-collectible-visual {
-            width: 70%; max-width: 280px;
+            width: 60%; max-width: 220px; /* Adjusted size */
             aspect-ratio: 1/1; margin: 0 auto;
             border-radius: 12px; position: relative; overflow: hidden;
             display: flex; align-items: center; justify-content: center;
@@ -396,20 +425,23 @@
 
         .modal-action-buttons-row {
             display: flex; justify-content: space-around; gap: 10px;
-            padding: 15px 20px;
-            background-color: var(--tg-theme-bg-color);
+            padding: 15px 20px; /* Normal padding */
+            background-color: var(--tg-theme-bg-color); /* Match display area bg */
         }
         .modal-action-buttons-row button {
             flex-grow: 1; padding: 10px 5px; font-size: 0.9em;
-            background-color: var(--app-action-button-bg);
-            color: var(--app-action-button-text);
+            background-color: var(--app-action-button-bg); /* Darker buttons */
+            color: var(--tg-theme-text-color); /* Brighter text on dark buttons */
             border: none; border-radius: 8px;
             display: flex; flex-direction: column; align-items: center;
             font-weight: 500;
         }
-        .modal-action-buttons-row button .icon { font-size: 1.3em; margin-bottom: 4px; }
+        .modal-action-buttons-row button .icon { margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
+        .modal-action-buttons-row button .icon svg { width: 22px; height: 22px; fill: var(--tg-theme-link-color); }
+        .modal-action-buttons-row button .text { font-size: 0.9em; }
 
-        .collectible-info-section { padding: 0 20px; }
+
+        .collectible-info-section { padding: 0 20px; background-color: var(--tg-theme-secondary-bg-color); }
         .collectible-info-section .info-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 0; font-size: 0.95em;
@@ -426,14 +458,14 @@
         .collectible-info-section .info-value .rarity-chip {
             background-color: var(--app-rarity-chip-bg);
             color: var(--app-rarity-chip-text);
-            padding: 3px 8px; border-radius: 12px;
+            padding: 2px 7px; border-radius: 8px; /* Adjusted padding */
             font-size: 0.8em; margin-left: 8px; font-weight: 500;
         }
         
         .modal-footer-message {
             text-align: center; font-size: 0.85em;
             color: var(--tg-theme-hint-color); padding: 15px 20px;
-            background-color: var(--tg-theme-bg-color);
+            background-color: var(--tg-theme-bg-color); /* Match display area bg */
         }
         .modal-footer-message .link { color: var(--tg-theme-link-color); cursor: pointer; }
 
@@ -456,25 +488,17 @@
         }
         #long-press-menu li:not(.disabled):hover { background-color: var(--tg-theme-border-color); }
         
-        /* Input for buy multiple */
         #buy-multiple-quantity {
             width: 80px; padding: 10px; text-align: center; margin-bottom:15px; 
             background-color: var(--tg-theme-bg-color); 
             color: var(--tg-theme-text-color); 
             border: 1px solid var(--tg-theme-border-color); 
-            border-radius: 8px;
-            font-size: 1em;
+            border-radius: 8px; font-size: 1em;
         }
         #buy-multiple-quantity::-webkit-outer-spin-button,
-        #buy-multiple-quantity::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        #buy-multiple-quantity[type=number] {
-            -moz-appearance: textfield;
-        }
+        #buy-multiple-quantity::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        #buy-multiple-quantity[type=number] { -moz-appearance: textfield; }
 
-        /* Spinner */
         .spinner {
             border: 4px solid var(--tg-theme-hint-color);
             border-top: 4px solid var(--tg-theme-link-color);
@@ -488,55 +512,54 @@
             display: flex; align-items: center; justify-content: center;
             color: var(--tg-theme-bg-color); font-size: 0.8em; border-radius: 8px;
         }
-
     </style>
 </head>
 <body>
     <div class="app-container">
         <!-- Profile Page -->
         <div id="profile-page" class="page active">
-            <div class="profile-header-area">
-                <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts">
-                    <!-- Pinned gift icons go here -->
-                </div>
-                <div class="profile-main-info">
-                    <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
-                    <div class="profile-name-status">
-                        <h1 id="profile-name">Имя</h1>
-                        <p id="profile-gift-count-subtext">0 подарков</p>
-                        <p id="profile-status" class="online">в сети</p>
+            <div class="profile-page-content">
+                <div class="profile-header-area">
+                    <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div>
+                    <div id="profile-main-info" class="profile-main-info">
+                        <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
+                        <div class="profile-name-status">
+                            <div class="name-line">
+                                <h1 id="profile-name">Имя</h1>
+                                <img id="worn-gift-icon" class="hidden" src="" alt="Worn Gift">
+                            </div>
+                            <p id="profile-gift-count-subtext">0 подарков</p>
+                            <p id="profile-status" class="online">в сети</p>
+                        </div>
                     </div>
-                     <div class="profile-action-icons">
-                        <!-- Icons removed as per request -->
+                    <div id="profile-details" class="profile-details">
+                        <p><strong>Телефон</strong><span id="profile-phone"></span></p>
+                        <p><strong>О себе</strong><span id="profile-bio"></span></p>
+                        <p><strong>Имя пользователя</strong><span id="profile-username"></span></p>
                     </div>
                 </div>
-                <div id="profile-details" class="profile-details">
-                    <p><strong>Телефон</strong><span id="profile-phone"></span></p>
-                    <p><strong>О себе</strong><span id="profile-bio"></span></p>
-                    <p><strong>Имя пользователя</strong><span id="profile-username"></span></p>
+
+                <div class="profile-tabs">
+                    <button>Публикации</button>
+                    <button>Архив</button>
+                    <button class="active" id="gifts-tab-button">Подарки</button>
                 </div>
-            </div>
+                
+                <div class="profile-gifts-actions">
+                    <button id="upgrade-all-gifts-button" class="action-button" style="display: none;">✨ Улучшить все</button>
+                    <button id="go-to-buy-gifts" class="action-button">🎁 Купить подарки</button>
+                </div>
 
-            <div class="profile-tabs">
-                <button>Публикации</button>
-                <button>Архив</button>
-                <button class="active" id="gifts-tab-button">Подарки</button>
-            </div>
-            
-            <div class="profile-gifts-actions">
-                <button id="upgrade-all-gifts-button" class="buy-gifts-button" style="background-color: var(--tg-theme-accent-blue); display: none;">✨ Улучшить все</button>
-                <button id="go-to-buy-gifts" class="buy-gifts-button">🎁 Купить подарки</button>
-            </div>
-
-            <div id="gifts-grid" class="gifts-grid">
-                <div class="spinner hidden" id="gifts-loading-spinner"></div>
+                <div id="gifts-grid" class="gifts-grid">
+                    <div class="spinner hidden" id="gifts-loading-spinner"></div>
+                </div>
             </div>
         </div>
 
         <!-- Buy Gifts Page -->
         <div id="buy-gifts-page" class="page">
             <div class="page-header">
-                <button id="back-to-profile-buy" class="back-button">←</button>
+                <button id="back-to-profile-buy" class="back-button"></button>
                 <h2>Магазин подарков</h2>
             </div>
             <div id="buy-gifts-grid" class="gifts-grid">
@@ -552,21 +575,22 @@
                 </div>
                 <div class="modal-scrollable-content">
                     <img id="modal-gift-image" class="modal-gift-image" src="" alt="Подарок">
+                    <p id="modal-gift-description1" class="modal-gift-description"></p>
+                    <p id="modal-gift-description2" class="modal-gift-description"></p>
                     <div id="modal-gift-info" class="modal-info-table">
                         <!-- Info rows populated by JS -->
                     </div>
                 </div>
                 <div class="modal-buttons-footer">
-                    <button id="upgrade-gift-button" class="modal-button">Улучшить</button>
-                    <button id="close-gift-detail-modal" class="modal-button secondary">ОК</button>
+                    <button id="close-gift-detail-modal" class="modal-button">ОК</button>
                 </div>
             </div>
         </div>
 
         <div id="collectible-detail-modal" class="modal-overlay">
             <div class="modal-content">
-                <div class="page-header">
-                    <button id="back-from-collectible-modal" class="back-button">←</button>
+                <div class="page-header"> <!-- Reusing page-header style for modal header -->
+                    <button id="back-from-collectible-modal" class="back-button"></button>
                     <h2 id="modal-collectible-header-title">Коллекционный</h2>
                     <button class="menu-button">⋮</button>
                 </div>
@@ -582,9 +606,9 @@
                     </div>
 
                     <div id="modal-collectible-actions" class="modal-action-buttons-row">
-                        <button><span class="icon">💎</span>Передать</button>
-                        <button><span class="icon">👑</span>Надеть</button>
-                        <button><span class="icon">💰</span>Продать</button>
+                        <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Передать</span></button>
+                        <button id="collectible-action-wear"><span class="icon"></span><span class="text">Надеть</span></button>
+                        <button id="collectible-action-sell"><span class="icon"></span><span class="text">Продать</span></button>
                     </div>
                     <div class="collectible-info-section">
                         <div id="modal-collectible-info-table" class="modal-info-table">
@@ -634,25 +658,32 @@
     <div id="long-press-menu" class="hidden">
         <ul>
             <li id="menu-pin-action">Закрепить</li>
-            <!-- Add other actions here if needed -->
         </ul>
     </div>
 
     <script>
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
-        const PIN_ICON_ON_CARD = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--tg-theme-link-color)" width="16px" height="16px" style="opacity:0.7;"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 2.99.71-.71L12 2z"/></svg>`; 
 
+        const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
+        const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold-outline</title><path d="M13,22L3,12L13,2V8H21V16H13V22M6,12L11,17V14H19V10H11V7L6,12Z" /></svg>`;
+        const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M15,4H17L19,7H16M11,4H13L14,7H10M7,4H9L8,7H5M6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
+        const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
+        const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
+        
         let allAvailableGifts = {};
         let ownedGifts = []; 
         let pinnedGifts = []; 
+        let wornGiftInstanceId = null;
         const MAX_PINS = 6;
         let tg = window.Telegram.WebApp;
 
         // DOM Elements
         const profilePage = document.getElementById('profile-page');
+        const profileMainInfo = document.getElementById('profile-main-info');
         const profileAvatar = document.getElementById('profile-avatar');
         const profileName = document.getElementById('profile-name');
+        const wornGiftIcon = document.getElementById('worn-gift-icon');
         const profileGiftCountSubtext = document.getElementById('profile-gift-count-subtext');
         const profileStatus = document.getElementById('profile-status');
         const profilePhone = document.getElementById('profile-phone');
@@ -661,7 +692,7 @@
         const profileTopPinnedGifts = document.getElementById('profile-top-pinned-gifts');
         const giftsGrid = document.getElementById('gifts-grid');
         const goToBuyGiftsButton = document.getElementById('go-to-buy-gifts');
-        const upgradeAllGiftsButton = document.getElementById('upgrade-all-gifts-button'); // New button
+        const upgradeAllGiftsButton = document.getElementById('upgrade-all-gifts-button');
         
         const buyGiftsPage = document.getElementById('buy-gifts-page');
         const backToProfileBuyButton = document.getElementById('back-to-profile-buy');
@@ -670,8 +701,10 @@
         const giftDetailModal = document.getElementById('gift-detail-modal');
         const modalGiftName = document.getElementById('modal-gift-name');
         const modalGiftImage = document.getElementById('modal-gift-image');
+        const modalGiftDescription1 = document.getElementById('modal-gift-description1');
+        const modalGiftDescription2 = document.getElementById('modal-gift-description2');
         const modalGiftInfo = document.getElementById('modal-gift-info');
-        const upgradeGiftButton = document.getElementById('upgrade-gift-button');
+        // const upgradeGiftButton = document.getElementById('upgrade-gift-button'); // This will be the inline one
         const closeGiftDetailModalButton = document.getElementById('close-gift-detail-modal');
 
         const collectibleDetailModal = document.getElementById('collectible-detail-modal');
@@ -684,6 +717,9 @@
         const modalCollectibleMainName = document.getElementById('modal-collectible-main-name');
         const modalCollectibleNumberSubtext = document.getElementById('modal-collectible-number-subtext');
         const modalCollectibleInfoTable = document.getElementById('modal-collectible-info-table');
+        const collectibleActionTransfer = document.getElementById('collectible-action-transfer');
+        const collectibleActionWear = document.getElementById('collectible-action-wear');
+        const collectibleActionSell = document.getElementById('collectible-action-sell');
         const closeCollectibleDetailModalButton = document.getElementById('close-collectible-detail-modal');
         
         const tooManyPinsModal = document.getElementById('too-many-pins-modal');
@@ -740,8 +776,18 @@
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
             
+            // Set SVG for back buttons
+            backToProfileBuyButton.innerHTML = BACK_ARROW_SVG;
+            backFromCollectibleModal.innerHTML = BACK_ARROW_SVG;
+            
+            // Set SVG for collectible action buttons
+            collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
+            collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
+            collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
+
             loadUserData();
-            loadState(); 
+            loadState(); // Includes wornGiftInstanceId
+            applyWornGiftStyles(wornGiftInstanceId);
             renderProfileGifts();
             setupEventListeners();
             fetchAvailableGifts();
@@ -760,15 +806,16 @@
                 setVar('--tg-theme-button-text-color', themeParams.button_text_color);
                 setVar('--tg-theme-secondary-bg-color', themeParams.secondary_bg_color);
                 setVar('--tg-theme-header-bg-color', themeParams.secondary_bg_color || themeParams.bg_color); 
-                setVar('--tg-theme-accent-blue', themeParams.accent_text_color || '#5288c1'); // Or use a specific theme key if available
-                
+                setVar('--tg-theme-accent-blue', themeParams.accent_text_color || '#5288c1');
+                setVar('--tg-theme-border-color', themeParams.section_header_text_color || '#232d36'); // Example, or find suitable TG key
+
                 document.body.style.backgroundColor = themeParams.bg_color || 'var(--tg-theme-bg-color)';
                 document.body.style.color = themeParams.text_color || 'var(--tg-theme-text-color)';
-
-                if (upgradeAllGiftsButton) { // Update button color if theme changes
+                
+                if (upgradeAllGiftsButton) {
                     upgradeAllGiftsButton.style.backgroundColor = themeParams.accent_text_color || 'var(--tg-theme-accent-blue)';
                 }
-
+                 applyWornGiftStyles(wornGiftInstanceId); // Re-apply if theme affects fallback
             } else {
                 console.log("Using default CSS variables as themeParams are empty.");
             }
@@ -790,17 +837,38 @@
         }
 
         function saveState() {
-            localStorage.setItem('ownedGifts_v3', JSON.stringify(ownedGifts));
-            localStorage.setItem('pinnedGifts_v3', JSON.stringify(pinnedGifts));
+            localStorage.setItem('ownedGifts_v4', JSON.stringify(ownedGifts));
+            localStorage.setItem('pinnedGifts_v4', JSON.stringify(pinnedGifts));
+            localStorage.setItem('wornGiftInstanceId_v4', wornGiftInstanceId);
         }
         function loadState() {
-            const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v3')) || [];
+            const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v4')) || [];
             ownedGifts = loadedOwnedGifts.map(gift => ({
                 ...gift,
                 instanceId: gift.instanceId || generateUniqueId() 
             }));
-            pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v3')) || [];
+            pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v4')) || [];
+            wornGiftInstanceId = localStorage.getItem('wornGiftInstanceId_v4') || null;
         }
+        
+        function applyWornGiftStyles(instanceId) {
+            const currentWornGift = ownedGifts.find(g => g.instanceId === instanceId && g.isCollectible);
+            if (currentWornGift && currentWornGift.collectibleData) {
+                wornGiftIcon.src = currentWornGift.collectibleData.modelImage;
+                wornGiftIcon.classList.remove('hidden');
+                const colors = currentWornGift.collectibleData.backdropColors;
+                if (colors) {
+                    profileMainInfo.style.background = `radial-gradient(circle, ${colors.centerColor}, ${colors.edgeColor})`;
+                } else {
+                     profileMainInfo.style.background = 'var(--app-profile-gradient-fallback)';
+                }
+            } else {
+                wornGiftIcon.classList.add('hidden');
+                wornGiftIcon.src = '';
+                profileMainInfo.style.background = 'var(--app-profile-gradient-fallback)';
+            }
+        }
+
 
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -889,78 +957,89 @@
                 giftsGrid.innerHTML = `<p class="empty-grid-message">У вас пока нет подарков. Время что-нибудь купить!</p>`;
             } else {
                 giftsGrid.style.display = 'grid'; 
-                sortedGifts.forEach(gift => {
-                    const card = document.createElement('div');
-                    card.className = 'gift-card';
-                    card.dataset.instanceId = gift.instanceId; 
-
-                    const giftImage = document.createElement('img');
-                    giftImage.className = 'gift-image';
-                    
-                    if (gift.isCollectible && gift.collectibleData) {
-                        const cd = gift.collectibleData;
-                        giftImage.src = cd.modelImage || gift.originalImage;
-                        giftImage.alt = cd.model?.name || gift.name;
-
-                        const bgDiv = document.createElement('div');
-                        bgDiv.className = 'gift-card-bg-pattern';
-                        if (cd.backdropColors) {
-                             bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
-                        } else {
-                            bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
-                        }
-                        card.appendChild(bgDiv);
-
-                        if (cd.patternImage) {
-                            const patternOverlayDiv = document.createElement('div');
-                            patternOverlayDiv.className = 'gift-card-pattern-overlay';
-                            patternOverlayDiv.style.backgroundImage = `url('${cd.patternImage}')`;
-                            card.appendChild(patternOverlayDiv);
-                        }
-                        
-                        const numberDiv = document.createElement('div');
-                        numberDiv.className = 'collectible-number-badge';
-                        numberDiv.textContent = `#${cd.number}`;
-                        card.appendChild(numberDiv);
-                    } else {
-                        giftImage.src = gift.originalImage;
-                        giftImage.alt = gift.name;
-                    }
-                    
-                    giftImage.onerror = function() { this.parentNode.replaceChild(createPlaceholderImage(true), this); };
-                    card.appendChild(giftImage);
-
-                    if (pinnedGifts.includes(gift.instanceId)) {
-                        const pinDiv = document.createElement('div');
-                        pinDiv.className = 'pin-indicator';
-                        pinDiv.innerHTML = PIN_ICON_ON_CARD; 
-                        card.appendChild(pinDiv);
-                    }
-
-                    card.addEventListener('click', () => openGiftDetailByInstanceId(gift.instanceId));
-                    setupLongPress(card, gift); 
-                    giftsGrid.appendChild(card);
-                });
+                sortedGifts.forEach(gift => giftsGrid.appendChild(createGiftCardDOM(gift)));
             }
             renderTopPinnedGiftsPreview();
 
-            // Visibility for "Upgrade All" button
             const hasNonCollectible = ownedGifts.some(g => !g.isCollectible);
             if (upgradeAllGiftsButton) {
                 upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
-                // If button becomes hidden, reset its state (text, disabled)
                 if (!hasNonCollectible) {
                      upgradeAllGiftsButton.textContent = '✨ Улучшить все';
                      upgradeAllGiftsButton.disabled = false;
                 }
             }
         }
+
+        function createGiftCardDOM(gift) {
+            const card = document.createElement('div');
+            card.className = 'gift-card';
+            card.dataset.instanceId = gift.instanceId;
+
+            const giftImage = document.createElement('img');
+            giftImage.className = 'gift-image';
+            
+            if (gift.isCollectible && gift.collectibleData) {
+                const cd = gift.collectibleData;
+                giftImage.src = cd.modelImage || gift.originalImage;
+                giftImage.alt = cd.model?.name || gift.name;
+
+                const bgDiv = document.createElement('div');
+                bgDiv.className = 'gift-card-bg-pattern';
+                if (cd.backdropColors) {
+                     bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
+                } else {
+                    bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
+                }
+                card.appendChild(bgDiv);
+
+                if (cd.patternImage) {
+                    const patternOverlayDiv = document.createElement('div');
+                    patternOverlayDiv.className = 'gift-card-pattern-overlay';
+                    patternOverlayDiv.style.backgroundImage = `url('${cd.patternImage}')`;
+                    card.appendChild(patternOverlayDiv);
+                }
+                
+                const numberDiv = document.createElement('div');
+                numberDiv.className = 'collectible-number-badge';
+                numberDiv.textContent = `#${cd.number}`;
+                card.appendChild(numberDiv);
+
+                // Add rarity/total issued badge if applicable (mocking for now)
+                if (cd.model?.rarityPermille) {
+                    const rarityBadge = document.createElement('div');
+                    rarityBadge.className = 'gift-rarity-badge';
+                    const totalMock = Math.floor(1 / (cd.model.rarityPermille / 100000)) * 100; // Mock total
+                    rarityBadge.textContent = `1 of ${ (totalMock / 1000).toFixed(1)}K`; // Example
+                    card.appendChild(rarityBadge);
+                }
+
+            } else {
+                giftImage.src = gift.originalImage;
+                giftImage.alt = gift.name;
+            }
+            
+            giftImage.onerror = function() { this.parentNode.replaceChild(createPlaceholderImage(true), this); };
+            card.appendChild(giftImage);
+
+            if (pinnedGifts.includes(gift.instanceId)) {
+                const pinDiv = document.createElement('div');
+                pinDiv.className = 'pin-indicator';
+                pinDiv.innerHTML = PIN_ICON_SVG; 
+                pinDiv.querySelector('svg').style.fill = 'var(--tg-theme-link-color)'; // Ensure color
+                card.appendChild(pinDiv);
+            }
+
+            card.addEventListener('click', () => openGiftDetailByInstanceId(gift.instanceId));
+            setupLongPress(card, gift); 
+            return card;
+        }
         
         function createPlaceholderImage(isCardPlaceholder = false) {
             const placeholder = document.createElement('div');
             placeholder.className = 'placeholder-image';
             if (isCardPlaceholder) {
-                placeholder.style.width = '75%'; placeholder.style.height = '75%';
+                placeholder.style.width = '70%'; placeholder.style.height = '70%';
             }
             placeholder.textContent = '🖼️';
             return placeholder;
@@ -1024,11 +1103,10 @@
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift) return;
 
-            upgradeGiftButton.dataset.instanceId = gift.instanceId; 
-
             if (gift.isCollectible && gift.collectibleData) {
                 const cd = gift.collectibleData;
-                modalCollectibleHeaderTitle.textContent = gift.name;
+                collectibleDetailModal.dataset.instanceId = gift.instanceId; // For wear button
+                modalCollectibleHeaderTitle.textContent = gift.name; // Use original gift name for header
                 modalCollectibleMainName.textContent = cd.model?.name || gift.name;
                 modalCollectibleNumberSubtext.textContent = `Коллекционный #${cd.number}`;
                 
@@ -1066,17 +1144,22 @@
                         <span class="info-value">#${cd.number} (Уникальный экземпляр)</span>
                     </div>
                 `;
+                collectibleActionWear.querySelector('.text').textContent = (wornGiftInstanceId === gift.instanceId) ? 'Снять' : 'Надеть';
                 collectibleDetailModal.classList.add('active');
-            } else {
-                modalGiftName.textContent = gift.name;
+            } else { // Non-collectible - "Saved Gift" style
+                modalGiftName.textContent = "Сохраненный подарок"; // Static title from screenshot
                 modalGiftImage.src = gift.originalImage;
                 modalGiftImage.alt = gift.name;
                 modalGiftImage.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };
+                
+                modalGiftDescription1.textContent = `Добавьте «${gift.name}» в свой профиль или улучшите его.`;
+                modalGiftDescription2.textContent = "Только вы можете видеть имя отправителя.";
+
 
                 modalGiftInfo.innerHTML = `
                     <div class="info-row">
-                        <span class="info-label">Дата получения</span>
-                        <span class="info-value">${new Date(gift.acquiredDate).toLocaleDateString('ru-RU')}</span>
+                        <span class="info-label">Дата</span>
+                        <span class="info-value">${new Date(gift.acquiredDate).toLocaleDateString('ru-RU', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Стоимость</span>
@@ -1086,19 +1169,25 @@
                         <span class="info-label">Доступность</span>
                         <span class="info-value">Ограничено</span>
                     </div>
-                    <div class="info-row">
+                    <div class="info-row" id="uniqueness-row-${gift.instanceId}">
                         <span class="info-label">Уникальность</span>
-                        <span class="info-value" id="modal-uniqueness-value">Стандартный</span>
+                        <div class="info-value-with-action">
+                            <span id="modal-uniqueness-value-${gift.instanceId}">Стандартный</span>
+                            <button id="modal-action-upgrade-gift-${gift.instanceId}" class="button-link-styled" data-instance-id="${gift.instanceId}">Улучшить</button>
+                        </div>
                     </div>
                 `;
-                upgradeGiftButton.disabled = false;
-                upgradeGiftButton.textContent = 'Улучшить';
                 giftDetailModal.classList.add('active');
+                // Add event listener for the new inline upgrade button
+                const inlineUpgradeBtn = document.getElementById(`modal-action-upgrade-gift-${gift.instanceId}`);
+                if(inlineUpgradeBtn) {
+                    inlineUpgradeBtn.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
+                }
             }
         }
         
         async function upgradeSingleGiftLogic(giftToUpgrade) {
-            if (giftToUpgrade.isCollectible) { // Should not happen if called from upgradeAll or correctly from modal
+            if (giftToUpgrade.isCollectible) {
                 return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'skipped' };
             }
 
@@ -1127,22 +1216,23 @@
                 const selectedModel = selectWeightedRandom(modelsData);
                 const selectedBackdrop = selectWeightedRandom(backdropsData);
                 const selectedPattern = selectWeightedRandom(patternsData);
-                const randomNumber = Math.floor(Math.random() * 2000) + 1;
+                const randomNumber = Math.floor(Math.random() * 200000) + 1; // Increased range
 
                 const giftIndexInOwned = ownedGifts.findIndex(g => g.instanceId === giftToUpgrade.instanceId);
                 if (giftIndexInOwned !== -1) {
+                    const newCollectibleData = {
+                        model: selectedModel, backdrop: selectedBackdrop, pattern: selectedPattern,
+                        number: randomNumber,
+                        modelImage: `${CDN_BASE_URL}models/${giftNameEncoded}/png/${encodeURIComponent(selectedModel.name)}.png`,
+                        patternImage: `${CDN_BASE_URL}patterns/${giftNameEncoded}/png/${encodeURIComponent(selectedPattern.name)}.png`,
+                        backdropColors: selectedBackdrop.hex,
+                    };
                     ownedGifts[giftIndexInOwned] = {
                         ...ownedGifts[giftIndexInOwned],
                         isCollectible: true,
-                        collectibleData: {
-                            model: selectedModel, backdrop: selectedBackdrop, pattern: selectedPattern,
-                            number: randomNumber,
-                            modelImage: `${CDN_BASE_URL}models/${giftNameEncoded}/png/${encodeURIComponent(selectedModel.name)}.png`,
-                            patternImage: `${CDN_BASE_URL}patterns/${giftNameEncoded}/png/${encodeURIComponent(selectedPattern.name)}.png`,
-                            backdropColors: selectedBackdrop.hex,
-                        }
+                        collectibleData: newCollectibleData
                     };
-                    return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'success', collectibleData: ownedGifts[giftIndexInOwned].collectibleData };
+                    return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'success', collectibleData: newCollectibleData, giftNameEncoded: giftNameEncoded };
                 } else {
                     throw new Error(`Подарок "${giftToUpgrade.name}" не найден в массиве для обновления.`);
                 }
@@ -1152,40 +1242,42 @@
             }
         }
 
-        async function handleUpgradeGift(instanceId) { // For modal "Upgrade" button
-            const giftIndex = ownedGifts.findIndex(g => g.instanceId === instanceId);
-            if (giftIndex === -1) return;
-            
-            const gift = ownedGifts[giftIndex];
+        async function handleSingleGiftUpgradeFromModal(instanceId) {
+            const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift || gift.isCollectible) return;
 
-            upgradeGiftButton.textContent = 'Улучшение...';
-            upgradeGiftButton.disabled = true;
-            const uniquenessValueEl = document.getElementById('modal-uniqueness-value');
-            if(uniquenessValueEl) uniquenessValueEl.textContent = 'Обработка...';
+            const upgradeButton = document.getElementById(`modal-action-upgrade-gift-${instanceId}`);
+            const uniquenessValueEl = document.getElementById(`modal-uniqueness-value-${instanceId}`);
+            
+            if (upgradeButton) {
+                upgradeButton.textContent = 'Улучшение...';
+                upgradeButton.disabled = true;
+            }
+            if (uniquenessValueEl) uniquenessValueEl.textContent = 'Обработка...';
 
             const result = await upgradeSingleGiftLogic(gift);
 
             if (result.status === 'success' && result.collectibleData) {
-                if(uniquenessValueEl) uniquenessValueEl.textContent = `Коллекционный #${result.collectibleData.number}`;
+                if (uniquenessValueEl) uniquenessValueEl.textContent = `Коллекционный #${result.collectibleData.number}`;
                 saveState();
-                renderProfileGifts();
+                renderProfileGifts(); // Re-render main grid
                 tg.HapticFeedback.notificationOccurred('success');
                 setTimeout(() => {
                     closeModal(giftDetailModal);
-                    openGiftDetailByInstanceId(gift.instanceId); 
+                    openGiftDetailByInstanceId(gift.instanceId); // Re-open as collectible
                 }, 1200);
             } else { 
                 tg.showAlert(`Не удалось улучшить "${gift.name}". ${result.error || 'Причина неизвестна.'}`);
-                if(uniquenessValueEl) uniquenessValueEl.textContent = 'Ошибка улучшения';
-                upgradeGiftButton.textContent = 'Улучшить';
-                upgradeGiftButton.disabled = false;
+                if (uniquenessValueEl) uniquenessValueEl.textContent = 'Ошибка';
+                if (upgradeButton) {
+                    upgradeButton.textContent = 'Улучшить';
+                    upgradeButton.disabled = false;
+                }
             }
         }
         
         async function handleUpgradeAllGifts() {
             const giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible);
-
             if (giftsToUpgrade.length === 0) {
                 tg.showAlert("Нет подарков для улучшения.");
                 return;
@@ -1203,15 +1295,23 @@
                 const result = await upgradeSingleGiftLogic(gift);
                 if (result.status === 'success') {
                     successCount++;
+                    const cardElement = giftsGrid.querySelector(`.gift-card[data-instance-id="${gift.instanceId}"]`);
+                    if (cardElement && result.collectibleData && result.giftNameEncoded) {
+                         // Rebuild the card content with new collectible data
+                        const updatedCard = createGiftCardDOM(ownedGifts.find(g => g.instanceId === gift.instanceId));
+                        cardElement.innerHTML = updatedCard.innerHTML; // Replace content
+                        // Re-attach long press as innerHTML replacement might remove old listeners if not careful
+                        setupLongPress(cardElement, ownedGifts.find(g => g.instanceId === gift.instanceId));
+                    }
                 } else if (result.status === 'failed') {
                     failureCount++;
                 }
-                // Small delay to allow UI to update and not hammer CDN too hard
-                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length -1) await new Promise(resolve => setTimeout(resolve, 100)); 
+                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length -1) await new Promise(resolve => setTimeout(resolve, 300)); 
             }
 
             saveState();
-            renderProfileGifts(); // This will also update button visibility if all are upgraded
+            // renderProfileGifts(); // Full re-render after all individual updates. Or rely on individual updates.
+            // Individual updates are done, a final sort might be good if order matters strictly, but pinning is handled.
 
             let summaryMessage = `Процесс улучшения завершён.\nУспешно: ${successCount}`;
             if (failureCount > 0) {
@@ -1220,9 +1320,9 @@
             tg.showAlert(summaryMessage);
             tg.HapticFeedback.notificationOccurred(successCount > 0 ? 'success' : (failureCount > 0 ? 'error' : 'warning'));
 
-            // renderProfileGifts will hide the button if no non-collectibles remain.
-            // If it's still visible (e.g., some failed), reset text.
-            if (upgradeAllGiftsButton.style.display !== 'none') {
+            const स्टिलHasNonCollectible = ownedGifts.some(g => !g.isCollectible);
+            upgradeAllGiftsButton.style.display = स्टिलHasNonCollectible ? 'inline-block' : 'none';
+            if (स्टिलHasNonCollectible) {
                  upgradeAllGiftsButton.textContent = originalButtonText;
                  upgradeAllGiftsButton.disabled = false;
             }
@@ -1250,15 +1350,17 @@
 
         function setupLongPress(element, gift) { 
             element.addEventListener('touchstart', (e) => {
+                clearTimeout(longPressTimer); // Clear any existing timer
                 longPressTimer = window.setTimeout(() => {
                     openLongPressMenu(gift, e.touches[0]);
                 }, 500);
-            }, { passive: false });
+            }, { passive: false }); // passive: false to allow preventDefault if needed later
 
             element.addEventListener('touchend', () => clearTimeout(longPressTimer));
             element.addEventListener('touchmove', () => clearTimeout(longPressTimer));
             element.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
+                clearTimeout(longPressTimer);
                 openLongPressMenu(gift, e);
             });
         }
@@ -1284,12 +1386,12 @@
         function closeLongPressMenuOnClickOutside(event) {
             if (!longPressMenu.contains(event.target) && event.target !== longPressMenu) {
                 longPressMenu.classList.add('hidden');
-                currentLongPressGift = null; // Reset when menu is closed
+                currentLongPressGift = null;
             }
         }
 
         function handlePinAction() {
-            if (!currentLongPressGift || menuPinAction.classList.contains('disabled')) { // No need to check !currentLongPressGift.isCollectible again as disabled class handles it
+            if (!currentLongPressGift || menuPinAction.classList.contains('disabled')) {
                 longPressMenu.classList.add('hidden');
                 if (currentLongPressGift && !currentLongPressGift.isCollectible) {
                     tg.showAlert("Только коллекционные подарки можно закреплять.");
@@ -1307,7 +1409,6 @@
                 if (pinnedGifts.length >= MAX_PINS) {
                     showTooManyPinsModal(); 
                     longPressMenu.classList.add('hidden');
-                    // currentLongPressGift remains, as it's needed by showTooManyPinsModal
                     return; 
                 }
                 pinnedGifts.push(giftInstanceId);
@@ -1324,14 +1425,7 @@
             pinnedGifts.forEach(pinnedInstanceId => {
                 const giftToUnpin = ownedGifts.find(g => g.instanceId === pinnedInstanceId);
                 if (giftToUnpin) {
-                    const card = document.createElement('div');
-                    card.className = 'gift-card';
-                    const img = document.createElement('img');
-                    img.className = 'gift-image';
-                    img.src = giftToUnpin.isCollectible && giftToUnpin.collectibleData?.modelImage ? giftToUnpin.collectibleData.modelImage : giftToUnpin.originalImage;
-                    img.alt = giftToUnpin.name;
-                    img.onerror = function() { this.parentNode.replaceChild(createPlaceholderImage(true), this); };
-                    card.appendChild(img);
+                    const card = createGiftCardDOM(giftToUnpin); // Reuse card creation
                     card.addEventListener('click', () => {
                         pinnedGifts = pinnedGifts.filter(id => id !== pinnedInstanceId);
                         if (currentLongPressGift && currentLongPressGift.isCollectible && !pinnedGifts.includes(currentLongPressGift.instanceId)) {
@@ -1341,7 +1435,7 @@
                         renderProfileGifts();
                         closeModal(tooManyPinsModal);
                         tg.HapticFeedback.impactOccurred('medium');
-                        currentLongPressGift = null; // Reset after use
+                        currentLongPressGift = null;
                     });
                     unpinSelectionGrid.appendChild(card);
                 }
@@ -1349,23 +1443,39 @@
             tooManyPinsModal.classList.add('active');
         }
 
+        function handleWearAction() {
+            const currentModalInstanceId = collectibleDetailModal.dataset.instanceId;
+            if (!currentModalInstanceId) return;
+
+            if (wornGiftInstanceId === currentModalInstanceId) { // Currently worn, so take off
+                wornGiftInstanceId = null;
+                collectibleActionWear.querySelector('.text').textContent = 'Надеть';
+            } else { // Not worn, or different gift worn
+                wornGiftInstanceId = currentModalInstanceId;
+                collectibleActionWear.querySelector('.text').textContent = 'Снять';
+            }
+            applyWornGiftStyles(wornGiftInstanceId);
+            saveState();
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
         function setupEventListeners() {
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
-            if (upgradeAllGiftsButton) { // Ensure button exists before adding listener
+            if (upgradeAllGiftsButton) {
                  upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
             }
             backToProfileBuyButton.addEventListener('click', () => showPage('profile-page'));
 
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
-            upgradeGiftButton.addEventListener('click', (e) => handleUpgradeGift(e.target.dataset.instanceId));
             
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
+            collectibleActionWear.addEventListener('click', handleWearAction);
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
             
             menuPinAction.addEventListener('click', handlePinAction);
             cancelUnpinModal.addEventListener('click', () => {
                 closeModal(tooManyPinsModal);
-                currentLongPressGift = null; // Also reset if cancelled
+                currentLongPressGift = null;
             });
 
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
@@ -1388,7 +1498,9 @@
             console.warn("Telegram WebApp не найден. Используются мок-данные и тема по умолчанию.");
             document.addEventListener('DOMContentLoaded', () => {
                  tg.initDataUnsafe = { user: mockUser };
-                 tg.themeParams = {}; 
+                 tg.themeParams = {
+                    //bg_color: '#18222d', text_color: '#ffffff', hint_color: '#aaa', link_color: '#8774e1', button_color: '#8774e1', button_text_color: '#ffffff', secondary_bg_color: '#222f3c', accent_text_color: '#8774e1', section_header_text_color: '#303d4a'
+                 }; 
                  tg.showAlert = (message) => alert(message);
                  tg.HapticFeedback = {
                      impactOccurred: (style) => console.log(`Тактильный отклик: ${style}`),
