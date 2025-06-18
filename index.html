@@ -1674,24 +1674,61 @@
         }
         
         // --- START APP ---
-        if (tg.initData && tg.initDataUnsafe) {
-             await initializeApp(); // <--- CORRECTED LINE: Added 'await'
-        } else {
-            // Fallback for local development if Telegram WebApp script fails or not in TG env
-            console.warn("Telegram WebApp not fully initialized. Using mock init or limited functionality.");
-            tg.initData = "mock_init_data_string_for_dev_if_needed_for_auth_header"; 
-            tg.initDataUnsafe = { start_param: null, user: { id: 0, first_name: "DevUser", username: "devuser" } };
-            tg.themeParams = { /* default theme from CSS */ };
-            tg.showAlert = (message) => alert(message);
-            tg.HapticFeedback = {
-                impactOccurred: (style) => console.log(`Haptic: ${style}`),
-                notificationOccurred: (type) => console.log(`Haptic notification: ${type}`),
-            };
-            tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = ()=>{};
-            tg.WebApp = {url: "http://localhost:8080/index.html", initDataUnsafe: tg.initDataUnsafe}; // mock URL and initDataUnsafe for fallback
+        (async () => { // <--- START Async IIFE
+            if (tg.initData && tg.initDataUnsafe && typeof tg.initDataUnsafe.start_param !== 'undefined' && tg.initDataUnsafe.user) { // More robust check
+                 await initializeApp();
+            } else {
+                // Fallback for local development
+                console.warn("Telegram WebApp not fully initialized or missing critical initDataUnsafe properties. Using mock init.");
 
-            document.addEventListener('DOMContentLoaded', async () => await initializeApp()); // Use async here too for fallback
-        }
+                // Ensure tg.initDataUnsafe and its properties are well-defined for the mock
+                tg.initDataUnsafe = tg.initDataUnsafe || {};
+                tg.initDataUnsafe.start_param = tg.initDataUnsafe.start_param || null;
+                tg.initDataUnsafe.user = tg.initDataUnsafe.user || { id: 0, first_name: "DevUser", username: "devuser", photo_url: null };
+
+                tg.initData = "mock_init_data_string_for_dev_if_needed_for_auth_header";
+                tg.themeParams = tg.themeParams || {bg_color: '#0e1621', text_color: '#ffffff', hint_color: '#708499', link_color: '#62bcf9', button_color: '#3e97f0', button_text_color: '#ffffff', secondary_bg_color: '#17212b'};
+                
+                // Mock Telegram functions if they don't exist
+                if (typeof tg.showAlert !== 'function') tg.showAlert = (message) => alert(message);
+                if (typeof tg.HapticFeedback !== 'object') {
+                    tg.HapticFeedback = {
+                        impactOccurred: (style) => console.log(`Haptic: ${style}`),
+                        notificationOccurred: (type) => console.log(`Haptic notification: ${type}`),
+                    };
+                }
+                if (typeof tg.ready !== 'function') tg.ready = () => {console.log("TG Ready (mock)")};
+                if (typeof tg.expand !== 'function') tg.expand = () => {console.log("TG Expand (mock)")};
+                if (typeof tg.onEvent !== 'function') tg.onEvent = (eventType, callback) => {console.log(`TG onEvent mock: ${eventType}`)};
+                
+                // Mock tg.WebApp with necessary properties
+                if (typeof tg.WebApp !== 'object') {
+                    tg.WebApp = {
+                        url: window.location.href, 
+                        initDataUnsafe: tg.initDataUnsafe,
+                        onEvent: (eventType, callback) => {console.log(`TG WebApp onEvent mock: ${eventType}`)},
+                        sendData: (data) => {console.log("TG WebApp sendData mock:", data)},
+                        ready: () => {console.log("TG WebApp Ready (mock)")},
+                        expand: () => {console.log("TG WebApp Expand (mock)")},
+                        // Add other methods/properties if your code uses them directly from tg.WebApp
+                    };
+                } else { // Ensure critical properties are on existing tg.WebApp if it's partially defined
+                    tg.WebApp.initDataUnsafe = tg.WebApp.initDataUnsafe || tg.initDataUnsafe;
+                    tg.WebApp.url = tg.WebApp.url || window.location.href;
+                }
+                
+                // For the fallback, ensure DOM is ready before calling initializeApp
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', async () => {
+                        console.log("DOMContentLoaded, calling initializeApp (mock env)");
+                        await initializeApp();
+                    });
+                } else { // DOM already ready
+                    console.log("DOM already ready, calling initializeApp (mock env)");
+                    await initializeApp();
+                }
+            }
+        })(); // <--- END Async IIFE and immediately invoke it
 
     </script>
 </body>
