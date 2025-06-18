@@ -709,7 +709,7 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Startup: Failed to run webhook setup: {e}")
     
-    # insert_dummy_data() # Uncomment for initial data population
+    insert_dummy_data() # Uncomment for initial data population
     
     is_local_dev = os.getenv("FLASK_ENV") == "development" or os.getenv("FLASK_DEBUG") == "1"
     if is_local_dev:
