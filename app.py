@@ -10,11 +10,14 @@ import asyncio # Added for running async set_webhook
 import psycopg2
 import psycopg2.extras
 from flask import Flask, request, jsonify, redirect
+from flask_cors import CORS # <--- IMPORT CORS
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, TypeHandler
 from dotenv import load_dotenv
 
 load_dotenv() # Load environment variables from .env file for local dev
+
+FRONTEND_ORIGIN = "https://vasiliy-katsyka.github.io"
 
 # --- CONFIGURATION ---
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -38,6 +41,8 @@ if not all([DATABASE_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBAPP_URL, SERVER_BASE_U
 app = Flask(__name__)
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+CORS(app, resources={r"/api/*": {"origins": FRONTEND_ORIGIN}}, supports_credentials=True)
 
 # --- DATABASE HELPER ---
 def get_db_connection():
