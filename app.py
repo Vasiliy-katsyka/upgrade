@@ -35,6 +35,17 @@ if not all([DATABASE_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBAPP_URL, SERVER_BASE_U
     if not TELEGRAM_BOT_USERNAME: logging.error("TELEGRAM_BOT_USERNAME is missing")
     exit(1)
 
+try:
+    init_db() # Call it here
+    logger.info("Database initialization check complete on app startup.")
+except psycopg2.Error as e:
+    logger.error(f"CRITICAL: Database initialization failed on app startup: {e}")
+    # Depending on your desired behavior, you might want to prevent the app from starting
+    # or have it run in a degraded state. For now, it will log and continue.
+    # raise RuntimeError(f"Database initialization failed: {e}") # This would stop the app
+except Exception as e:
+    logger.error(f"CRITICAL: An unexpected error occurred during database initialization: {e}")
+
 # --- FLASK APP SETUP ---
 app = Flask(__name__)
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
