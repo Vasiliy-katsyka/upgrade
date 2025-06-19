@@ -999,6 +999,7 @@
         
         function openModal(modalElement) {
             modalElement.classList.add('active');
+            // Set the Telegram BackButton to close this specific modal when clicked
             manageBackButton(true, () => closeModal(modalElement));
         }
         
@@ -1007,8 +1008,13 @@
             if (modalElement.id === 'collectible-detail-modal') destroyLottieAnimation(modalLottieCollectibleModel);
             modalElement.classList.remove('active');
         
+            // After closing a modal, determine the underlying page and reset the back button state
             const activePage = document.querySelector('.page.active').id;
-            showPage(activePage); // This will reset the back button to the correct state for the page
+            if (activePage === 'buy-gifts-page') {
+                manageBackButton(true, () => showPage('profile-page'));
+            } else {
+                manageBackButton(false); // Hide for profile page
+            }
         }
         
         
@@ -1251,40 +1257,93 @@
         
         function openGiftDetailByInstanceId(instanceId) {
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
-            if (!gift) return;
+            if (!gift) {
+                console.error("Gift with instanceId not found:", instanceId);
+                return;
+            }
+        
+            // Case 1: The gift is a collectible item.
             if (gift.isCollectible && gift.collectibleData) {
                 const cd = gift.collectibleData;
+        
+                // Set the instanceId on the modal itself for other functions to reference
                 collectibleDetailModal.dataset.instanceId = gift.instanceId;
+                
+                // Populate header and main titles
                 modalCollectibleHeaderTitle.textContent = gift.name;
                 modalCollectibleMainName.textContent = cd.model?.name || gift.name;
                 modalCollectibleNumberSubtext.textContent = `Коллекционный #${cd.number}`;
+        
+                // Set up the dynamic visual elements (background and pattern)
                 modalCollectibleBg.style.background = `radial-gradient(circle, ${cd.backdropColors?.centerColor || '#555'}, ${cd.backdropColors?.edgeColor || '#333'})`;
                 modalCollectiblePattern.style.backgroundImage = cd.patternImage ? `url('${cd.patternImage}')` : 'none';
-                if (cd.lottieModelPath) { playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true); modalCollectibleModelImgStatic.style.display = 'none'; } 
-                else { destroyLottieAnimation(modalLottieCollectibleModel); modalCollectibleModelImgStatic.src = cd.modelImage || gift.originalImage; modalCollectibleModelImgStatic.style.display = 'block'; modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; }; }
-                const ownerName = profileName.textContent; const ownerAvatar = profileAvatar.src;
+        
+                // Handle displaying Lottie animation or a static fallback image
+                if (cd.lottieModelPath) {
+                    playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true);
+                    modalCollectibleModelImgStatic.style.display = 'none';
+                } else {
+                    destroyLottieAnimation(modalLottieCollectibleModel);
+                    modalCollectibleModelImgStatic.src = cd.modelImage || gift.originalImage;
+                    modalCollectibleModelImgStatic.style.display = 'block';
+                    modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
+                }
+        
+                // Populate the detailed information table
+                const ownerName = profileName.textContent;
+                const ownerAvatar = profileAvatar.src;
                 modalCollectibleInfoTable.innerHTML = `
                     <div class="info-row"><span class="info-label">Владелец</span><span class="info-value"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span></div>
                     <div class="info-row"><span class="info-label">Модель</span><span class="info-value">${cd.model?.name || 'N/A'} <span class="rarity-chip">${(cd.model?.rarityPermille || 0) / 10}%</span></span></div>
                     <div class="info-row"><span class="info-label">Фон</span><span class="info-value">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${(cd.backdrop?.rarityPermille || 0) / 10}%</span></span></div>
                     <div class="info-row"><span class="info-label">Символ</span><span class="info-value">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${(cd.pattern?.rarityPermille || 0) / 10}%</span></span></div>
                     <div class="info-row"><span class="info-label">Количество</span><span class="info-value">#${cd.number} (Уникальный)</span></div>`;
+                
+                // Update the 'Wear'/'Unwear' button state
                 collectibleActionWear.querySelector('.text').textContent = (wornGiftInstanceId === gift.instanceId) ? 'Снять' : 'Надеть';
+                
+                // Open the modal using the helper to manage the back button
                 openModal(collectibleDetailModal);
+        
+            // Case 2: The gift is a standard, non-collectible item.
             } else {
+                // Populate header and descriptions
                 modalGiftName.textContent = "Сохраненный подарок";
-                if (gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; } 
-                else { destroyLottieAnimation(modalLottieGiftOriginal); modalGiftImageStatic.src = gift.originalImage; modalGiftImageStatic.style.display = 'block'; modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };}
                 modalGiftDescription1.textContent = `Добавьте «${gift.name}» в свой профиль или улучшите его.`;
                 modalGiftDescription2.textContent = "Только вы можете видеть имя отправителя.";
+        
+                // Handle displaying Lottie animation or a static fallback image
+                if (gift.lottiePath) {
+                    playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true);
+                    modalGiftImageStatic.style.display = 'none';
+                } else {
+                    destroyLottieAnimation(modalLottieGiftOriginal);
+                    modalGiftImageStatic.src = gift.originalImage;
+                    modalGiftImageStatic.style.display = 'block';
+                    modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };
+                }
+                
+                // Populate the detailed information table, including the dynamic 'Upgrade' button
                 modalGiftInfo.innerHTML = `
                     <div class="info-row"><span class="info-label">Дата</span><span class="info-value">${new Date(gift.acquiredDate).toLocaleDateString('ru-RU', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}</span></div>
                     <div class="info-row"><span class="info-label">Стоимость</span><span class="info-value"><span class="star-icon">⭐</span> Бесплатно</span></div>
                     <div class="info-row"><span class="info-label">Доступность</span><span class="info-value">Ограничено</span></div>
-                    <div class="info-row" id="uniqueness-row-${gift.instanceId}"><span class="info-label">Уникальность</span><div class="info-value-with-action"><span id="modal-uniqueness-value-${gift.instanceId}">Стандартный</span><button id="modal-action-upgrade-gift-${gift.instanceId}" class="button-link-styled" data-instance-id="${gift.instanceId}">Улучшить</button></div></div>`;
+                    <div class="info-row" id="uniqueness-row-${gift.instanceId}">
+                        <span class="info-label">Уникальность</span>
+                        <div class="info-value-with-action">
+                            <span id="modal-uniqueness-value-${gift.instanceId}">Стандартный</span>
+                            <button id="modal-action-upgrade-gift-${gift.instanceId}" class="button-link-styled" data-instance-id="${gift.instanceId}">Улучшить</button>
+                        </div>
+                    </div>`;
+                
+                // Open the modal using the helper to manage the back button
                 openModal(giftDetailModal);
+                
+                // IMPORTANT: Attach the event listener *after* the button has been created in the DOM
                 const inlineUpgradeBtn = document.getElementById(`modal-action-upgrade-gift-${gift.instanceId}`);
-                if (inlineUpgradeBtn) inlineUpgradeBtn.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
+                if (inlineUpgradeBtn) {
+                    inlineUpgradeBtn.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
+                }
             }
         }
         async function upgradeSingleGiftLogic(giftToUpgrade) {
