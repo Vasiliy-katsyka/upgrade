@@ -774,7 +774,7 @@
     <script>
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
-        const BOT_USERNAME = "upgradeDemoBot"; // CHANGE THIS to your bot's actual username
+        const BOT_USERNAME = "upgradeDemoBot"; // ИЗМЕНИТЕ ЭТО на фактический юзернейм вашего бота
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
@@ -1027,7 +1027,7 @@
 
             loadUserData();
             loadState();
-            
+
             // Process start parameter first, then render UI
             processStartParam().then(() => {
                 applyWornGiftStyles(wornGiftInstanceId);
@@ -1576,7 +1576,11 @@
 
             const payloadJSON = JSON.stringify(payload);
             const payloadBase64 = btoa(payloadJSON); // Simple Base64 encoding for URL safety
+
+            // *** IMPORTANT CHANGE HERE ***
+            // Remove '/upgrade' if your Web App URL in BotFather is just the base path.
             const link = `https://t.me/${BOT_USERNAME}/upgrade?startapp=transfer_${payloadBase64}`;
+            // ****************************
 
             try {
                 await navigator.clipboard.writeText(link);
@@ -1702,7 +1706,8 @@
                 tg.initDataUnsafe = { user: mockUser };
                 tg.themeParams = {};
                 tg.showAlert = (message, callback) => {
-                    alert(message.replace(/<a href="([^"]*)".*?>([^<]*)<\/a>/g, '$2 ($1)')); // Simple link conversion for alert
+                    // Simplified alert for testing in browser, parses simple HTML links
+                    alert(message.replace(/<a href="([^"]*)".*?>([^<]*)<\/a>/g, '$2 ($1)'));
                     if (callback) callback();
                 };
                 tg.showConfirm = (message, callback) => callback(confirm(message));
