@@ -1557,7 +1557,8 @@
             try {
                 await navigator.clipboard.writeText(transferLink);
                 tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`Ссылка для передачи подарка скопирована:\n\n${transferLink}\n\nОтправьте эту ссылку получателю, и он получит подарок. После вашего подтверждения подарок будет удален из вашего профиля.`, () => {
+                // MODIFIED: Removed the actual transferLink from the alert message.
+                tg.showAlert(`Ссылка для передачи подарка скопирована!\n\nОтправьте эту ссылку получателю, и он получит подарок. После вашего подтверждения подарок будет удален из вашего профиля.`, () => {
                     // On user confirmation, delete the gift from sender's profile
                     deleteGift(giftToTransfer.instanceId);
                     tg.HapticFeedback.notificationOccurred('success');
