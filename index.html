@@ -522,6 +522,30 @@
         }
         #filter-popup .clear-data-button svg { width: 20px; height: 20px; fill: currentColor; margin-right: 8px; }
 
+        /* New styles for transfer modal */
+        #transfer-gift-modal .modal-input-group {
+            margin-bottom: 20px;
+        }
+        #transfer-gift-modal label {
+            display: block;
+            font-size: 0.9em;
+            color: var(--tg-theme-hint-color);
+            margin-bottom: 8px;
+        }
+        #transfer-gift-modal input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            border: 1px solid var(--tg-theme-hint-color);
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+        }
+        #transfer-gift-modal input[type="text"]:focus {
+            border-color: var(--tg-theme-link-color);
+        }
+
         .spinner {
             border: 4px solid var(--tg-theme-hint-color);
             border-top: 4px solid var(--tg-theme-link-color);
@@ -718,6 +742,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- New Transfer Gift Modal -->
+        <div id="transfer-gift-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar">
+                    <h3>Передать подарок</h3>
+                </div>
+                <div class="modal-scrollable-content">
+                    <p style="text-align: center; margin-bottom: 20px; color: var(--tg-theme-hint-color);" id="transfer-gift-modal-info">
+                        Укажите Telegram-ID или имя пользователя получателя.
+                    </p>
+                    <div class="modal-input-group">
+                        <label for="recipient-input">Получатель:</label>
+                        <input type="text" id="recipient-input" placeholder="@username или ID">
+                    </div>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="send-transfer-link-button" class="modal-button">Отправить</button>
+                    <button id="cancel-transfer-button" class="modal-button secondary">Отмена</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div id="long-press-menu" class="hidden">
@@ -729,14 +776,17 @@
         // Ensure Lottie Player is loaded (already in <head>)
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
-        
+        const BOT_USERNAME = "upgradeDemoBot"; // Replace with your bot's actual username
+
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M15,4H17L19,7H16M11,4H13L14,7H10M7,4H9L8,7H5M6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>`;
-        
+        const CLIPBOARD_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>clipboard-text-outline</title><path d="M12,18H17V16H12M12,14H17V12H12M8,6V4H16V6H20V20H4V6H8M6,8V18H18V8H6Z" /></svg>`;
+
+
         let allAvailableGifts = {};
         let ownedGifts = [];
         let pinnedGifts = [];
@@ -817,7 +867,14 @@
         const clearFiltersButton = document.getElementById('clear-filters-button');
         const clearAllDataButton = document.getElementById('clear-all-data-button');
         const clearDataIconPlaceholder = document.getElementById('clear-data-icon-placeholder');
-        
+
+        // New transfer modal elements
+        const transferGiftModal = document.getElementById('transfer-gift-modal');
+        const recipientInput = document.getElementById('recipient-input');
+        const sendTransferLinkButton = document.getElementById('send-transfer-link-button');
+        const cancelTransferButton = document.getElementById('cancel-transfer-button');
+        let giftToTransfer = null; // Store the gift object being transferred
+
         const russianFirstNames = ["Василий", "Иван", "Алексей", "Дмитрий", "Сергей"];
         const russianLastNames = ["Дуров", "Петров", "Иванов", "Смирнов", "Кузнецов"];
         const russianBios = ["Всё только начинается.", "Люблю путешествовать.", "Кофеман."];
@@ -830,11 +887,13 @@
             for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10); return num;
         }
         function generateUniqueId() { return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`; }
+        
         const mockUser = {
             first_name: getRandomElement(russianFirstNames), last_name: getRandomElement(russianLastNames),
-            photo_url: `https://i.pravatar.cc/140?u=${generateUniqueId()}`, bio: getRandomElement(russianBios), phone: generateRandomPhoneNumber()
+            photo_url: `https://i.pravatar.cc/140?u=${generateUniqueId()}`, bio: getRandomElement(russianBios), phone: generateRandomPhoneNumber(),
+            username: `${getRandomElement(['test', 'demo', 'user'])}${Math.floor(Math.random() * 1000)}`,
+            id: Math.floor(Math.random() * 1000000000) + 1 // Simulate numeric ID
         };
-        mockUser.username = `${mockUser.first_name.toLowerCase().replace(' ', '')}${Math.floor(Math.random() * 1000)}`;
         
         let lottieIntersectionObserver;
         
@@ -907,7 +966,28 @@
                 if(lottieContainer) destroyLottieAnimation(lottieContainer); // Clean up immediately
             }
         }
-        
+
+        /**
+         * Simulates encryption by base64 encoding the JSON stringified data.
+         * IMPORTANT: This is NOT secure encryption and is only for demonstration purposes.
+         * For a real application, server-side encryption and secure transfer are required.
+         */
+        function encryptGiftData(data) {
+            return btoa(JSON.stringify(data));
+        }
+
+        /**
+         * Simulates decryption by base64 decoding and JSON parsing.
+         * IMPORTANT: This is NOT secure decryption.
+         */
+        function decryptGiftData(encryptedData) {
+            try {
+                return JSON.parse(atob(encryptedData));
+            } catch (e) {
+                console.error("Failed to decrypt gift data:", e);
+                return null;
+            }
+        }
         
         function initApp() {
             tg.ready(); tg.expand();
@@ -918,16 +998,20 @@
             profileBackButton.innerHTML = BACK_ARROW_SVG;
             backToProfileBuyButton.innerHTML = BACK_ARROW_SVG;
             backFromCollectibleModal.innerHTML = BACK_ARROW_SVG;
-            collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
+            collectibleActionTransfer.querySelector('.icon').innerHTML = CLIPBOARD_ICON_SVG;
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
         
-            loadUserData(); loadState();
+            loadUserData();
+            loadState();
             applyWornGiftStyles(wornGiftInstanceId);
             renderProfileGifts();
             setupEventListeners();
             fetchAvailableGifts();
+
+            // Check for start_param (gift transfer link)
+            processStartParameter();
         }
         
         function applyTheme(themeParams) { /* Same as before */ 
@@ -950,12 +1034,13 @@
         }
         function loadUserData() { /* Same as before */ 
             const user = tg.initDataUnsafe?.user || mockUser;
+            // Use real user data if available, otherwise mock
             profileName.textContent = user.first_name || mockUser.first_name;
             profileAvatar.src = user.photo_url || mockUser.photo_url;
             profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
             profileUsername.textContent = user.username ? `@${user.username}` : `@${mockUser.username}`;
-            profileBio.textContent = user.bio || mockUser.bio;
-            profilePhone.textContent = user.phone || mockUser.phone;
+            profileBio.textContent = mockUser.bio; // Bio is always mocked
+            profilePhone.textContent = mockUser.phone; // Phone is always mocked
         }
         function saveState() { /* Same as before */ 
             localStorage.setItem('ownedGifts_v7', JSON.stringify(ownedGifts));
@@ -1129,7 +1214,7 @@
                 card.appendChild(bgDiv);
                 if (cd.patternImage) { const pOverlay = document.createElement('div'); pOverlay.className = 'gift-card-pattern-overlay'; pOverlay.style.backgroundImage = `url('${cd.patternImage}')`; card.appendChild(pOverlay); }
                 const numDiv = document.createElement('div'); numDiv.className = 'collectible-number-badge'; numDiv.textContent = `#${cd.number}`; card.appendChild(numDiv);
-                if (cd.model?.rarityPermille) { const rBadge = document.createElement('div'); rBadge.className = 'gift-rarity-badge'; const tMock = Math.floor(1/(cd.model.rarityPermille/100000))*Math.max(100,cd.number/100); rBadge.textContent = `1 of ${(tMock/1000).toFixed(1)}K`; card.appendChild(rBadge); }
+                if (cd.model?.rarityPermille) { const tMock = Math.floor(1/(cd.model.rarityPermille/100000))*Math.max(100,cd.number/100); const rBadge = document.createElement('div'); rBadge.className = 'gift-rarity-badge'; rBadge.textContent = `1 of ${(tMock/1000).toFixed(1)}K`; card.appendChild(rBadge); }
         
             } else { // Non-collectible
                 staticImage.src = gift.originalImage;
@@ -1226,6 +1311,7 @@
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift) return;
             if (gift.isCollectible && gift.collectibleData) {
+                giftToTransfer = gift; // Set gift for transfer modal
                 const cd = gift.collectibleData;
                 collectibleDetailModal.dataset.instanceId = gift.instanceId;
                 modalCollectibleHeaderTitle.textContent = gift.name;
@@ -1245,6 +1331,7 @@
                 collectibleActionWear.querySelector('.text').textContent = (wornGiftInstanceId === gift.instanceId) ? 'Снять' : 'Надеть';
                 collectibleDetailModal.classList.add('active');
             } else {
+                giftToTransfer = null; // Only collectibles can be transferred
                 modalGiftName.textContent = "Сохраненный подарок";
                 if (gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; } 
                 else { destroyLottieAnimation(modalLottieGiftOriginal); modalGiftImageStatic.src = gift.originalImage; modalGiftImageStatic.style.display = 'block'; modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };}
@@ -1429,6 +1516,122 @@
             else { wornGiftInstanceId = currentModalInstanceId; collectibleActionWear.querySelector('.text').textContent = 'Снять'; }
             applyWornGiftStyles(wornGiftInstanceId); saveState(); tg.HapticFeedback.impactOccurred('light');
         }
+
+        // New transfer gift functions
+        function openTransferGiftModal() {
+            if (!giftToTransfer) return; // Should only open if giftToTransfer is set (from collectible detail)
+            closeModal(collectibleDetailModal); // Close the collectible detail modal first
+            recipientInput.value = ''; // Clear previous input
+            transferGiftModal.classList.add('active');
+            recipientInput.focus();
+        }
+
+        async function handleSendTransferLink() {
+            const recipientIdentifier = recipientInput.value.trim();
+            if (!recipientIdentifier) {
+                tg.showAlert("Пожалуйста, введите имя пользователя или ID получателя.");
+                return;
+            }
+            if (!tg.initDataUnsafe?.user) {
+                tg.showAlert("Не удалось получить данные о вашем профиле для отправки подарка. Пожалуйста, попробуйте еще раз.");
+                return;
+            }
+
+            const senderUsername = tg.initDataUnsafe.user.username || `@id${tg.initDataUnsafe.user.id}`;
+            const transferData = {
+                giftId: giftToTransfer.id,
+                instanceId: giftToTransfer.instanceId,
+                name: giftToTransfer.name,
+                originalImage: giftToTransfer.originalImage,
+                lottiePath: giftToTransfer.lottiePath,
+                isCollectible: giftToTransfer.isCollectible,
+                collectibleData: giftToTransfer.collectibleData,
+                senderUsername: senderUsername,
+                recipientIdentifier: recipientIdentifier,
+                acquiredDate: new Date().toISOString() // New acquisition date for recipient
+            };
+
+            const encryptedData = encryptGiftData(transferData);
+            const transferLink = `https://t.me/${BOT_USERNAME}/upgrade?startapp=receive_${encryptedData}`;
+
+            try {
+                await navigator.clipboard.writeText(transferLink);
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Ссылка для передачи подарка скопирована:\n\n${transferLink}\n\nОтправьте эту ссылку получателю, и он получит подарок. После вашего подтверждения подарок будет удален из вашего профиля.`, () => {
+                    // On user confirmation, delete the gift from sender's profile
+                    deleteGift(giftToTransfer.instanceId);
+                    tg.HapticFeedback.notificationOccurred('success');
+                    tg.showAlert("Подарок успешно передан и удален из вашего профиля.");
+                    closeModal(transferGiftModal);
+                    renderProfileGifts(); // Re-render sender's gifts
+                    giftToTransfer = null; // Clear gift in transit
+                });
+            } catch (err) {
+                console.error("Failed to copy text or show alert:", err);
+                tg.showAlert("Не удалось скопировать ссылку. Пожалуйста, попробуйте еще раз.");
+            }
+        }
+
+        function deleteGift(instanceId) {
+            ownedGifts = ownedGifts.filter(g => g.instanceId !== instanceId);
+            pinnedGifts = pinnedGifts.filter(id => id !== instanceId); // Also remove from pinned
+            if (wornGiftInstanceId === instanceId) {
+                wornGiftInstanceId = null; // Unset if it was worn
+                applyWornGiftStyles(null);
+            }
+            saveState();
+        }
+
+        async function processStartParameter() {
+            const startParam = tg.initDataUnsafe?.start_param;
+            if (startParam && startParam.startsWith('receive_')) {
+                const encryptedData = startParam.substring('receive_'.length);
+                const receivedGiftData = decryptGiftData(encryptedData);
+
+                if (!receivedGiftData) {
+                    tg.showAlert("Не удалось получить данные о подарке.");
+                    return;
+                }
+
+                const currentUser = tg.initDataUnsafe?.user || mockUser;
+                const currentUserId = currentUser.id?.toString();
+                const currentUserUsername = currentUser.username?.toLowerCase();
+
+                // Validation: Check if recipient matches current user
+                const isRecipientMatch = receivedGiftData.recipientIdentifier.startsWith('@') 
+                    ? currentUserUsername === receivedGiftData.recipientIdentifier.substring(1).toLowerCase()
+                    : currentUserId === receivedGiftData.recipientIdentifier;
+
+                if (!isRecipientMatch) {
+                    tg.showAlert("Этот подарок предназначен для другого пользователя.");
+                    return;
+                }
+
+                // Validation: Check for duplicate gift (same instanceId)
+                const alreadyOwned = ownedGifts.some(g => g.instanceId === receivedGiftData.instanceId);
+                if (alreadyOwned) {
+                    tg.showAlert("Вы уже получили этот подарок.");
+                    return;
+                }
+
+                // Add gift to recipient's storage
+                ownedGifts.unshift(receivedGiftData);
+                saveState();
+                renderProfileGifts();
+                populateFilterOptions();
+
+                tg.HapticFeedback.notificationOccurred('success');
+                const senderLink = `https://t.me/${receivedGiftData.senderUsername.startsWith('@') ? receivedGiftData.senderUsername.substring(1) : `id${receivedGiftData.senderUsername}`}`;
+                const senderHtml = `<a href="${senderLink}" target="_blank">${receivedGiftData.senderUsername}</a>`;
+
+                tg.showAlert(`Вы получили подарок от ${senderHtml}!`, () => {
+                    // Show the gift detail modal after user acknowledges receipt
+                    openGiftDetailByInstanceId(receivedGiftData.instanceId);
+                });
+            }
+        }
+
+
         let filterPopupLongPressTimer; /* Filter logic same as before */
         function setupFilterPopupTrigger() {
             filterLongPressTarget.addEventListener('touchstart', (e) => { filterPopupLongPressTimer = setTimeout(openFilterPopup, 700); }, { passive: true });
@@ -1501,12 +1704,15 @@
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
             collectibleActionWear.addEventListener('click', handleWearAction);
+            collectibleActionTransfer.addEventListener('click', openTransferGiftModal); // New event listener for transfer
+            sendTransferLinkButton.addEventListener('click', handleSendTransferLink); // New event listener for send transfer
+            cancelTransferButton.addEventListener('click', () => { closeModal(transferGiftModal); giftToTransfer = null; }); // New event listener for cancel transfer
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
             menuPinAction.addEventListener('click', handlePinAction);
             cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
             cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup].forEach(modal => {
+            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, transferGiftModal].forEach(modal => {
                 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
             });
             // Scroll listeners are handled by IntersectionObserver for Lottie grid items
@@ -1523,8 +1729,15 @@
             console.warn("Telegram WebApp не найден. Используются мок-данные и тема по умолчанию.");
             document.addEventListener('DOMContentLoaded', () => {
                 tg.initDataUnsafe = { user: mockUser };
+                // Simulate start_param for testing transfer
+                // tg.initDataUnsafe.start_param = 'receive_eyJnaWZ0SWQiOiJjaHJpc3RtYXNfdHJlZSIsImluc3RhbmNlSWQiOiIxbGR2MHRsc28tNmFpNm92eWQiLCJuYW1lIjoiXHUwNDF5XHUwNDQwXHUwNDQwXHUwNDMyXHUwNDNkXHUwNDMzXHUwNDMyXHUwNDQyXHUwNDMyXHUwNDM4XHUwNDQxXHUwNDM0XHUwNDQxXHUwNDM3XHUwNDMwXHUwNDNlIFx1MDQyOFx1MDQ0NFx1MDQzNFx1MDQzMCIsIm9yaWdpbmFsSW1hZ2UiOiJodHRwczovL2Nkbi5jaGFuZ2VzLnRnL2dpZnRzL29yaWdpbmFscy9jaHJpc3RtYXNfdHJlZS9PcmlnaW5hbC5wbmciLCJsb3R0aWVQYXRoIjpudWxsLCJpc0NvbGxlY3RpYmxlIjp0cnVlLCJjb2xsZWN0aWJsZURhdGEiOnsiYmFja2Ryb3AiOnsiZGF0YSI6eyJpZCI6IjY4NTUyODAyOTg4MjQ1NzIwMzkiLCJpc19hY3RpdmUiOnRydWUsIm5hbWUiOiJkZWZhdWx0X2JhY2tkcm9wIiwiY29sbGVjdGlvbiI6ImNocmlzdG1hc190cmVlIiwicGFyYW1zIjp7fSwiZXh0X2lkIjpudWxsLCJhcGktdHlwZSI6bnVsbCwicmFyaXR5X3Blcm1pbGxlIjoxMDAwMDAwMH0sImhlbmNpZCI6IjIwMjMtMTItMjMgMTI6MTY6MTYifSwibW9kZWwiOnsiZGF0YSI6eyJpZCI6IjY4NTUyODAyOTg4MjQ1NzIwNDciLCJpc19hY3RpdmUiOnRydWUsIm5hbWUiOiJkZWZhdWx0X21vZGVsIiwiY29sbGVjdGlvbiI6ImNocmlzdG1hc190cmVlIiwicGFyYW1zIjp7fSwiZXh0X2lkIjpudWxsLCJhcGktdHlwZSI6bnVsbCwicmFyaXR5X3Blcm1pbGxlIjoxMDAwMDAwMH0sImhlbmNpZCI6IjIwMjMtMTItMjMgMTI6MTY6MTYifSwicGF0dGVybiI6eyJkYXRhIjp7ImlkIjoiNjg1NTI4MDI5ODgyNDU3MjA2MSIsImlzX2FjdGl2ZSI6dHJ1ZSwibmFtZSI6ImRlZmF1bHRfcGF0dGVybiIsImNvbGxlY3Rpb24iOiJjaHJpc3RtYXNfdHJlZSIsInBhcmFtcyI6e30sImV4dF9pZCI6bnVsbCwiYXBpLXR5cGUiOm51bGwsInJhcml0eV9wZXJtaWxsZSI6MTAwMDAwMDB9LCJoZW5jaWQiOiIyMDIzLTEyLTIzIDEyOjE2OjE2In0sIm51bWJlciI6MzQyNTEsIm1vZGVsSW1hZ2UiOiJodHRwczovL2Nkbi5jaGFuZ2VzLnRnL2dpZnRzL21vZGVscy9jaHJpc3RtYXNfdHJlZS9wbmcvZGVmYXVsdF9tb2RlbC5wbmciLCJsb3R0aWVNb2RlbFBhdGgiOm51bGwsInBhdHRlcm5JbWFnZSI6Imh0dHBzOi8vY2RuLmNoYW5nZXMudGcvZ2lmdHMvcGF0dGVybnMvY2hyaXN0bWFzX3RyZWUvcG5nL2RlZmF1bHRfcGF0dGVybi5wbmciLCJiYWNrZHJvcENvbG9ycyI6eyJjZW50ZXJDb2xvciI6IiMxNzc2MjIiLCJlZGdlQ29sb3IiOiIjMDYxMjEyIn19LCJzZW5kZXJVc2VybmFtZSI6IkB0ZXN0VXNlciIsImXfcmVjaXBpZW50SWRlbnRpZmllciI6IkB0ZXN0VXNlciIsImFjcXVpcmVkRGF0ZSI6IjIwMjQtMDItMjNUMTE6NTQ6MzguMjI4WiJ9'; // Example collectible data for current user
+                // tg.initDataUnsafe.start_param = 'receive_eyJpbnN0YW5jZUlkIjoiMTZsc29kZmhkZjQzNzcyNjk1NjQzOTIxOTY3Ni12NXVnZm1jYiIsInJlY2lwaWVudElkZW50aWZpZXIiOiJAdGVzdHVzZXI1OTciLCJuYW1lIjoiQW5ncnkiLCJvcmlnaW5hbEltYWdlIjoiaHR0cHM6Ly9jZG4uY2hhbmdlcy50Zy9naWZ0cy9vcmlnaW5hbHMvYW5ncnkvcG5nL2FuZ3J5LnBuZyIsImxvdHRpZVBhdGgiOiJodHRwczovL2Nkbi5jaGFuZ2VzLnRnL2dpZnRzL29yaWdpbmFscy9hbmctcnkvbGF0dGllL2FuZ3J5Lmpzb24iLCJpc0NvbGxlY3RpYmxlIjpmYWxzZSwiY29sbGVjdGlibGVCYXNpY0RhdGEiOm51bGwsInNlbmRlclVzZXJuYW1lIjoiQHRlc3QxMjMiLCJhY3F1aXJlZERhdGUiOiIyMDI0LTAyLTIzVDE1OjMwOjAxLjEyMVoifQ=='; // Example non-collectible data for current user
+                
                 tg.themeParams = {};
-                tg.showAlert = (message) => alert(message);
+                tg.showAlert = (message, callback) => {
+                    alert(message.replace(/<a href="([^"]*)" target="_blank">([^<]*)<\/a>/g, '$2 ($1)')); // Strip HTML for alert
+                    if (callback) callback(true);
+                };
                 tg.showConfirm = (message, callback) => callback(confirm(message));
                 tg.HapticFeedback = {
                     impactOccurred: (style) => console.log(`Haptic: ${style}`),
