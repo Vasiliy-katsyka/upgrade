@@ -16,23 +16,23 @@
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #17212b;
             --tg-theme-accent-blue: #5288c1;
-
+    
             --app-modal-backdrop-color: rgba(0,0,0,0.7);
             --app-rarity-chip-bg: rgba(0,0,0,0.2); 
             --app-rarity-chip-text: var(--tg-theme-text-color);
             --app-action-button-bg: #232e3a;
             --app-action-button-text: var(--tg-theme-link-color);
-            --app-profile-gradient-fallback: #283747; /* Adjusted for a default fallback that looks decent */
+            --app-profile-gradient-fallback: var(--tg-theme-secondary-bg-color);
             --app-clear-data-color: #ff3b30;
         }
-
+    
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
-
+    
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--tg-theme-bg-color);
@@ -41,7 +41,7 @@
             line-height: 1.4;
             font-size: 16px;
         }
-
+    
         .app-container {
             max-width: 600px;
             margin: 0 auto;
@@ -49,18 +49,18 @@
             display: flex;
             flex-direction: column;
         }
-
+    
         .page {
             display: none;
             flex-direction: column;
             flex-grow: 1;
             background-color: var(--tg-theme-bg-color);
         }
-
+    
         .page.active {
             display: flex;
         }
-
+    
         .page-header {
             display: flex;
             align-items: center;
@@ -97,7 +97,7 @@
             cursor: pointer;
             padding: 5px;
         }
-
+    
         .profile-page-content {
             flex-grow: 1;
             display: flex;
@@ -106,56 +106,103 @@
         }
         .profile-top-section {
             position: relative;
-            padding-top: 56px; /* Keep space for header buttons */
-            /* Remove background here, will be set on profile-header-pattern-overlay directly */
-            background: transparent; /* Changed to transparent */
-            overflow: hidden; /* Ensure content doesn't bleed out of rounded corners */
-            border-bottom-left-radius: 12px; /* Add some rounded corners at the bottom */
-            border-bottom-right-radius: 12px;
+            padding-top: 56px; /* Space for header */
+            padding-bottom: 20px; /* Space for content */
+            background: var(--app-profile-gradient-fallback);
+            transition: background 0.3s ease;
+            overflow: hidden; /* To contain absolute positioned items */
         }
-
         .profile-header-pattern-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             background-repeat: repeat;
-            background-size: 30% auto; /* Keep this for pattern tiling */
-            background-position: center; /* Ensure pattern is centered */
-            opacity: 1; /* Make background fully opaque, as it's the main background now */
+            background-size: 30% auto;
+            opacity: 0.15; /* Slightly more visible */
             pointer-events: none;
             z-index: 0;
-            /* This will be dynamic based on worn gift's backdropColors and patternImage */
-            background-color: var(--app-profile-gradient-fallback); /* Fallback for no worn gift */
-            border-bottom-left-radius: 12px; /* Match parent */
-            border-bottom-right-radius: 12px;
+            /* NEW: Radial mask for pattern */
+            -webkit-mask-image: radial-gradient(circle at 50% 30%, black 10%, rgba(0,0,0,0.8) 40%, transparent 75%);
+            mask-image: radial-gradient(circle at 50% 30%, black 10%, rgba(0,0,0,0.8) 40%, transparent 75%);
         }
-
+    
+        /* NEW: Styles for levitating pinned gifts */
+        #profile-top-pinned-gifts {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5; /* Above content but below header buttons */
+            pointer-events: none; /* Container doesn't block clicks */
+        }
+        .profile-top-pinned-gifts .pinned-gift-item {
+            position: absolute;
+            pointer-events: auto; /* Children can be clicked */
+            transition: transform 0.2s ease-out;
+        }
+        .profile-top-pinned-gifts .pinned-gift-item:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        .pinned-gift-item:nth-child(1) {
+            width: 48px; height: 48px;
+            top: 110px; left: 60px;
+            transform: rotate(-15deg);
+        }
+        .pinned-gift-item:nth-child(2) {
+            width: 40px; height: 40px;
+            top: 75px; left: 130px;
+            transform: rotate(10deg);
+        }
+        .pinned-gift-item:nth-child(3) {
+            width: 45px; height: 45px;
+            top: 80px; right: 40px;
+            transform: rotate(20deg);
+        }
+        .pinned-gift-item:nth-child(4) {
+            width: 38px; height: 38px;
+            top: 140px; right: 70px;
+            transform: rotate(-10deg);
+        }
+         .pinned-gift-item:nth-child(5) {
+            width: 42px; height: 42px;
+            top: 60px; left: 50%;
+            transform: translateX(-50%) rotate(5deg);
+        }
+        .pinned-gift-item:nth-child(6) {
+            width: 36px; height: 36px;
+            top: 135px; left: 15%;
+            transform: rotate(12deg);
+        }
+    
+    
         .profile-header-content-wrapper {
-             position: relative; z-index: 1;
-             padding: 0 15px;
+            position: relative; z-index: 1;
+            padding: 50px 15px 0 15px; /* Added top padding to push content down from floating gifts */
         }
         .profile-main-info {
-            position: relative;
-            z-index: 1; /* Ensure content is above pattern */
             display: flex;
             align-items: center;
-            padding: 8px 15px 20px 15px; /* Adjust padding if needed */
+            padding: 8px 0 0 0;
         }
         .profile-avatar {
-            width: 70px; height: 70px;
+            width: 80px; height: 80px;
             border-radius: 50%;
             background-color: var(--tg-theme-hint-color);
             margin-right: 15px;
             object-fit: cover;
-            border: 3px solid rgba(255,255,255,0.1);
+            border: 4px solid rgba(255,255,255,0.1);
+            z-index: 2; /* Ensure avatar is on top of patterns */
+            position: relative;
         }
         .profile-name-status { display: flex; flex-direction: column; }
         .profile-name-status .name-line { display: flex; align-items: center; }
         .profile-name-status h1 {
-            font-size: 1.4em; font-weight: 600;
+            font-size: 1.5em; font-weight: 600;
             color: var(--tg-theme-text-color);
         }
-        #worn-gift-icon-container { /* Changed from img to div */
-            width: 24px; height: 24px; margin-left: 8px;
+        #worn-gift-icon-container {
+            width: 28px; height: 28px; margin-left: 8px;
             overflow: hidden;
         }
         .profile-name-status p { font-size: 0.95em; color: var(--tg-theme-text-color); opacity: 0.7; margin-top: 3px; }
@@ -173,7 +220,7 @@
         }
         .profile-details p span { color: var(--tg-theme-text-color); }
         .profile-details p span#profile-username { color: var(--tg-theme-link-color); }
-
+    
         .profile-tabs {
             display: flex; justify-content: space-around;
             background-color: var(--tg-theme-bg-color);
@@ -216,7 +263,7 @@
             font-weight: 500;
         }
         #upgrade-all-gifts-button { background-color: var(--tg-theme-accent-blue); margin-right: 10px; }
-
+    
         .gifts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -230,8 +277,8 @@
             color: var(--tg-theme-hint-color); text-align: center;
             padding: 30px 40px; font-size: 0.95em; line-height: 1.5; width: 100%; 
         }
-
-        .gift-card, .buy-gift-item { /* Combined common styles */
+    
+        .gift-card, .buy-gift-item {
             background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 10px;
             padding: 8px;
@@ -241,9 +288,9 @@
             position: relative; overflow: hidden;
             transition: transform 0.1s ease-out;
         }
-        .buy-gift-item { aspect-ratio: 1/1.1; } /* Specific for buy items */
+        .buy-gift-item { aspect-ratio: 1/1.1; }
         .gift-card.is-updating { transform: scale(0.95); opacity: 0.7; }
-        .gift-card-bg-pattern, .buy-gift-item-bg-pattern { /* For collectibles */
+        .gift-card-bg-pattern, .buy-gift-item-bg-pattern {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-size: cover; pointer-events: none; z-index: 0;
         }
@@ -255,14 +302,14 @@
             opacity: 0.1;
             pointer-events: none; z-index: 1;
         }
-        .image-container { /* Common for gift cards and buy items */
-            width: 70%; height: 70%; /* For gift-card */
+        .image-container {
+            width: 70%; height: 70%;
             display: flex; align-items: center; justify-content: center;
             position: relative; z-index: 2;
         }
-        .buy-gift-item .image-container { /* Specific for buy-gift-item */
-            width: 65%; max-height: 60px; /* from buy-gift-item img */
-            margin-bottom: 8px; height: auto; /* Adjust as needed */
+        .buy-gift-item .image-container {
+            width: 65%; max-height: 60px;
+            margin-bottom: 8px; height: auto;
         }
         
         .static-image-fallback {
@@ -293,24 +340,24 @@
             z-index: 3; display: flex; align-items: center; justify-content: center;
         }
         .gift-card .pin-indicator svg { width: 18px; height: 18px; fill: var(--tg-theme-link-color); opacity: 0.8; }
-
+    
         .buy-gift-item .gift-name {
             font-size: 0.8em; text-align: center;
             color: var(--tg-theme-text-color); margin-bottom: 6px;
             min-height: 2.4em; overflow: hidden; text-overflow: ellipsis;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-            z-index: 2; /* Above potential bg pattern */
+            z-index: 2;
         }
         .buy-gift-item .gift-price { font-size: 0.9em; color: var(--tg-theme-hint-color); z-index: 2;}
         .buy-gift-item .gift-price .star-icon { color: #f5a623; margin-right: 3px;}
-        .buy-gift-item .limited-label { /* Copied from .limited-label */
+        .buy-gift-item .limited-label {
             position: absolute; top: 6px; right: 6px;
             background-color: var(--tg-theme-accent-blue);
             color: var(--tg-theme-button-text-color);
             font-size: 0.6em; padding: 2px 6px;
             border-radius: 8px; font-weight: 500; z-index: 3;
         }
-
+    
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background-color: var(--app-modal-backdrop-color);
@@ -355,136 +402,94 @@
             color: var(--tg-theme-link-color);
             margin-top: 10px;
         }
-
+    
+        /* Styles for regular gift detail modal */
         #gift-detail-modal .modal-gift-image-container {
-            width: 120px; height: 120px;
-            margin: 10px auto 15px auto; display: flex;
-            align-items: center; justify-content: center;
+            width: 120px; height: 120px; margin: 10px auto 15px auto;
         }
-        #gift-detail-modal .modal-gift-image-static {
-             max-width: 100%; max-height: 100%; object-fit: contain;
-        }
-        #gift-detail-modal .lottie-animation-container { /* Reusing generic */
-             width: 100%; height: 100%;
-        }
-        #gift-detail-modal .modal-gift-description {
-            font-size: 0.9em; color: var(--tg-theme-hint-color);
-            margin-bottom: 8px; text-align: center; line-height: 1.5;
-        }
-        #gift-detail-modal .modal-info-table .info-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 0; font-size: 0.95em;
-        }
+        #gift-detail-modal .modal-gift-image-static { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #gift-detail-modal .modal-gift-description { font-size: 0.9em; color: var(--tg-theme-hint-color); margin-bottom: 8px; text-align: center; line-height: 1.5; }
+        #gift-detail-modal .modal-info-table .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; font-size: 0.95em; }
         #gift-detail-modal .modal-info-table .info-row:not(:last-child) { margin-bottom: 2px; }
         #gift-detail-modal .modal-info-table .info-label { color: var(--tg-theme-text-color); }
         #gift-detail-modal .modal-info-table .info-value { color: var(--tg-theme-hint-color); }
         #gift-detail-modal .info-value-with-action { display: flex; align-items: center; }
         #gift-detail-modal .info-value-with-action span { margin-right: 10px; color: var(--tg-theme-hint-color); }
-        #gift-detail-modal .button-link-styled {
-            background: none; border: none;
-            color: var(--tg-theme-link-color);
-            font-size: 0.95em; font-weight: 500;
-            padding: 5px; cursor: pointer;
-        }
+        #gift-detail-modal .button-link-styled { background: none; border: none; color: var(--tg-theme-link-color); font-size: 0.95em; font-weight: 500; padding: 5px; cursor: pointer; }
         #gift-detail-modal .button-link-styled:disabled { color: var(--tg-theme-hint-color); }
-
-        /* --- Collectible Modal Redesign --- */
-        #collectible-detail-modal .modal-content {
-            padding-top: 0;
-            background-color: var(--tg-theme-bg-color); /* Modal background is now theme bg */
-        }
-
+    
+        /* REDESIGNED: Collectible Detail Modal */
+        #collectible-detail-modal .modal-content { padding-top: 0; }
         #collectible-detail-modal .page-header {
-            background-color: transparent; /* Header background transparent */
-            position: absolute; /* Absolute positioning within modal-content */
-            top: 0; left: 0; right: 0;
-            z-index: 100; /* Ensure it's above everything else */
-            justify-content: space-between; /* Space out elements */
-            padding: 10px 15px; /* Adjust padding */
-            min-height: auto; /* Allow height to adjust */
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            background-color: transparent; /* Header is see-through */
+            position: absolute; /* Float over the content */
+            width: 100%;
+            top: 0;
+            z-index: 10;
         }
         #collectible-detail-modal .page-header h2 {
-            display: none; /* Remove title from header, it's in the content */
+            display: none; /* Hide header title as requested */
         }
-        #collectible-detail-modal .page-header .back-button,
-        #collectible-detail-modal .page-header .menu-button {
-            color: var(--tg-theme-text-color); /* Ensure icons are visible on transparent background */
-            z-index: 101; /* Above header itself */
-        }
-
-        #collectible-detail-modal .modal-scrollable-content {
-            padding: 0; /* Remove top padding as visual area has its own */
-            flex-grow: 1;
-            overflow-y: auto;
-        }
+        #collectible-detail-modal .modal-scrollable-content { padding: 0; }
+        
         .collectible-display-area {
-            background-color: transparent; /* Make this transparent, background is now on visual element */
-            padding: 0; /* Remove padding here, handled by elements inside */
-            text-align: center;
-            position: relative; /* For z-index context */
-            overflow: hidden; /* Hide any overflow if gift is too large */
-            border-top-left-radius: 12px; /* Match modal corners */
-            border-top-right-radius: 12px;
-        }
-
-        .modal-collectible-visual {
-            width: 100%; /* Make it full width of the content area */
-            max-width: none; /* Remove max-width constraint */
-            aspect-ratio: auto; /* Allow height to adjust based on padding */
-            min-height: 250px; /* Minimum height for the visual area */
-            height: 35vh; /* Adjust height relative to viewport for better fit */
-            margin: 0; /* Remove margin, now full width */
-            border-radius: 0; /* Remove border-radius here */
             position: relative;
-            overflow: hidden;
-            background-color: transparent; /* Will be set by gradient/pattern */
-            display: flex; align-items: center; justify-content: center;
-            /* Add this for gradient/pattern transition */
-            transition: background 0.3s ease;
+            text-align: center;
+            padding-bottom: 15px; /* Space below text, before buttons */
+            min-height: 350px; /* Ensure enough space for background and content */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Push text content to the bottom */
+            overflow: hidden; /* Important */
         }
-
-        .modal-collectible-visual .collectible-bg-gradient {
-            position: absolute; top:0;left:0;right:0;bottom:0; z-index: 1;
-            border-top-left-radius: 12px; /* Rounded corners at top of modal */
-            border-top-right-radius: 12px;
+        #modal-collectible-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1;
         }
-
-        .modal-collectible-visual .collectible-pattern-tile {
-            position: absolute; top:0;left:0;right:0;bottom:0;
-            background-size: 25% auto;
-            background-repeat: repeat;
-            background-position: center; /* Center the pattern for "circled" effect */
-            opacity: 0.15;
+        #modal-collectible-pattern {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: 35% auto; 
+            background-repeat: repeat; opacity: 0.2; 
             z-index: 2;
-            border-top-left-radius: 12px; /* Rounded corners at top of modal */
-            border-top-right-radius: 12px;
+            -webkit-mask-image: radial-gradient(circle at 50% 40%, black 20%, transparent 80%);
+            mask-image: radial-gradient(circle at 50% 40%, black 20%, transparent 80%);
+        }
+        .modal-collectible-visual {
+            width: 50%; /* Smaller gift */
+            max-width: 180px;
+            aspect-ratio: 1/1;
+            margin: 0 auto;
+            position: relative; /* It's not absolute, it's part of the flow */
+            z-index: 3;
+            margin-bottom: 15px;
         }
         .modal-collectible-visual .static-image-fallback,
         .modal-collectible-visual .lottie-animation-container {
-             max-width: 80%; max-height: 80%; /* Adjust size of the gift itself */
-             object-fit: contain; z-index: 3; position: relative; /* Ensure it's above patterns */
+            width: 100%; height: 100%;
         }
-
-
         .collectible-display-area h3 {
-            font-size: 1.4em; font-weight: 600; margin-top: 15px;
+            font-size: 1.6em;
+            font-weight: 600;
             color: var(--tg-theme-text-color);
-            margin-bottom: 5px; /* Smaller margin below gift name */
+            z-index: 3;
+            position: relative;
         }
         .collectible-display-area p {
-            font-size: 0.95em; color: var(--tg-theme-hint-color); margin-bottom: 10px;
+            font-size: 1em;
+            color: var(--tg-theme-hint-color);
+            margin-top: 4px;
+            margin-bottom: 5px; /* Reduced space before buttons */
+            z-index: 3;
+            position: relative;
         }
-
-        /* Reduce space between collectible number and buttons */
+    
         #modal-collectible-actions {
-            padding-top: 10px; /* Reduce top padding */
-            padding-bottom: 15px; /* Keep some bottom padding */
-            background-color: var(--tg-theme-bg-color); /* Match modal background */
-        }
-
-        .modal-action-buttons-row {
             display: flex; justify-content: space-around; gap: 10px;
-            padding: 15px 20px;
+            padding: 10px 20px; /* Reduced top/bottom padding */
             background-color: var(--tg-theme-bg-color);
         }
         .modal-action-buttons-row button {
@@ -494,22 +499,16 @@
             border: none; border-radius: 8px;
             display: flex; flex-direction: column; align-items: center;
             font-weight: 500;
+            cursor: pointer;
         }
         .modal-action-buttons-row button .icon { margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
         .modal-action-buttons-row button .icon svg { width: 22px; height: 22px; fill: var(--tg-theme-link-color); }
         .modal-action-buttons-row button .text { font-size: 0.9em; }
-
-        .collectible-info-section {
-            padding: 0 20px;
-            background-color: var(--tg-theme-secondary-bg-color); /* Match Telegram's table background */
-            border-radius: 8px; /* Slightly rounded corners for the info box */
-            margin: 0 20px 15px 20px; /* Add margin to center it and separate from footer */
-            overflow: hidden; /* For rounded corners */
-        }
+    
+        .collectible-info-section { padding: 0 20px; background-color: var(--tg-theme-secondary-bg-color); }
         .collectible-info-section .info-row {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 0; /* Slightly reduce padding */
-            font-size: 0.9em; /* Slightly smaller font */
+            padding: 12px 0; font-size: 0.95em;
         }
         .collectible-info-section .info-row:not(:last-child) { margin-bottom: 2px; }
         .collectible-info-section .info-label { color: var(--tg-theme-text-color); }
@@ -525,80 +524,10 @@
         .modal-footer-message {
             text-align: center; font-size: 0.85em;
             color: var(--tg-theme-hint-color); padding: 15px 20px;
-            background-color: var(--tg-theme-bg-color); /* Match modal background */
+            background-color: var(--tg-theme-bg-color);
         }
         .modal-footer-message .link { color: var(--tg-theme-link-color); cursor: pointer; }
-
-        .modal-buttons-footer {
-            background-color: var(--tg-theme-bg-color); /* Match modal background */
-        }
-
-        /* --- Pinned Gifts Overlay Positioning --- */
-        .profile-top-pinned-gifts {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 2; /* Above avatar and name */
-            pointer-events: none; /* Allow clicks to go through to profile elements */
-        }
-
-        .profile-top-pinned-gifts .pinned-gift-item {
-            position: absolute; /* Enable precise positioning */
-            width: 40px; /* Adjust size */
-            height: 40px; /* Adjust size */
-            border-radius: 8px; /* Match collectible style */
-            background-color: transparent; /* Make transparent, pattern will be visible */
-            overflow: hidden;
-            pointer-events: none; /* Allow clicks through to profile elements */
-            opacity: 0.8; /* Slightly transparent like in Telegram */
-        }
-
-        /* Specific positioning for each pinned gift (example, adjust as needed) */
-        /* These positions are highly dependent on the profile content and screen size.
-           You might need to tweak them for optimal appearance. */
-        .profile-top-pinned-gifts .pinned-gift-item:nth-child(1) {
-            top: 60px; /* Near avatar */
-            left: 75px;
-            transform: rotate(-10deg);
-        }
-        .profile-top-pinned-gifts .pinned-gift-item:nth-child(2) {
-            top: 20px; /* High up, near name */
-            left: 200px;
-            transform: rotate(15deg);
-        }
-        .profile-top-pinned-gifts .pinned-gift-item:nth-child(3) {
-            top: 90px;
-            right: 20px;
-            transform: rotate(-20deg);
-        }
-        .profile-top-pinned-gifts .pinned-gift-item:nth-child(4) {
-            top: 10px;
-            right: 80px;
-            transform: rotate(5deg);
-        }
-        .profile-top-pinned-gifts .pinned-gift-item:nth-child(5) {
-            top: 110px;
-            left: 10px;
-            transform: rotate(25deg);
-        }
-        .profile-top-pinned-gifts .pinned-gift-item:nth-child(6) {
-            top: 40px;
-            left: 10px;
-            transform: rotate(-5deg);
-        }
-
-        /* Ensure avatar and name are visible beneath pins */
-        .profile-avatar {
-            position: relative;
-            z-index: 3;
-        }
-        .profile-name-status {
-            position: relative;
-            z-index: 3;
-        }
-
+    
         #long-press-menu {
             position: fixed;
             background-color: var(--tg-theme-secondary-bg-color);
@@ -611,85 +540,38 @@
         #long-press-menu li.disabled { color: var(--tg-theme-hint-color); cursor: default; }
         #long-press-menu li:not(.disabled):hover { background-color: rgba(255,255,255,0.05); }
         
-        #buy-multiple-quantity {
-            width: 80px; padding: 10px; text-align: center; margin-bottom:15px; 
+        #buy-multiple-quantity, #recipient-input {
             background-color: var(--tg-theme-bg-color); 
             color: var(--tg-theme-text-color); 
             border: 1px solid var(--tg-theme-hint-color);
             border-radius: 8px; font-size: 1em;
+            padding: 10px;
         }
+        #buy-multiple-quantity { width: 80px; text-align: center; margin-bottom:15px; }
+        #recipient-input { width: 100%; }
+        #recipient-input:focus { border-color: var(--tg-theme-link-color); outline: none;}
+    
         #buy-multiple-quantity::-webkit-outer-spin-button,
         #buy-multiple-quantity::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         #buy-multiple-quantity[type=number] { -moz-appearance: textfield; }
-
+    
         #filter-popup .filter-section { margin-bottom: 15px; }
-        #filter-popup .filter-section h4 {
-            font-size: 0.9em; font-weight: 500; color: var(--tg-theme-hint-color);
-            margin-bottom: 8px; padding-left: 5px;
-        }
-        #filter-popup .filter-options-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 8px; max-height: 150px; overflow-y: auto;
-            padding: 5px; background-color: rgba(0,0,0,0.1); border-radius: 8px;
-        }
-        #filter-popup .filter-option {
-            aspect-ratio: 1/1; border-radius: 6px;
-            background-color: var(--tg-theme-bg-color);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: 2px solid transparent;
-            overflow: hidden;
-        }
+        #filter-popup .filter-section h4 { font-size: 0.9em; font-weight: 500; color: var(--tg-theme-hint-color); margin-bottom: 8px; padding-left: 5px; }
+        #filter-popup .filter-options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px; max-height: 150px; overflow-y: auto; padding: 5px; background-color: rgba(0,0,0,0.1); border-radius: 8px; }
+        #filter-popup .filter-option { aspect-ratio: 1/1; border-radius: 6px; background-color: var(--tg-theme-bg-color); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; overflow: hidden; }
         #filter-popup .filter-option.selected { border-color: var(--tg-theme-link-color); }
         #filter-popup .filter-option img { max-width: 80%; max-height: 80%; object-fit: contain; }
         #filter-popup .filter-option .gradient-square { width: 100%; height: 100%; }
-        #filter-popup .clear-data-button {
-            background-color: transparent;
-            color: var(--app-clear-data-color);
-            border: none; padding: 13px; border-radius: 8px;
-            font-size: 1em; cursor: pointer; text-align: center;
-            font-weight: 500; width: 100%;
-            display: flex; align-items: center; justify-content: center;
-            margin-top: 15px;
-        }
+        #filter-popup .clear-data-button { background-color: transparent; color: var(--app-clear-data-color); border: none; padding: 13px; border-radius: 8px; font-size: 1em; cursor: pointer; text-align: center; font-weight: 500; width: 100%; display: flex; align-items: center; justify-content: center; margin-top: 15px; }
         #filter-popup .clear-data-button svg { width: 20px; height: 20px; fill: currentColor; margin-right: 8px; }
-
-        /* New styles for transfer modal */
-        #transfer-gift-modal .modal-input-group {
-            margin-bottom: 20px;
-        }
-        #transfer-gift-modal label {
-            display: block;
-            font-size: 0.9em;
-            color: var(--tg-theme-hint-color);
-            margin-bottom: 8px;
-        }
-        #transfer-gift-modal input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            border: 1px solid var(--tg-theme-hint-color);
-            border-radius: 8px;
-            font-size: 1em;
-            outline: none;
-        }
-        #transfer-gift-modal input[type="text"]:focus {
-            border-color: var(--tg-theme-link-color);
-        }
-
-        .spinner {
-            border: 4px solid var(--tg-theme-hint-color);
-            border-top: 4px solid var(--tg-theme-link-color);
-            border-radius: 50%; width: 30px; height: 30px;
-            animation: spin 1s linear infinite; margin: 20px auto;
-        }
+    
+        #transfer-gift-modal .modal-input-group { margin-bottom: 20px; }
+        #transfer-gift-modal label { display: block; font-size: 0.9em; color: var(--tg-theme-hint-color); margin-bottom: 8px; }
+    
+        .spinner { border: 4px solid var(--tg-theme-hint-color); border-top: 4px solid var(--tg-theme-link-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hidden { display: none !important; }
-        .placeholder-image {
-            background-color: var(--tg-theme-hint-color); width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--tg-theme-bg-color); font-size: 0.8em; border-radius: 8px;
-        }
+        .placeholder-image { background-color: var(--tg-theme-hint-color); width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--tg-theme-bg-color); font-size: 0.8em; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -701,8 +583,11 @@
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
                     <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
-                    <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div> <!-- Moved here for overlay -->
+                    <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts">
+                        <!-- Pinned gifts will be dynamically inserted here -->
+                    </div>
                     <div class="profile-header-content-wrapper">
+                        <!-- Profile Main Info Block has been moved inside wrapper -->
                         <div id="profile-main-info-block" class="profile-main-info">
                             <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
                             <div class="profile-name-status">
@@ -779,18 +664,24 @@
             <div class="modal-content">
                 <div class="page-header">
                     <button id="back-from-collectible-modal" class="back-button"></button>
-                    <h2 id="modal-collectible-header-title">Коллекционный</h2> <!-- This text is now hidden by CSS -->
+                    <!-- Title h2 is now hidden by CSS -->
+                    <h2 id="modal-collectible-header-title">Коллекционный</h2>
                     <button class="menu-button">⋮</button>
                 </div>
                 <div class="modal-scrollable-content">
                     <div class="collectible-display-area">
+                        <!-- Background and pattern are now part of the display area -->
+                        <div id="modal-collectible-bg" class="collectible-bg-gradient"></div>
+                        <div id="modal-collectible-pattern" class="collectible-pattern-tile"></div>
+                        
+                        <!-- The gift visual itself floats on top -->
                         <div id="modal-collectible-visual" class="modal-collectible-visual">
-                            <!-- Background gradient and pattern are now directly on modal-collectible-visual via JS styles -->
-                            <div id="modal-lottie-collectible-model" class="lottie-animation-container"></div>
-                            <img id="modal-collectible-model-img-static" class="static-image-fallback" src="" alt="Модель" style="display:none;">
+                             <div id="modal-lottie-collectible-model" class="lottie-animation-container"></div>
+                             <img id="modal-collectible-model-img-static" class="static-image-fallback" src="" alt="Модель" style="display:none;">
                         </div>
-                        <h3 id="modal-collectible-main-name">Название Модели</h3>
-                        <p id="modal-collectible-number-subtext">Коллекционный #123</p>
+
+                        <h3 id="modal-collectible-main-name">Название Подарка</h3>
+                        <p id="modal-collectible-number-subtext">Collectible #123</p>
                     </div>
 
                     <div id="modal-collectible-actions" class="modal-action-buttons-row">
@@ -902,6 +793,7 @@
             <li id="menu-pin-action">Закрепить</li>
         </ul>
     </div>
+
     <script>
         // ====================================================================
         // ВЕСЬ JAVASCRIPT КОД
@@ -1105,22 +997,23 @@
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
             initLottieObserver();
-
+    
             profileBackButton.innerHTML = BACK_ARROW_SVG;
             backToProfileBuyButton.innerHTML = BACK_ARROW_SVG;
             backFromCollectibleModal.innerHTML = BACK_ARROW_SVG;
-            collectibleActionTransfer.querySelector('.icon').innerHTML = CLIPBOARD_ICON_SVG;
+            // CHANGED: Иконка для кнопки "Передать" заменена на алмаз
+            collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
-
+    
             loadUserData();
             loadState();
             applyWornGiftStyles(wornGiftInstanceId);
             renderProfileGifts();
             setupEventListeners();
             fetchAvailableGifts();
-
+    
             // Check for start_param (gift transfer link)
             processStartParameter();
         }
@@ -1470,62 +1363,50 @@
         function openGiftDetailByInstanceId(instanceId) {
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift) return;
-
+    
             if (gift.isCollectible && gift.collectibleData) {
                 giftToTransfer = gift; // Set gift for transfer modal
                 const cd = gift.collectibleData;
                 collectibleDetailModal.dataset.instanceId = gift.instanceId;
-
-                // Header Title (keep hidden, just for reference if needed)
-                modalCollectibleHeaderTitle.textContent = gift.name; // This text is hidden by CSS
-
-                // Main Name (Gift Name instead of Model Name)
-                modalCollectibleMainName.textContent = gift.name; // Changed to gift.name
-
-                modalCollectibleNumberSubtext.textContent = `Коллекционный #${cd.number}`;
-
-                // Apply background and pattern to the visual container itself
-                if (cd.backdropColors) {
-                    modalCollectibleVisual.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
-                } else {
-                    modalCollectibleVisual.style.background = 'linear-gradient(45deg, #2a3745, #17212b)'; // Fallback
-                }
-
-                if (cd.patternImage) {
-                    modalCollectibleVisual.style.backgroundImage = `url('${cd.patternImage}'), ${modalCollectibleVisual.style.background}`;
-                    modalCollectibleVisual.style.backgroundSize = '25% auto, cover';
-                    modalCollectibleVisual.style.backgroundRepeat = 'repeat, no-repeat';
-                    modalCollectibleVisual.style.backgroundPosition = 'center, center'; // Center both for "circled" effect
-                } else {
-                    modalCollectibleVisual.style.backgroundImage = '';
-                }
-
-                // Lottie/Static Model
-                if (cd.lottieModelPath) {
-                    playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true);
-                    modalCollectibleModelImgStatic.style.display = 'none';
-                }
-                else {
-                    destroyLottieAnimation(modalLottieCollectibleModel);
-                    modalCollectibleModelImgStatic.src = cd.modelImage || gift.originalImage;
-                    modalCollectibleModelImgStatic.style.display = 'block';
+                
+                // CHANGED: Заголовок в шапке модального окна теперь не отображается, поэтому эта строка не нужна
+                // modalCollectibleHeaderTitle.textContent = gift.name;
+                
+                // CHANGED: Основное название теперь - это название коллекции (подарка), а не модели
+                modalCollectibleMainName.textContent = gift.name; 
+                
+                // CHANGED: Текст подзаголовка для соответствия скриншоту
+                modalCollectibleNumberSubtext.textContent = `Collectible #${cd.number}`;
+                
+                modalCollectibleBg.style.background = `radial-gradient(circle, ${cd.backdropColors?.centerColor || '#555'}, ${cd.backdropColors?.edgeColor || '#333'})`;
+                modalCollectiblePattern.style.backgroundImage = cd.patternImage ? `url('${cd.patternImage}')` : 'none';
+                
+                if (cd.lottieModelPath) { 
+                    playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true); 
+                    modalCollectibleModelImgStatic.style.display = 'none'; 
+                } else { 
+                    destroyLottieAnimation(modalLottieCollectibleModel); 
+                    modalCollectibleModelImgStatic.src = cd.modelImage || gift.originalImage; 
+                    modalCollectibleModelImgStatic.style.display = 'block'; 
                     modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
                 }
-
+                
                 const ownerName = profileName.textContent; const ownerAvatar = profileAvatar.src;
+                // CHANGED: В таблице информации показываем модель с ее редкостью
                 modalCollectibleInfoTable.innerHTML = `
                     <div class="info-row"><span class="info-label">Владелец</span><span class="info-value"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span></div>
                     <div class="info-row"><span class="info-label">Модель</span><span class="info-value">${cd.model?.name || 'N/A'} <span class="rarity-chip">${(cd.model?.rarityPermille || 0) / 10}%</span></span></div>
                     <div class="info-row"><span class="info-label">Фон</span><span class="info-value">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${(cd.backdrop?.rarityPermille || 0) / 10}%</span></span></div>
                     <div class="info-row"><span class="info-label">Символ</span><span class="info-value">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${(cd.pattern?.rarityPermille || 0) / 10}%</span></span></div>
                     <div class="info-row"><span class="info-label">Количество</span><span class="info-value">#${cd.number} (Уникальный)</span></div>`;
+                
                 collectibleActionWear.querySelector('.text').textContent = (wornGiftInstanceId === gift.instanceId) ? 'Снять' : 'Надеть';
                 collectibleDetailModal.classList.add('active');
             } else {
-                // ... (existing non-collectible gift detail logic)
-                giftToTransfer = null; // Only collectibles can be transferred
+                // ... (эта часть для не-коллекционных подарков остается без изменений) ...
+                giftToTransfer = null;
                 modalGiftName.textContent = "Сохраненный подарок";
-                if (gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; }
+                if (gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; } 
                 else { destroyLottieAnimation(modalLottieGiftOriginal); modalGiftImageStatic.src = gift.originalImage; modalGiftImageStatic.style.display = 'block'; modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };}
                 modalGiftDescription1.textContent = `Добавьте «${gift.name}» в свой профиль или улучшите его.`;
                 modalGiftDescription2.textContent = "Только вы можете видеть имя отправителя.";
