@@ -973,18 +973,18 @@
          * For a real application, server-side encryption and secure transfer are required.
          */
         function encryptGiftData(data) {
-            return btoa(JSON.stringify(data));
+            return JSON.stringify(data);
         }
 
         /**
-         * Simulates decryption by base64 decoding and JSON parsing.
+         * Simulates decryption by directly parsing the JSON string.
          * IMPORTANT: This is NOT secure decryption.
          */
         function decryptGiftData(encryptedData) {
             try {
-                return JSON.parse(atob(encryptedData));
+                return JSON.parse(encryptedData);
             } catch (e) {
-                console.error("Failed to decrypt gift data:", e);
+                console.error("Failed to parse gift data:", e); // Changed "decrypt" to "parse" for clarity
                 return null;
             }
         }
