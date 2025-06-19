@@ -930,7 +930,7 @@
             fetchAvailableGifts();
         }
         
-        function applyTheme(themeParams) { /* Same as before */ 
+        function applyTheme(themeParams) { 
             if (themeParams && Object.keys(themeParams).length > 0) {
                 const root = document.documentElement;
                 const setVar = (varName, value) => { if (value) root.style.setProperty(varName, value); };
@@ -948,7 +948,7 @@
                 applyWornGiftStyles(wornGiftInstanceId);
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
-        function loadUserData() { /* Same as before */ 
+        function loadUserData() { 
             const user = tg.initDataUnsafe?.user || mockUser;
             profileName.textContent = user.first_name || mockUser.first_name;
             profileAvatar.src = user.photo_url || mockUser.photo_url;
@@ -957,13 +957,13 @@
             profileBio.textContent = user.bio || mockUser.bio;
             profilePhone.textContent = user.phone || mockUser.phone;
         }
-        function saveState() { /* Same as before */ 
+        function saveState() { 
             localStorage.setItem('ownedGifts_v7', JSON.stringify(ownedGifts));
             localStorage.setItem('pinnedGifts_v7', JSON.stringify(pinnedGifts));
             localStorage.setItem('wornGiftInstanceId_v7', wornGiftInstanceId);
             localStorage.setItem('activeFilters_v7', JSON.stringify(activeFilters));
         }
-        function loadState() { /* Same as before */ 
+        function loadState() { 
             const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v7')) || [];
             ownedGifts = loadedOwnedGifts.map(gift => ({ ...gift, instanceId: gift.instanceId || generateUniqueId() }));
             pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v7')) || [];
@@ -996,11 +996,11 @@
             }
         }
         
-        function showPage(pageId) { /* Same as before */ 
+        function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
         }
-        async function fetchAvailableGifts() { /* Same as before, ensure populateFilterOptions is called */ 
+        async function fetchAvailableGifts() { 
             buyGiftsLoadingSpinner.classList.remove('hidden');
             buyGiftsGrid.innerHTML = '';
             try {
@@ -1054,17 +1054,17 @@
             }
         }
         
-        function getGiftCountText(count) { /* Same as before */ 
+        function getGiftCountText(count) { 
             if (count % 10 === 1 && count % 100 !== 11) return `${count} подарок`;
             if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} подарка`;
             return `${count} подарков`;
         }
-        function renderProfileGifts() { /* Modified to unobserve old elements */ 
+        function renderProfileGifts() { 
             // Unobserve old elements before clearing
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
             
-            const filteredGifts = ownedGifts.filter(gift => { /* ... filter logic same ... */ 
+            const filteredGifts = ownedGifts.filter(gift => { 
                 if (activeFilters.collection && gift.id !== activeFilters.collection) return false;
                 if (gift.isCollectible && gift.collectibleData) {
                     if (activeFilters.model && gift.collectibleData.model?.name !== activeFilters.model) return false;
@@ -1075,12 +1075,12 @@
             });
             profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
             if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) profileGiftCountSubtext.textContent += ` из ${ownedGifts.length}`;
-            const sortedGifts = [...filteredGifts].sort((a, b) => { /* ... sort logic same ... */ 
+            const sortedGifts = [...filteredGifts].sort((a, b) => { 
                 const aIsPinned = pinnedGifts.includes(a.instanceId); const bIsPinned = pinnedGifts.includes(b.instanceId);
                 if (aIsPinned && !bIsPinned) return -1; if (!aIsPinned && bIsPinned) return 1;
                 return (new Date(b.acquiredDate || 0)) - (new Date(a.acquiredDate || 0));
             });
-            if (sortedGifts.length === 0) { /* ... empty message logic same ... */ 
+            if (sortedGifts.length === 0) { 
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
                 giftsGrid.innerHTML = `<p class="empty-grid-message">${ownedGifts.length > 0 ? 'Нет подарков, соответствующих фильтрам.' : 'У вас пока нет подарков. Время что-нибудь купить!'}</p>`;
             } else {
@@ -1093,7 +1093,7 @@
             }
             renderTopPinnedGiftsPreview(); // This will also handle Lottie for pinned gifts
             const hasNonCollectible = ownedGifts.some(g => !g.isCollectible);
-            if (upgradeAllGiftsButton) { /* ... button visibility logic same ... */ 
+            if (upgradeAllGiftsButton) { 
                 upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
                 if (!hasNonCollectible) { upgradeAllGiftsButton.textContent = '✨ Улучшить все'; upgradeAllGiftsButton.disabled = false; }
             }
@@ -1122,7 +1122,7 @@
                 staticImage.src = cd.modelImage || gift.originalImage;
                 staticImage.alt = cd.model?.name || gift.name;
                 lottiePathForCard = cd.lottieModelPath; // Use model's Lottie
-                // ... (bg, pattern, badges setup - same as before) ...
+                
                 const bgDiv = document.createElement('div'); bgDiv.className = 'gift-card-bg-pattern';
                 if (cd.backdropColors) bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
                 else bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
@@ -1145,7 +1145,7 @@
             imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
         
-            if (pinnedGifts.includes(gift.instanceId)) { /* ... pin indicator logic same ... */ 
+            if (pinnedGifts.includes(gift.instanceId)) { 
                 const pinDiv = document.createElement('div'); pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG; pinDiv.querySelector('svg').style.fill = 'var(--tg-theme-link-color)';
                 card.appendChild(pinDiv);
@@ -1155,7 +1155,7 @@
             return card;
         }
         
-        function createPlaceholderImage() { /* Fallback for onerror, not used directly in createGiftCardDOM anymore */ 
+        function createPlaceholderImage() { 
             const placeholder = document.createElement('div');
             placeholder.className = 'placeholder-image';
             placeholder.style.width = '100%'; placeholder.style.height = '100%';
@@ -1201,7 +1201,7 @@
             buyMultipleModal.classList.add('active');
             buyMultipleQuantityInput.focus();
         }
-        function handleConfirmBuyMultiple() { /* Modified to pass lottiePath to buyGift */
+        function handleConfirmBuyMultiple() {
             if (!currentGiftToBuyMultiple) return;
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Пожалуйста, введите корректное количество."); return; }
@@ -1222,7 +1222,7 @@
             tg.showAlert(message); showPage('profile-page');
         }
         
-        function openGiftDetailByInstanceId(instanceId) { /* Same as previous version with Lottie in modals */ 
+        function openGiftDetailByInstanceId(instanceId) { 
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift) return;
             if (gift.isCollectible && gift.collectibleData) {
@@ -1260,7 +1260,7 @@
                 if (inlineUpgradeBtn) inlineUpgradeBtn.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
             }
         }
-        async function upgradeSingleGiftLogic(giftToUpgrade) { /* Same as previous, ensures lottieModelPath is set */ 
+        async function upgradeSingleGiftLogic(giftToUpgrade) {
             if (giftToUpgrade.isCollectible) return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'skipped' };
             const giftNameEncoded = encodeURIComponent(giftToUpgrade.name);
             try {
@@ -1295,7 +1295,7 @@
                 return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'failed', error: error.message };
             }
         }
-        async function handleSingleGiftUpgradeFromModal(instanceId) { /* Same as before */ 
+        async function handleSingleGiftUpgradeFromModal(instanceId) { 
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift || gift.isCollectible) return;
             const upgradeButton = document.getElementById(`modal-action-upgrade-gift-${instanceId}`);
@@ -1314,7 +1314,7 @@
                 if (upgradeButton) { upgradeButton.textContent = 'Улучшить'; upgradeButton.disabled = false; }
             }
         }
-        async function handleUpgradeAllGifts() { /* Same as before, relies on createGiftCardDOM for render update */ 
+        async function handleUpgradeAllGifts() { 
             const giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible);
             if (giftsToUpgrade.length === 0) { tg.showAlert("Нет подарков для улучшения."); return; }
             const originalButtonText = upgradeAllGiftsButton.textContent;
@@ -1332,12 +1332,9 @@
                     if (cardElement && result.collectibleData) { // Card still exists and upgrade was successful
                         const updatedGiftData = ownedGifts.find(g => g.instanceId === gift.instanceId);
                         if (updatedGiftData) {
-                             // The card's content will be complex, direct innerHTML might be easier if Lottie instances are managed by observer
                             const newCard = createGiftCardDOM(updatedGiftData); // Create new DOM fragment
                             cardElement.innerHTML = newCard.innerHTML; // Replace content
-                            // Crucially, re-observe if necessary or ensure data attributes are correct
                             cardElement.dataset.lottiePath = updatedGiftData.isCollectible && updatedGiftData.collectibleData ? updatedGiftData.collectibleData.lottieModelPath : updatedGiftData.lottiePath;
-                            // Old Lottie instance on cardElement (if any via observer) might be orphaned. Observer should handle this.
                             setupLongPress(cardElement, updatedGiftData);
                         }
                     }
@@ -1353,7 +1350,7 @@
             upgradeAllGiftsButton.style.display = stillHasNonCollectible ? 'inline-block' : 'none';
             if (stillHasNonCollectible) { upgradeAllGiftsButton.textContent = originalButtonText; upgradeAllGiftsButton.disabled = false; }
         }
-        function selectWeightedRandom(items) { /* Same as before */ 
+        function selectWeightedRandom(items) { 
             if (!items || items.length === 0) return null;
             let totalWeight = items.reduce((sum, item) => sum + (item.rarityPermille || 1), 0);
             if (totalWeight === 0) return items[Math.floor(Math.random() * items.length)];
@@ -1364,12 +1361,12 @@
             }
             return items[items.length - 1];
         }
-        function closeModal(modalElement) { /* Modified to stop Lottie */ 
+        function closeModal(modalElement) { 
             if (modalElement.id === 'gift-detail-modal') destroyLottieAnimation(modalLottieGiftOriginal);
             if (modalElement.id === 'collectible-detail-modal') destroyLottieAnimation(modalLottieCollectibleModel);
             modalElement.classList.remove('active');
         }
-        let currentLongPressGift = null; let longPressTimer; /* Long press logic same as before */
+        let currentLongPressGift = null; let longPressTimer;
         function setupLongPress(element, gift) { 
             element.addEventListener('touchstart', (e) => {
                 clearTimeout(longPressTimer);
@@ -1423,13 +1420,13 @@
             });
             tooManyPinsModal.classList.add('active');
         }
-        function handleWearAction() { /* Same as before, relies on applyWornGiftStyles for Lottie */
+        function handleWearAction() { 
             const currentModalInstanceId = collectibleDetailModal.dataset.instanceId; if (!currentModalInstanceId) return;
             if (wornGiftInstanceId === currentModalInstanceId) { wornGiftInstanceId = null; collectibleActionWear.querySelector('.text').textContent = 'Надеть'; }
             else { wornGiftInstanceId = currentModalInstanceId; collectibleActionWear.querySelector('.text').textContent = 'Снять'; }
             applyWornGiftStyles(wornGiftInstanceId); saveState(); tg.HapticFeedback.impactOccurred('light');
         }
-        let filterPopupLongPressTimer; /* Filter logic same as before */
+        let filterPopupLongPressTimer;
         function setupFilterPopupTrigger() {
             filterLongPressTarget.addEventListener('touchstart', (e) => { filterPopupLongPressTimer = setTimeout(openFilterPopup, 700); }, { passive: true });
             filterLongPressTarget.addEventListener('touchend', () => clearTimeout(filterPopupLongPressTimer));
@@ -1494,27 +1491,38 @@
             });
         }
         
-        function setupEventListeners() { /* Same as before, ensures IntersectionObserver related calls are in place */
+        function setupEventListeners() {
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
+            
+            // Back buttons
+            profileBackButton.addEventListener('click', () => showPage('profile-page')); // For future use-cases
             backToProfileBuyButton.addEventListener('click', () => showPage('profile-page'));
-            closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
-            collectibleActionWear.addEventListener('click', handleWearAction);
+        
+            // Modal close buttons
+            closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
-            menuPinAction.addEventListener('click', handlePinAction);
             cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
-            confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
             cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup].forEach(modal => {
-                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
-            });
-            // Scroll listeners are handled by IntersectionObserver for Lottie grid items
-            // giftsGrid.addEventListener('scroll', () => { if(!longPressMenu.classList.contains('hidden')) { longPressMenu.classList.add('hidden'); currentLongPressGift = null; } });
+            
+            // Modal specific actions
+            collectibleActionWear.addEventListener('click', handleWearAction);
+            confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
+        
+            // Context / Long-press menu
+            menuPinAction.addEventListener('click', handlePinAction);
+            
+            // Filters
             setupFilterPopupTrigger();
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
             clearAllDataButton.addEventListener('click', handleClearAllData);
+        
+            // Close modals on overlay click
+            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup].forEach(modal => {
+                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+            });
         }
         
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
