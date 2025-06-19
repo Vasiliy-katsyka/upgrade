@@ -18,7 +18,7 @@
             --tg-theme-accent-blue: #5288c1;
 
             --app-modal-backdrop-color: rgba(0,0,0,0.7);
-            --app-rarity-chip-bg: rgba(0,0,0,0.2); 
+            --app-rarity-chip-bg: rgba(0,0,0,0.2);
             --app-rarity-chip-text: var(--tg-theme-text-color);
             --app-action-button-bg: #232e3a;
             --app-action-button-text: var(--tg-theme-link-color);
@@ -69,8 +69,8 @@
             min-height: 56px;
             position: sticky; top: 0; z-index: 10;
         }
-        #profile-page > .page-header { 
-            background-color: transparent; 
+        #profile-page > .page-header {
+            background-color: transparent;
             position: absolute;
             top: 0; left:0; right:0;
             z-index: 100;
@@ -161,7 +161,7 @@
         }
         .profile-name-status p { font-size: 0.95em; color: var(--tg-theme-text-color); opacity: 0.7; margin-top: 3px; }
         .profile-name-status p.online { opacity: 1; color: var(--tg-theme-link-color); }
-        
+
         .profile-details-section {
             background-color: var(--tg-theme-bg-color);
             padding: 15px 15px 5px 15px;
@@ -194,7 +194,7 @@
             bottom: 0px; left: 0; right: 0;
             height: 3px; background-color: var(--tg-theme-link-color);
         }
-        
+
         .profile-gifts-actions-wrapper {
             display: flex;
             align-items: center;
@@ -229,7 +229,7 @@
         }
         .empty-grid-message {
             color: var(--tg-theme-hint-color); text-align: center;
-            padding: 30px 40px; font-size: 0.95em; line-height: 1.5; width: 100%; 
+            padding: 30px 40px; font-size: 0.95em; line-height: 1.5; width: 100%;
         }
 
         .gift-card, .buy-gift-item { /* Combined common styles */
@@ -265,7 +265,7 @@
             width: 65%; max-height: 60px; /* from buy-gift-item img */
             margin-bottom: 8px; height: auto; /* Adjust as needed */
         }
-        
+
         .static-image-fallback {
             max-width: 100%; max-height: 100%;
             object-fit: contain;
@@ -337,7 +337,7 @@
             position: sticky; top: 0; background-color: var(--tg-theme-secondary-bg-color); z-index: 1;
         }
         .modal-header-bar h3 { font-size: 1.1em; font-weight: 500; }
-        
+
         .modal-scrollable-content { overflow-y: auto; padding: 15px 20px; flex-grow: 1; }
         .modal-buttons-footer {
             padding: 15px 20px;
@@ -417,8 +417,8 @@
         .modal-collectible-visual .collectible-bg-gradient { position: absolute; top:0;left:0;right:0;bottom:0; z-index: 1; }
         .modal-collectible-visual .collectible-pattern-tile {
             position: absolute; top:0;left:0;right:0;bottom:0;
-            background-size: 25% auto; 
-            background-repeat: repeat; opacity: 0.15; 
+            background-size: 25% auto;
+            background-repeat: repeat; opacity: 0.15;
             z-index: 2;
         }
         .modal-collectible-visual .static-image-fallback {
@@ -460,7 +460,7 @@
             padding: 2px 7px; border-radius: 8px;
             font-size: 0.8em; margin-left: 8px; font-weight: 500;
         }
-        
+
         .modal-footer-message {
             text-align: center; font-size: 0.85em;
             color: var(--tg-theme-hint-color); padding: 15px 20px;
@@ -479,11 +479,42 @@
         #long-press-menu li { padding: 10px 20px; cursor: pointer; color: var(--tg-theme-text-color); font-size: 0.95em; }
         #long-press-menu li.disabled { color: var(--tg-theme-hint-color); cursor: default; }
         #long-press-menu li:not(.disabled):hover { background-color: rgba(255,255,255,0.05); }
-        
+
+        /* Styles for new modals */
+        .modal-input-group {
+            margin-bottom: 15px;
+        }
+        .modal-input-group label {
+            display: block;
+            color: var(--tg-theme-hint-color);
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .modal-input-group input[type="text"],
+        .modal-input-group input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            border: 1px solid var(--tg-theme-hint-color);
+            border-radius: 8px;
+            font-size: 1em;
+        }
+         #share-link-input {
+            background-color: var(--tg-theme-bg-color);
+            cursor: default;
+        }
+        #copy-link-button {
+            margin-top: 10px;
+            background-color: var(--app-action-button-bg);
+            color: var(--tg-theme-link-color);
+        }
+
         #buy-multiple-quantity {
-            width: 80px; padding: 10px; text-align: center; margin-bottom:15px; 
-            background-color: var(--tg-theme-bg-color); 
-            color: var(--tg-theme-text-color); 
+            width: 80px; padding: 10px; text-align: center; margin-bottom:15px;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
             border: 1px solid var(--tg-theme-hint-color);
             border-radius: 8px; font-size: 1em;
         }
@@ -539,8 +570,10 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Profile Page (Main) -->
         <div id="profile-page" class="page active">
              <div class="page-header">
+                <!-- This back button is for future use, not the native one -->
                 <button id="profile-back-button" class="back-button hidden"></button>
             </div>
             <div class="profile-page-content">
@@ -575,7 +608,7 @@
                     <button>Архив</button>
                     <button class="active" id="gifts-tab-button">Подарки</button>
                 </div>
-                
+
                 <div class="profile-gifts-actions-wrapper">
                     <div id="filter-long-press-target"></div>
                     <div class="profile-gifts-actions">
@@ -590,9 +623,11 @@
             </div>
         </div>
 
+        <!-- Buy Gifts Page -->
         <div id="buy-gifts-page" class="page">
             <div class="page-header">
-                <button id="back-to-profile-buy" class="back-button"></button>
+                <!-- This back button is a placeholder, the native one will be used -->
+                <button id="back-to-profile-buy" class="back-button hidden"></button>
                 <h2>Магазин подарков</h2>
             </div>
             <div id="buy-gifts-grid" class="gifts-grid">
@@ -600,6 +635,9 @@
             </div>
         </div>
 
+        <!-- MODALS SECTION -->
+
+        <!-- Gift Detail Modal (Non-collectible) -->
         <div id="gift-detail-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar">
@@ -620,10 +658,12 @@
             </div>
         </div>
 
+        <!-- Collectible Detail Modal -->
         <div id="collectible-detail-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="page-header">
-                    <button id="back-from-collectible-modal" class="back-button"></button>
+                    <!-- This back button is a placeholder, the native one will be used -->
+                    <button id="back-from-collectible-modal" class="back-button hidden"></button>
                     <h2 id="modal-collectible-header-title">Коллекционный</h2>
                     <button class="menu-button">⋮</button>
                 </div>
@@ -640,7 +680,7 @@
                     </div>
 
                     <div id="modal-collectible-actions" class="modal-action-buttons-row">
-                        <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Передать</span></button>
+                        <button id="collectible-action-send"><span class="icon"></span><span class="text">Передать</span></button>
                         <button id="collectible-action-wear"><span class="icon"></span><span class="text">Надеть</span></button>
                         <button id="collectible-action-sell"><span class="icon"></span><span class="text">Продать</span></button>
                     </div>
@@ -657,6 +697,41 @@
             </div>
         </div>
 
+        <!-- NEW: Transfer Gift Modal -->
+        <div id="transfer-gift-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Передать подарок</h3></div>
+                <div class="modal-scrollable-content">
+                    <div class="modal-input-group">
+                        <label for="transfer-username-input">Имя пользователя получателя</label>
+                        <input type="text" id="transfer-username-input" placeholder="@username">
+                    </div>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="confirm-transfer-button" class="modal-button">Создать ссылку</button>
+                    <button id="cancel-transfer-button" class="modal-button secondary">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Share Link Modal -->
+        <div id="share-link-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Поделитесь этой ссылкой</h3></div>
+                <div class="modal-scrollable-content" style="text-align: center;">
+                    <p style="color: var(--tg-theme-hint-color); margin-bottom: 15px;">Отправьте эту ссылку получателю. После того как он откроет её, подарок будет передан.</p>
+                    <div class="modal-input-group">
+                         <input type="text" id="share-link-input" readonly>
+                    </div>
+                    <button id="copy-link-button" class="modal-button">Копировать ссылку</button>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="close-share-link-button" class="modal-button secondary">Закрыть</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Too Many Pins Modal -->
         <div id="too-many-pins-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar"><h3>Слишком много закреплённых подарков</h3></div>
@@ -671,6 +746,7 @@
             </div>
         </div>
 
+        <!-- Buy Multiple Modal -->
         <div id="buy-multiple-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar"><h3 id="buy-multiple-modal-title">Купить подарок</h3></div>
@@ -686,6 +762,7 @@
             </div>
         </div>
 
+        <!-- Filter Popup -->
         <div id="filter-popup" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar">
@@ -720,6 +797,7 @@
         </div>
     </div>
 
+    <!-- Long Press Menu -->
     <div id="long-press-menu" class="hidden">
         <ul>
             <li id="menu-pin-action">Закрепить</li>
@@ -729,30 +807,38 @@
         // Ensure Lottie Player is loaded (already in <head>)
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
-        
+
+        // IMPORTANT: Replace 'YourBotUsername' with your actual bot's username
+        const BOT_USERNAME = "upgradeDemoBot";
+
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M15,4H17L19,7H16M11,4H13L14,7H10M7,4H9L8,7H5M6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>`;
-        
+
         let allAvailableGifts = {};
         let ownedGifts = [];
         let pinnedGifts = [];
         let wornGiftInstanceId = null;
+        let giftInstanceIdToTransfer = null;
         const MAX_PINS = 6;
         let tg = window.Telegram.WebApp;
-        
+
         let activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-        
+
+        // Page Elements
         const profilePage = document.getElementById('profile-page');
+        const buyGiftsPage = document.getElementById('buy-gifts-page');
+
+        // Profile Page Elements
         const profileBackButton = document.getElementById('profile-back-button');
         const profileTopSection = document.getElementById('profile-top-section');
         const profileHeaderPatternOverlay = document.getElementById('profile-header-pattern-overlay');
         const profileAvatar = document.getElementById('profile-avatar');
         const profileName = document.getElementById('profile-name');
-        const wornGiftIconContainer = document.getElementById('worn-gift-icon-container'); // Changed from img
+        const wornGiftIconContainer = document.getElementById('worn-gift-icon-container');
         const profileGiftCountSubtext = document.getElementById('profile-gift-count-subtext');
         const profileStatus = document.getElementById('profile-status');
         const profilePhone = document.getElementById('profile-phone');
@@ -763,11 +849,12 @@
         const goToBuyGiftsButton = document.getElementById('go-to-buy-gifts');
         const upgradeAllGiftsButton = document.getElementById('upgrade-all-gifts-button');
         const filterLongPressTarget = document.getElementById('filter-long-press-target');
-        
-        const buyGiftsPage = document.getElementById('buy-gifts-page');
+
+        // Buy Gifts Page Elements
         const backToProfileBuyButton = document.getElementById('back-to-profile-buy');
         const buyGiftsGrid = document.getElementById('buy-gifts-grid');
-        
+
+        // Modal Elements
         const giftDetailModal = document.getElementById('gift-detail-modal');
         const modalGiftName = document.getElementById('modal-gift-name');
         const modalLottieGiftOriginal = document.getElementById('modal-lottie-gift-original');
@@ -776,7 +863,7 @@
         const modalGiftDescription2 = document.getElementById('modal-gift-description2');
         const modalGiftInfo = document.getElementById('modal-gift-info');
         const closeGiftDetailModalButton = document.getElementById('close-gift-detail-modal');
-        
+
         const collectibleDetailModal = document.getElementById('collectible-detail-modal');
         const backFromCollectibleModal = document.getElementById('back-from-collectible-modal');
         const modalCollectibleHeaderTitle = document.getElementById('modal-collectible-header-title');
@@ -788,11 +875,21 @@
         const modalCollectibleMainName = document.getElementById('modal-collectible-main-name');
         const modalCollectibleNumberSubtext = document.getElementById('modal-collectible-number-subtext');
         const modalCollectibleInfoTable = document.getElementById('modal-collectible-info-table');
-        const collectibleActionTransfer = document.getElementById('collectible-action-transfer');
+        const collectibleActionSend = document.getElementById('collectible-action-send');
         const collectibleActionWear = document.getElementById('collectible-action-wear');
         const collectibleActionSell = document.getElementById('collectible-action-sell');
         const closeCollectibleDetailModalButton = document.getElementById('close-collectible-detail-modal');
-        
+
+        // New Transfer Modals
+        const transferGiftModal = document.getElementById('transfer-gift-modal');
+        const transferUsernameInput = document.getElementById('transfer-username-input');
+        const confirmTransferButton = document.getElementById('confirm-transfer-button');
+        const cancelTransferButton = document.getElementById('cancel-transfer-button');
+        const shareLinkModal = document.getElementById('share-link-modal');
+        const shareLinkInput = document.getElementById('share-link-input');
+        const copyLinkButton = document.getElementById('copy-link-button');
+        const closeShareLinkButton = document.getElementById('close-share-link-button');
+
         const tooManyPinsModal = document.getElementById('too-many-pins-modal');
         const unpinSelectionGrid = document.getElementById('unpin-selection-grid');
         const cancelUnpinModal = document.getElementById('cancel-unpin-modal');
@@ -817,11 +914,11 @@
         const clearFiltersButton = document.getElementById('clear-filters-button');
         const clearAllDataButton = document.getElementById('clear-all-data-button');
         const clearDataIconPlaceholder = document.getElementById('clear-data-icon-placeholder');
-        
+
         const russianFirstNames = ["Василий", "Иван", "Алексей", "Дмитрий", "Сергей"];
         const russianLastNames = ["Дуров", "Петров", "Иванов", "Смирнов", "Кузнецов"];
         const russianBios = ["Всё только начинается.", "Люблю путешествовать.", "Кофеман."];
-        
+
         function getRandomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function generateRandomPhoneNumber() {
             let num = '+7 (9'; for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10); num += ') ';
@@ -835,102 +932,108 @@
             photo_url: `https://i.pravatar.cc/140?u=${generateUniqueId()}`, bio: getRandomElement(russianBios), phone: generateRandomPhoneNumber()
         };
         mockUser.username = `${mockUser.first_name.toLowerCase().replace(' ', '')}${Math.floor(Math.random() * 1000)}`;
-        
+
         let lottieIntersectionObserver;
-        
+
         function playLottieAnimation(container, path, loop = true, isGridItem = false) {
             if (!container || !path) return;
             if (container.lottieInstance) { container.lottieInstance.destroy(); delete container.lottieInstance; }
             container.innerHTML = '';
-            const anim = bodymovin.loadAnimation({
-                container: container, path: path, renderer: 'svg', loop: loop, autoplay: true
-            });
-            container.lottieInstance = anim;
-            if (isGridItem && !loop) {
-                anim.addEventListener('complete', () => {
-                    if (container.lottieInstance === anim) { // Ensure it's the current animation
-                        container.dataset.playedOnce = 'true';
-                    }
+            try {
+                const anim = bodymovin.loadAnimation({
+                    container: container, path: path, renderer: 'svg', loop: loop, autoplay: true
                 });
+                container.lottieInstance = anim;
+                if (isGridItem && !loop) {
+                    anim.addEventListener('complete', () => {
+                        if (container.lottieInstance === anim) {
+                            container.dataset.playedOnce = 'true';
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Lottie loading failed for path:", path, e);
             }
         }
+
         function destroyLottieAnimation(container) {
             if (container && container.lottieInstance) {
                 container.lottieInstance.destroy();
                 delete container.lottieInstance;
-                delete container.dataset.playedOnce; // Reset for re-play on re-view
-                container.innerHTML = ''; // Clear container
+                delete container.dataset.playedOnce;
+                container.innerHTML = '';
             }
         }
-        
+
         function handleLottieIntersection(entries, observer) {
             entries.forEach(entry => {
                 const cardElement = entry.target;
                 const lottieContainer = cardElement.querySelector('.lottie-animation-container');
                 const staticFallback = cardElement.querySelector('.static-image-fallback');
                 const lottiePath = cardElement.dataset.lottiePath;
-        
+
                 if (entry.isIntersecting) {
                     if (lottiePath && lottieContainer) {
                         if(staticFallback) staticFallback.style.display = 'none';
-                        lottieContainer.style.display = 'flex'; // Make sure it's visible
-                        // Play once, then stop. Replay if it scrolls out and back in.
+                        lottieContainer.style.display = 'flex';
                         playLottieAnimation(lottieContainer, lottiePath, false, true);
                     }
                 } else {
                     if (lottieContainer) {
                         destroyLottieAnimation(lottieContainer);
-                        if(staticFallback) staticFallback.style.display = 'block'; // Show fallback
+                        if(staticFallback) staticFallback.style.display = 'block';
                         lottieContainer.style.display = 'none';
                     }
                 }
             });
         }
-        
+
         function initLottieObserver() {
             lottieIntersectionObserver = new IntersectionObserver(handleLottieIntersection, {
-                root: null, // viewport
-                rootMargin: '100px', // Load/unload when 100px from viewport edge
-                threshold: 0.01 // Trigger even if 1% is visible
+                root: null,
+                rootMargin: '100px',
+                threshold: 0.01
             });
         }
-        
+
         function observeLottieElement(element) {
             if (lottieIntersectionObserver && element.dataset.lottiePath) {
                 lottieIntersectionObserver.observe(element);
             }
         }
         function unobserveLottieElement(element) {
-             if (lottieIntersectionObserver && element.dataset.lottiePath) { // Check if it was observed
+             if (lottieIntersectionObserver && element.dataset.lottiePath) {
                 lottieIntersectionObserver.unobserve(element);
                 const lottieContainer = element.querySelector('.lottie-animation-container');
-                if(lottieContainer) destroyLottieAnimation(lottieContainer); // Clean up immediately
+                if(lottieContainer) destroyLottieAnimation(lottieContainer);
             }
         }
-        
-        
+
         function initApp() {
-            tg.ready(); tg.expand();
+            tg.ready();
+            tg.expand();
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
             initLottieObserver();
-        
+            checkForReceivedGift();
+
             profileBackButton.innerHTML = BACK_ARROW_SVG;
-            backToProfileBuyButton.innerHTML = BACK_ARROW_SVG;
+            // The backToProfileBuyButton is now hidden and controlled by native TG back button
             backFromCollectibleModal.innerHTML = BACK_ARROW_SVG;
-            collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
+            collectibleActionSend.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
-        
-            loadUserData(); loadState();
+
+            loadUserData();
+            loadState();
             applyWornGiftStyles(wornGiftInstanceId);
             renderProfileGifts();
             setupEventListeners();
             fetchAvailableGifts();
         }
-        
-        function applyTheme(themeParams) { 
+
+        function applyTheme(themeParams) {
             if (themeParams && Object.keys(themeParams).length > 0) {
                 const root = document.documentElement;
                 const setVar = (varName, value) => { if (value) root.style.setProperty(varName, value); };
@@ -948,7 +1051,8 @@
                 applyWornGiftStyles(wornGiftInstanceId);
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
-        function loadUserData() { 
+
+        function loadUserData() {
             const user = tg.initDataUnsafe?.user || mockUser;
             profileName.textContent = user.first_name || mockUser.first_name;
             profileAvatar.src = user.photo_url || mockUser.photo_url;
@@ -957,27 +1061,29 @@
             profileBio.textContent = user.bio || mockUser.bio;
             profilePhone.textContent = user.phone || mockUser.phone;
         }
-        function saveState() { 
+
+        function saveState() {
             localStorage.setItem('ownedGifts_v7', JSON.stringify(ownedGifts));
             localStorage.setItem('pinnedGifts_v7', JSON.stringify(pinnedGifts));
             localStorage.setItem('wornGiftInstanceId_v7', wornGiftInstanceId);
             localStorage.setItem('activeFilters_v7', JSON.stringify(activeFilters));
         }
-        function loadState() { 
+
+        function loadState() {
             const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v7')) || [];
             ownedGifts = loadedOwnedGifts.map(gift => ({ ...gift, instanceId: gift.instanceId || generateUniqueId() }));
             pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v7')) || [];
             wornGiftInstanceId = localStorage.getItem('wornGiftInstanceId_v7') || null;
             activeFilters = JSON.parse(localStorage.getItem('activeFilters_v7')) || { collection: null, model: null, backdrop: null, pattern: null };
         }
-        
+
         function applyWornGiftStyles(instanceId) {
             const currentWornGift = ownedGifts.find(g => g.instanceId === instanceId && g.isCollectible);
-            destroyLottieAnimation(wornGiftIconContainer); // Clear previous if any
+            destroyLottieAnimation(wornGiftIconContainer);
             if (currentWornGift && currentWornGift.collectibleData) {
                 if (currentWornGift.collectibleData.lottieModelPath) {
                     playLottieAnimation(wornGiftIconContainer, currentWornGift.collectibleData.lottieModelPath, true);
-                } else if (currentWornGift.collectibleData.modelImage) { // Fallback to static if no Lottie
+                } else if (currentWornGift.collectibleData.modelImage) {
                     wornGiftIconContainer.innerHTML = `<img src="${currentWornGift.collectibleData.modelImage}" style="width:100%; height:100%; object-fit:contain;">`;
                 }
                 wornGiftIconContainer.classList.remove('hidden');
@@ -995,19 +1101,34 @@
                 profileHeaderPatternOverlay.style.backgroundImage = 'none';
             }
         }
-        
+
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
+
+            // Native Back Button Logic
+            if (pageId === 'profile-page') {
+                tg.BackButton.hide();
+            } else {
+                tg.BackButton.show();
+            }
         }
-        async function fetchAvailableGifts() { 
+
+        function handleBackButton() {
+            // This function handles clicks on the native Telegram Back Button.
+            if (buyGiftsPage.classList.contains('active')) {
+                showPage('profile-page');
+            }
+        }
+
+        async function fetchAvailableGifts() {
             buyGiftsLoadingSpinner.classList.remove('hidden');
             buyGiftsGrid.innerHTML = '';
             try {
                 const response = await fetch(GIFTS_JSON_URL);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 allAvailableGifts = await response.json();
-                renderAvailableGifts(); // This will now set up Lottie observation for buy grid
+                renderAvailableGifts();
                 populateFilterOptions();
             } catch (error) {
                 console.error("Не удалось загрузить доступные подарки:", error);
@@ -1016,8 +1137,8 @@
                 buyGiftsLoadingSpinner.classList.add('hidden');
             }
         }
-        
-        function renderAvailableGifts() { // Modified for Lottie
+
+        function renderAvailableGifts() {
             buyGiftsGrid.innerHTML = '';
             if (Object.keys(allAvailableGifts).length === 0 && !buyGiftsLoadingSpinner.classList.contains('hidden')) {
                 buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">Сейчас нет доступных подарков.</p>`; return;
@@ -1026,13 +1147,13 @@
                 const name = allAvailableGifts[id];
                 const originalImageUrl = `${CDN_BASE_URL}originals/${id}/Original.png`;
                 const lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`;
-        
+
                 const item = document.createElement('div');
                 item.className = 'buy-gift-item';
                 item.dataset.id = id; item.dataset.name = name;
                 item.dataset.originalImage = originalImageUrl;
-                item.dataset.lottiePath = lottiePath; // For IntersectionObserver
-        
+                item.dataset.lottiePath = lottiePath;
+
                 item.innerHTML = `
                     <div class="image-container">
                         <div class="lottie-animation-container" style="display:none;"></div>
@@ -1042,29 +1163,29 @@
                     <div class="gift-price"><span class="star-icon">⭐</span> Бесплатно</div>
                     <div class="limited-label">Ограничено</div>
                 `;
-                item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1)); // Pass Lottie path
+                item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
                 let buyItemLongPressTimer;
                 item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
                 item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
-                
-                observeLottieElement(item); // Observe for intersection-based animation
+
+                observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
             }
         }
-        
-        function getGiftCountText(count) { 
+
+        function getGiftCountText(count) {
             if (count % 10 === 1 && count % 100 !== 11) return `${count} подарок`;
             if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} подарка`;
             return `${count} подарков`;
         }
-        function renderProfileGifts() { 
-            // Unobserve old elements before clearing
+
+        function renderProfileGifts() {
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
-            
-            const filteredGifts = ownedGifts.filter(gift => { 
+
+            const filteredGifts = ownedGifts.filter(gift => {
                 if (activeFilters.collection && gift.id !== activeFilters.collection) return false;
                 if (gift.isCollectible && gift.collectibleData) {
                     if (activeFilters.model && gift.collectibleData.model?.name !== activeFilters.model) return false;
@@ -1075,12 +1196,12 @@
             });
             profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
             if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) profileGiftCountSubtext.textContent += ` из ${ownedGifts.length}`;
-            const sortedGifts = [...filteredGifts].sort((a, b) => { 
+            const sortedGifts = [...filteredGifts].sort((a, b) => {
                 const aIsPinned = pinnedGifts.includes(a.instanceId); const bIsPinned = pinnedGifts.includes(b.instanceId);
                 if (aIsPinned && !bIsPinned) return -1; if (!aIsPinned && bIsPinned) return 1;
                 return (new Date(b.acquiredDate || 0)) - (new Date(a.acquiredDate || 0));
             });
-            if (sortedGifts.length === 0) { 
+            if (sortedGifts.length === 0) {
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
                 giftsGrid.innerHTML = `<p class="empty-grid-message">${ownedGifts.length > 0 ? 'Нет подарков, соответствующих фильтрам.' : 'У вас пока нет подарков. Время что-нибудь купить!'}</p>`;
             } else {
@@ -1088,41 +1209,41 @@
                 sortedGifts.forEach(gift => {
                     const card = createGiftCardDOM(gift);
                     giftsGrid.appendChild(card);
-                    observeLottieElement(card); // Observe new card
+                    observeLottieElement(card);
                 });
             }
-            renderTopPinnedGiftsPreview(); // This will also handle Lottie for pinned gifts
+            renderTopPinnedGiftsPreview();
             const hasNonCollectible = ownedGifts.some(g => !g.isCollectible);
-            if (upgradeAllGiftsButton) { 
+            if (upgradeAllGiftsButton) {
                 upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
                 if (!hasNonCollectible) { upgradeAllGiftsButton.textContent = '✨ Улучшить все'; upgradeAllGiftsButton.disabled = false; }
             }
         }
-        
-        function createGiftCardDOM(gift) { // Modified for Lottie in grid
+
+        function createGiftCardDOM(gift) {
             const card = document.createElement('div');
             card.className = 'gift-card';
             card.dataset.instanceId = gift.instanceId;
-        
+
             const imageContainer = document.createElement('div');
-            imageContainer.className = 'image-container'; // Generic container class from CSS
-            
+            imageContainer.className = 'image-container';
+
             const lottieContainer = document.createElement('div');
             lottieContainer.className = 'lottie-animation-container';
-            lottieContainer.style.display = 'none'; // Initially hidden, observer will show
-        
+            lottieContainer.style.display = 'none';
+
             const staticImage = document.createElement('img');
             staticImage.className = 'static-image-fallback';
             staticImage.loading = 'lazy';
-        
+
             let lottiePathForCard = null;
-        
+
             if (gift.isCollectible && gift.collectibleData) {
                 const cd = gift.collectibleData;
                 staticImage.src = cd.modelImage || gift.originalImage;
                 staticImage.alt = cd.model?.name || gift.name;
-                lottiePathForCard = cd.lottieModelPath; // Use model's Lottie
-                
+                lottiePathForCard = cd.lottieModelPath;
+
                 const bgDiv = document.createElement('div'); bgDiv.className = 'gift-card-bg-pattern';
                 if (cd.backdropColors) bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
                 else bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
@@ -1130,22 +1251,22 @@
                 if (cd.patternImage) { const pOverlay = document.createElement('div'); pOverlay.className = 'gift-card-pattern-overlay'; pOverlay.style.backgroundImage = `url('${cd.patternImage}')`; card.appendChild(pOverlay); }
                 const numDiv = document.createElement('div'); numDiv.className = 'collectible-number-badge'; numDiv.textContent = `#${cd.number}`; card.appendChild(numDiv);
                 if (cd.model?.rarityPermille) { const rBadge = document.createElement('div'); rBadge.className = 'gift-rarity-badge'; const tMock = Math.floor(1/(cd.model.rarityPermille/100000))*Math.max(100,cd.number/100); rBadge.textContent = `1 of ${(tMock/1000).toFixed(1)}K`; card.appendChild(rBadge); }
-        
-            } else { // Non-collectible
+
+            } else {
                 staticImage.src = gift.originalImage;
                 staticImage.alt = gift.name;
-                lottiePathForCard = gift.lottiePath; // Use original's Lottie
+                lottiePathForCard = gift.lottiePath;
             }
-            
+
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
-        
-            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';}; // Simple placeholder
-            
+
+            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';};
+
             imageContainer.appendChild(lottieContainer);
             imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
-        
-            if (pinnedGifts.includes(gift.instanceId)) { 
+
+            if (pinnedGifts.includes(gift.instanceId)) {
                 const pinDiv = document.createElement('div'); pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG; pinDiv.querySelector('svg').style.fill = 'var(--tg-theme-link-color)';
                 card.appendChild(pinDiv);
@@ -1154,53 +1275,45 @@
             setupLongPress(card, gift);
             return card;
         }
-        
-        function createPlaceholderImage() { 
-            const placeholder = document.createElement('div');
-            placeholder.className = 'placeholder-image';
-            placeholder.style.width = '100%'; placeholder.style.height = '100%';
-            placeholder.textContent = '🖼️';
-            return placeholder;
-        }
-        
-        function renderTopPinnedGiftsPreview() { // Modified for Lottie
-            // Destroy Lottie for old pinned gifts
+
+        function renderTopPinnedGiftsPreview() {
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => {
                 destroyLottieAnimation(childLottieContainer);
             });
             profileTopPinnedGifts.innerHTML = '';
-        
+
             pinnedGifts.slice(0, 7).forEach(instanceId => {
                 const gift = ownedGifts.find(g => g.instanceId === instanceId);
                 if (gift) {
                     const lottieContainer = document.createElement('div');
-                    lottieContainer.className = 'pinned-gift-item lottie-animation-container'; // Reused class for sizing
-                    
+                    lottieContainer.className = 'pinned-gift-item lottie-animation-container';
+
                     let lottiePathForPinned = null;
                     if (gift.isCollectible && gift.collectibleData?.lottieModelPath) {
                         lottiePathForPinned = gift.collectibleData.lottieModelPath;
                     } else if (gift.lottiePath) {
                         lottiePathForPinned = gift.lottiePath;
                     }
-        
+
                     if (lottiePathForPinned) {
-                        playLottieAnimation(lottieContainer, lottiePathForPinned, true); // Loop pinned gifts
-                    } else { // Fallback to static image if no Lottie
+                        playLottieAnimation(lottieContainer, lottiePathForPinned, true);
+                    } else {
                         lottieContainer.innerHTML = `<img src="${gift.isCollectible && gift.collectibleData?.modelImage ? gift.collectibleData.modelImage : gift.originalImage}" alt="${gift.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
                     }
                     profileTopPinnedGifts.appendChild(lottieContainer);
                 }
             });
         }
-        
-        function openBuyMultipleModal(id, name, originalImage, lottiePath) { // Pass Lottie path
-            currentGiftToBuyMultiple = { id, name, originalImage, lottiePath }; // Store Lottie path
+
+        function openBuyMultipleModal(id, name, originalImage, lottiePath) {
+            currentGiftToBuyMultiple = { id, name, originalImage, lottiePath };
             buyMultipleModalTitle.textContent = `Купить "${name}"`;
             buyMultipleGiftName.textContent = `Укажите количество для "${name}"`;
             buyMultipleQuantityInput.value = "1";
             buyMultipleModal.classList.add('active');
             buyMultipleQuantityInput.focus();
         }
+
         function handleConfirmBuyMultiple() {
             if (!currentGiftToBuyMultiple) return;
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
@@ -1209,20 +1322,22 @@
             closeModal(buyMultipleModal);
             currentGiftToBuyMultiple = null;
         }
-        function buyGift(id, name, originalImage, lottiePath, quantity = 1) { // Accept lottiePath
+
+        function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
             for (let i = 0; i < quantity; i++) {
                 ownedGifts.unshift({
-                    id, instanceId: generateUniqueId(), name, originalImage, lottiePath, // Store Lottie path
+                    id, instanceId: generateUniqueId(), name, originalImage, lottiePath,
                     isCollectible: false, collectibleData: null, acquiredDate: new Date().toISOString()
                 });
             }
             saveState(); renderProfileGifts(); populateFilterOptions();
             tg.HapticFeedback.notificationOccurred('success');
             const message = quantity > 1 ? `"${name}" (${quantity} шт.) добавлены!` : `"${name}" добавлен!`;
-            tg.showAlert(message); showPage('profile-page');
+            tg.showAlert(message);
+            showPage('profile-page');
         }
-        
-        function openGiftDetailByInstanceId(instanceId) { 
+
+        function openGiftDetailByInstanceId(instanceId) {
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift) return;
             if (gift.isCollectible && gift.collectibleData) {
@@ -1233,7 +1348,7 @@
                 modalCollectibleNumberSubtext.textContent = `Коллекционный #${cd.number}`;
                 modalCollectibleBg.style.background = `radial-gradient(circle, ${cd.backdropColors?.centerColor || '#555'}, ${cd.backdropColors?.edgeColor || '#333'})`;
                 modalCollectiblePattern.style.backgroundImage = cd.patternImage ? `url('${cd.patternImage}')` : 'none';
-                if (cd.lottieModelPath) { playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true); modalCollectibleModelImgStatic.style.display = 'none'; } 
+                if (cd.lottieModelPath) { playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true); modalCollectibleModelImgStatic.style.display = 'none'; }
                 else { destroyLottieAnimation(modalLottieCollectibleModel); modalCollectibleModelImgStatic.src = cd.modelImage || gift.originalImage; modalCollectibleModelImgStatic.style.display = 'block'; modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; }; }
                 const ownerName = profileName.textContent; const ownerAvatar = profileAvatar.src;
                 modalCollectibleInfoTable.innerHTML = `
@@ -1246,7 +1361,7 @@
                 collectibleDetailModal.classList.add('active');
             } else {
                 modalGiftName.textContent = "Сохраненный подарок";
-                if (gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; } 
+                if (gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; }
                 else { destroyLottieAnimation(modalLottieGiftOriginal); modalGiftImageStatic.src = gift.originalImage; modalGiftImageStatic.style.display = 'block'; modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };}
                 modalGiftDescription1.textContent = `Добавьте «${gift.name}» в свой профиль или улучшите его.`;
                 modalGiftDescription2.textContent = "Только вы можете видеть имя отправителя.";
@@ -1260,6 +1375,7 @@
                 if (inlineUpgradeBtn) inlineUpgradeBtn.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
             }
         }
+
         async function upgradeSingleGiftLogic(giftToUpgrade) {
             if (giftToUpgrade.isCollectible) return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'skipped' };
             const giftNameEncoded = encodeURIComponent(giftToUpgrade.name);
@@ -1295,7 +1411,8 @@
                 return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'failed', error: error.message };
             }
         }
-        async function handleSingleGiftUpgradeFromModal(instanceId) { 
+
+        async function handleSingleGiftUpgradeFromModal(instanceId) {
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift || gift.isCollectible) return;
             const upgradeButton = document.getElementById(`modal-action-upgrade-gift-${instanceId}`);
@@ -1314,7 +1431,8 @@
                 if (upgradeButton) { upgradeButton.textContent = 'Улучшить'; upgradeButton.disabled = false; }
             }
         }
-        async function handleUpgradeAllGifts() { 
+
+        async function handleUpgradeAllGifts() {
             const giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible);
             if (giftsToUpgrade.length === 0) { tg.showAlert("Нет подарков для улучшения."); return; }
             const originalButtonText = upgradeAllGiftsButton.textContent;
@@ -1329,11 +1447,11 @@
                 if (cardElement) cardElement.classList.remove('is-updating');
                 if (result.status === 'success') {
                     successCount++;
-                    if (cardElement && result.collectibleData) { // Card still exists and upgrade was successful
+                    if (cardElement && result.collectibleData) {
                         const updatedGiftData = ownedGifts.find(g => g.instanceId === gift.instanceId);
                         if (updatedGiftData) {
-                            const newCard = createGiftCardDOM(updatedGiftData); // Create new DOM fragment
-                            cardElement.innerHTML = newCard.innerHTML; // Replace content
+                            const newCard = createGiftCardDOM(updatedGiftData);
+                            cardElement.innerHTML = newCard.innerHTML;
                             cardElement.dataset.lottiePath = updatedGiftData.isCollectible && updatedGiftData.collectibleData ? updatedGiftData.collectibleData.lottieModelPath : updatedGiftData.lottiePath;
                             setupLongPress(cardElement, updatedGiftData);
                         }
@@ -1350,7 +1468,8 @@
             upgradeAllGiftsButton.style.display = stillHasNonCollectible ? 'inline-block' : 'none';
             if (stillHasNonCollectible) { upgradeAllGiftsButton.textContent = originalButtonText; upgradeAllGiftsButton.disabled = false; }
         }
-        function selectWeightedRandom(items) { 
+
+        function selectWeightedRandom(items) {
             if (!items || items.length === 0) return null;
             let totalWeight = items.reduce((sum, item) => sum + (item.rarityPermille || 1), 0);
             if (totalWeight === 0) return items[Math.floor(Math.random() * items.length)];
@@ -1361,13 +1480,15 @@
             }
             return items[items.length - 1];
         }
-        function closeModal(modalElement) { 
+
+        function closeModal(modalElement) {
             if (modalElement.id === 'gift-detail-modal') destroyLottieAnimation(modalLottieGiftOriginal);
             if (modalElement.id === 'collectible-detail-modal') destroyLottieAnimation(modalLottieCollectibleModel);
             modalElement.classList.remove('active');
         }
+
         let currentLongPressGift = null; let longPressTimer;
-        function setupLongPress(element, gift) { 
+        function setupLongPress(element, gift) {
             element.addEventListener('touchstart', (e) => {
                 clearTimeout(longPressTimer);
                 longPressTimer = setTimeout(() => openLongPressMenu(gift, e.touches[0]), 500);
@@ -1376,6 +1497,7 @@
             element.addEventListener('touchmove', () => clearTimeout(longPressTimer));
             element.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(longPressTimer); openLongPressMenu(gift, e); });
         }
+
         function openLongPressMenu(gift, eventCoords) {
             currentLongPressGift = gift;
             if (!gift.isCollectible) { menuPinAction.textContent = 'Закрепить (только коллекционные)'; menuPinAction.classList.add('disabled'); }
@@ -1385,9 +1507,11 @@
             longPressMenu.classList.remove('hidden');
             document.addEventListener('click', closeLongPressMenuOnClickOutside, { once: true, capture: true });
         }
+
         function closeLongPressMenuOnClickOutside(event) {
             if (!longPressMenu.contains(event.target) && event.target !== longPressMenu) { longPressMenu.classList.add('hidden'); currentLongPressGift = null; }
         }
+
         function handlePinAction() {
             if (!currentLongPressGift || menuPinAction.classList.contains('disabled')) {
                 longPressMenu.classList.add('hidden');
@@ -1400,12 +1524,13 @@
             saveState(); renderProfileGifts(); longPressMenu.classList.add('hidden');
             tg.HapticFeedback.impactOccurred(isPinned ? 'light' : 'medium'); currentLongPressGift = null;
         }
+
         function showTooManyPinsModal() {
             unpinSelectionGrid.innerHTML = '';
             pinnedGifts.forEach(pinnedInstanceId => {
                 const giftToUnpin = ownedGifts.find(g => g.instanceId === pinnedInstanceId);
                 if (giftToUnpin) {
-                    const card = createGiftCardDOM(giftToUnpin); // This will setup for Lottie observation too
+                    const card = createGiftCardDOM(giftToUnpin);
                     card.addEventListener('click', () => {
                         pinnedGifts = pinnedGifts.filter(id => id !== pinnedInstanceId);
                         if (currentLongPressGift && currentLongPressGift.isCollectible && !pinnedGifts.includes(currentLongPressGift.instanceId)) {
@@ -1415,17 +1540,107 @@
                         tg.HapticFeedback.impactOccurred('medium'); currentLongPressGift = null;
                     });
                     unpinSelectionGrid.appendChild(card);
-                    observeLottieElement(card); // Observe the card in the modal grid
+                    observeLottieElement(card);
                 }
             });
             tooManyPinsModal.classList.add('active');
         }
-        function handleWearAction() { 
+
+        function handleWearAction() {
             const currentModalInstanceId = collectibleDetailModal.dataset.instanceId; if (!currentModalInstanceId) return;
             if (wornGiftInstanceId === currentModalInstanceId) { wornGiftInstanceId = null; collectibleActionWear.querySelector('.text').textContent = 'Надеть'; }
             else { wornGiftInstanceId = currentModalInstanceId; collectibleActionWear.querySelector('.text').textContent = 'Снять'; }
             applyWornGiftStyles(wornGiftInstanceId); saveState(); tg.HapticFeedback.impactOccurred('light');
         }
+
+        // --- NEW GIFT TRANSFER LOGIC ---
+
+        function openTransferModal() {
+            giftInstanceIdToTransfer = collectibleDetailModal.dataset.instanceId;
+            if (!giftInstanceIdToTransfer) return;
+            transferUsernameInput.value = '';
+            transferGiftModal.classList.add('active');
+            transferUsernameInput.focus();
+        }
+
+        function handleConfirmTransfer() {
+            const recipientUsername = transferUsernameInput.value.trim().replace('@', '');
+            if (!recipientUsername) {
+                tg.showAlert("Пожалуйста, введите имя пользователя получателя.");
+                return;
+            }
+
+            const giftIndex = ownedGifts.findIndex(g => g.instanceId === giftInstanceIdToTransfer);
+            if (giftIndex === -1) {
+                tg.showAlert("Ошибка: Подарок не найден.");
+                return;
+            }
+            const giftToSend = ownedGifts[giftIndex];
+
+            // 1. Create payload and encode it
+            const payload = {
+                gift: giftToSend,
+                to: recipientUsername
+            };
+            const encodedPayload = btoa(JSON.stringify(payload));
+
+            // 2. Generate the shareable link
+            const shareUrl = `https://t.me/${BOT_USERNAME}/app?startapp=receive${encodedPayload}`;
+            shareLinkInput.value = shareUrl;
+
+            // 3. Remove gift from sender's inventory
+            ownedGifts.splice(giftIndex, 1);
+            if (wornGiftInstanceId === giftInstanceIdToTransfer) wornGiftInstanceId = null;
+            pinnedGifts = pinnedGifts.filter(id => id !== giftInstanceIdToTransfer);
+            saveState();
+            renderProfileGifts();
+            applyWornGiftStyles(null);
+
+            // 4. Close old modals and show the share link modal
+            closeModal(transferGiftModal);
+            closeModal(collectibleDetailModal);
+            shareLinkModal.classList.add('active');
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        function checkForReceivedGift() {
+            const startParam = tg.initDataUnsafe?.start_param;
+            if (!startParam || !startParam.startsWith('receive')) {
+                return;
+            }
+
+            const encodedPayload = startParam.substring('receive'.length);
+            try {
+                const decodedPayload = atob(encodedPayload);
+                const payload = JSON.parse(decodedPayload);
+                const { gift, to } = payload;
+                const currentUser = tg.initDataUnsafe?.user || mockUser;
+
+                if (currentUser.username && currentUser.username.toLowerCase() === to.toLowerCase()) {
+                    const giftExists = ownedGifts.some(g => g.instanceId === gift.instanceId);
+                    if (giftExists) {
+                        tg.showAlert("Этот подарок уже был получен.");
+                    } else {
+                        gift.acquiredDate = new Date().toISOString(); // Update acquisition date
+                        ownedGifts.unshift(gift);
+                        saveState();
+                        renderProfileGifts();
+                        tg.showAlert(`Вы получили подарок: "${gift.name}"! Он добавлен в вашу коллекцию.`);
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
+                } else {
+                    tg.showAlert(`Этот подарок предназначен для @${to}, а не для вас.`);
+                }
+            } catch (e) {
+                console.error("Failed to process received gift link:", e);
+                tg.showAlert("Не удалось обработать ссылку на подарок. Возможно, она повреждена.");
+            } finally {
+                // Clean the URL to prevent re-processing on reload
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        // --- FILTER LOGIC ---
         let filterPopupLongPressTimer;
         function setupFilterPopupTrigger() {
             filterLongPressTarget.addEventListener('touchstart', (e) => { filterPopupLongPressTimer = setTimeout(openFilterPopup, 700); }, { passive: true });
@@ -1433,7 +1648,9 @@
             filterLongPressTarget.addEventListener('touchmove', () => clearTimeout(filterPopupLongPressTimer));
             filterLongPressTarget.addEventListener('contextmenu', (e) => { e.preventDefault(); openFilterPopup(); });
         }
+
         function openFilterPopup() { populateFilterOptions(); filterPopup.classList.add('active'); }
+
         function populateFilterOptions() {
             const uniqueCollections = [...new Map(ownedGifts.map(item => [item.id, {id: item.id, name: item.name, image: item.originalImage}])).values()];
             renderFilterOptions(filterOptionsCollections, uniqueCollections, 'collection', (item) => `<img src="${item.image}" alt="${item.name}">`);
@@ -1446,9 +1663,10 @@
             const collectibleGifts = ownedGifts.filter(g => g.isCollectible && g.collectibleData?.backdrop);
             const uniqueBackdrops = [...new Map(collectibleGifts.map(item => [item.collectibleData.backdrop.name, {name: item.collectibleData.backdrop.name, colors: item.collectibleData.backdropColors}])).values()];
             renderFilterOptions(filterOptionsBackdrops, uniqueBackdrops, 'backdrop', (item) => `<div class="gradient-square" style="background: radial-gradient(circle, ${item.colors.centerColor}, ${item.colors.edgeColor});"></div>`);
-            const uniquePatterns = [...new Map(collectibleGifts.filter(g => g.collectibleData.pattern).map(item => [item.collectibleData.pattern.name, {name: item.collectibleData.pattern.name, image: item.collectibleData.patternImage}])).values()];
+            const uniquePatterns = [...new Map(collectibleGifts.filter(g => g.collectibleData && g.collectibleData.pattern).map(item => [item.collectibleData.pattern.name, {name: item.collectibleData.pattern.name, image: item.collectibleData.patternImage}])).values()];
             renderFilterOptions(filterOptionsPatterns, uniquePatterns, 'pattern', (item) => `<img src="${item.image}" alt="${item.name}">`);
         }
+
         function renderFilterOptions(container, items, filterType, displayFn) {
             container.innerHTML = '';
             items.forEach(item => {
@@ -1469,76 +1687,100 @@
                 container.appendChild(optionEl);
             });
         }
+
         function handleApplyFilters() { renderProfileGifts(); saveState(); closeModal(filterPopup); }
+
         function handleClearFilters() {
             activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
             populateFilterOptions(); renderProfileGifts(); saveState();
         }
+
         function handleClearAllData() {
             tg.showConfirm("Вы уверены, что хотите удалить все свои подарки и данные? Это действие необратимо.", (confirmed) => {
                 if (confirmed) {
                     ownedGifts = []; pinnedGifts = []; wornGiftInstanceId = null;
                     activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-                    // Clear Lottie from grids and pinned area
+
                     Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
                     Array.from(buyGiftsGrid.children).forEach(child => unobserveLottieElement(child));
                     Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
-                    
+
                     saveState(); applyWornGiftStyles(null); renderProfileGifts(); populateFilterOptions();
                     tg.HapticFeedback.notificationOccurred('success'); tg.showAlert("Все данные удалены.");
                     closeModal(filterPopup);
                 }
             });
         }
-        
+
         function setupEventListeners() {
+            // Page Navigation
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
+
+            // Native Back Button
+            tg.BackButton.onClick(handleBackButton);
+
+            // Actions
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
-            
-            // Back buttons
-            profileBackButton.addEventListener('click', () => showPage('profile-page')); // For future use-cases
-            backToProfileBuyButton.addEventListener('click', () => showPage('profile-page'));
-            backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
-        
-            // Modal close buttons
+            collectibleActionSend.addEventListener('click', openTransferModal);
+            collectibleActionWear.addEventListener('click', handleWearAction);
+
+            // Modals
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
             cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
-            cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            
-            // Modal specific actions
-            collectibleActionWear.addEventListener('click', handleWearAction);
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
-        
-            // Context / Long-press menu
+            cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
+
+            // New Transfer Modals Listeners
+            confirmTransferButton.addEventListener('click', handleConfirmTransfer);
+            cancelTransferButton.addEventListener('click', () => closeModal(transferGiftModal));
+            copyLinkButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+                    tg.showAlert('Ссылка скопирована!');
+                    tg.HapticFeedback.notificationOccurred('success');
+                });
+            });
+            closeShareLinkButton.addEventListener('click', () => closeModal(shareLinkModal));
+
+            // Context Menu
             menuPinAction.addEventListener('click', handlePinAction);
-            
+
             // Filters
             setupFilterPopupTrigger();
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
             clearAllDataButton.addEventListener('click', handleClearAllData);
-        
+
             // Close modals on overlay click
-            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup].forEach(modal => {
+            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, transferGiftModal, shareLinkModal].forEach(modal => {
                 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
             });
         }
-        
+
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
             initApp();
         } else {
             console.warn("Telegram WebApp не найден. Используются мок-данные и тема по умолчанию.");
             document.addEventListener('DOMContentLoaded', () => {
-                tg.initDataUnsafe = { user: mockUser };
-                tg.themeParams = {};
-                tg.showAlert = (message) => alert(message);
-                tg.showConfirm = (message, callback) => callback(confirm(message));
-                tg.HapticFeedback = {
-                    impactOccurred: (style) => console.log(`Haptic: ${style}`),
-                    notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
+                tg = {
+                    initDataUnsafe: { user: mockUser, start_param: new URLSearchParams(window.location.search).get('startapp') },
+                    themeParams: {},
+                    showAlert: (message) => alert(message),
+                    showConfirm: (message, callback) => callback(confirm(message)),
+                    HapticFeedback: {
+                        impactOccurred: (style) => console.log(`Haptic: ${style}`),
+                        notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
+                    },
+                    BackButton: {
+                        isVisible: false,
+                        show() { this.isVisible = true; console.log('BackButton: show'); },
+                        hide() { this.isVisible = false; console.log('BackButton: hide'); },
+                        onClick(cb) { console.log('BackButton: onClick handler set.'); window.handleBackButtonClick = cb; } // Assign to global for console access
+                    },
+                    ready: () => {},
+                    expand: () => {},
+                    onEvent: () => {}
                 };
-                tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
                 initApp();
             });
         }
