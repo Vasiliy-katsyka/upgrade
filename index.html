@@ -89,13 +89,26 @@
             color: var(--tg-theme-text-color);
             font-weight: 500;
         }
+        /* UPDATED: Menu button style */
         .page-header .menu-button {
-            background: none; border: none;
+            background: none; 
+            border: none;
             color: var(--tg-theme-link-color);
-            font-size: 1.8em;
+            /* font-size: 1.8em; Removed fixed font-size for better SVG control */
             margin-left: auto;
             cursor: pointer;
-            padding: 5px;
+            padding: 5px 10px; /* Increased horizontal padding for tap target */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px; /* Minimum tap target size */
+            min-height: 44px; /* Minimum tap target size */
+            box-sizing: border-box; /* Ensure padding/border included in size */
+        }
+        .page-header .menu-button svg {
+            width: 24px; /* Larger SVG icon */
+            height: 24px;
+            fill: var(--tg-theme-link-color);
         }
 
         .profile-page-content {
@@ -688,7 +701,7 @@
                 <div class="page-header">
                     <button id="back-from-collectible-modal" class="back-button"></button>
                     <h2 id="modal-collectible-header-title">Коллекционный</h2>
-                    <button class="menu-button">⋮</button>
+                    <button class="menu-button">⋮</button> <!-- This is the button for the 3 dots menu -->
                 </div>
                 <div class="modal-scrollable-content">
                     <div class="collectible-display-area">
@@ -706,7 +719,6 @@
                         <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Передать</span></button>
                         <button id="collectible-action-wear"><span class="icon"></span><span class="text">Надеть</span></button>
                         <button id="collectible-action-sell"><span class="icon"></span><span class="text">Продать</span></button>
-                        <!-- Кнопки share/share to story удалены отсюда -->
                     </div>
                     <div class="collectible-info-section">
                         <div id="modal-collectible-info-table" class="modal-info-table"></div>
@@ -852,20 +864,20 @@
     <div id="long-press-menu" class="hidden">
         <ul>
             <li id="menu-pin-action">Закрепить</li>
-            <li id="menu-share-image-action" class="hidden">Поделиться изображением</li> <!-- NEW: Added share image action -->
+            <li id="menu-share-image-action" class="hidden">Поделиться изображением</li>
         </ul>
     </div>
     <script>
-        // Ensure Lottie Player is loaded (already in <head>)
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
-        const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M15,4H17L19,7H16M11,4H13L14,7H10M7,4H9L8,7H5M6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
+        const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`; // Corrected Diamond SVG
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>`;
+        const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`; // Vertical dots SVG
         
         let allAvailableGifts = {};
         let ownedGifts = [];
@@ -882,7 +894,7 @@
         const profileHeaderPatternOverlay = document.getElementById('profile-header-pattern-overlay');
         const profileAvatar = document.getElementById('profile-avatar');
         const profileName = document.getElementById('profile-name');
-        const wornGiftIconContainer = document.getElementById('worn-gift-icon-container'); // Changed from img
+        const wornGiftIconContainer = document.getElementById('worn-gift-icon-container');
         const profileGiftCountSubtext = document.getElementById('profile-gift-count-subtext');
         const profileStatus = document.getElementById('profile-status');
         const profilePhone = document.getElementById('profile-phone');
@@ -922,7 +934,7 @@
         const collectibleActionWear = document.getElementById('collectible-action-wear');
         const collectibleActionSell = document.getElementById('collectible-action-sell');
         const closeCollectibleDetailModalButton = document.getElementById('close-collectible-detail-modal');
-        const collectibleMenuButton = collectibleDetailModal.querySelector('.menu-button'); // NEW: Get menu button from collectible modal
+        const collectibleMenuButton = collectibleDetailModal.querySelector('.menu-button');
         
         const tooManyPinsModal = document.getElementById('too-many-pins-modal');
         const unpinSelectionGrid = document.getElementById('unpin-selection-grid');
@@ -949,7 +961,6 @@
         const clearAllDataButton = document.getElementById('clear-all-data-button');
         const clearDataIconPlaceholder = document.getElementById('clear-data-icon-placeholder');
 
-        // NEW: Custom Buy Modal elements
         const customBuyModal = document.getElementById('custom-buy-modal');
         const customBuyBaseGiftsGrid = document.getElementById('custom-buy-base-gifts-grid');
         const customBuyModelsSection = document.getElementById('custom-buy-models-section');
@@ -961,23 +972,19 @@
         const customBuyConfirmButton = document.getElementById('custom-buy-confirm-button');
         const customBuyCancelButton = document.getElementById('custom-buy-cancel-button');
 
-        // NEW: Generated Image Modal elements
         const generatedImageModal = document.getElementById('generated-image-modal');
         const generatedImagePreview = document.getElementById('generated-image-preview');
         const generatedImageMessage = document.getElementById('generated-image-message');
         const downloadGeneratedImageButton = document.getElementById('download-generated-image');
         const closeGeneratedImageModalButton = document.getElementById('close-generated-image-modal');
 
-        // NEW: Share Image Action in Long Press Menu
         const menuShareImageAction = document.getElementById('menu-share-image-action');
 
-
-        // NEW: Exit Filter Mode button
         const exitFilterModeButton = document.createElement('button');
         exitFilterModeButton.id = 'exit-filter-mode-button';
         exitFilterModeButton.className = 'action-button hidden';
         exitFilterModeButton.textContent = 'Выйти из режима фильтра';
-        document.querySelector('.profile-gifts-actions').prepend(exitFilterModeButton); // Add it to the actions bar
+        document.querySelector('.profile-gifts-actions').prepend(exitFilterModeButton);
         
         const russianFirstNames = ["Василий", "Иван", "Алексей", "Дмитрий", "Сергей"];
         const russianLastNames = ["Дуров", "Петров", "Иванов", "Смирнов", "Кузнецов"];
@@ -999,7 +1006,6 @@
         
         let lottieIntersectionObserver;
 
-        // NEW: Variables for custom gift selection
         let selectedCustomGift = {
             id: null,
             name: null,
@@ -1013,10 +1019,7 @@
             patternImage: null,
             backdropColors: null
         };
-        // NEW: Caches for fetched collectible parts (models, backdrops, patterns)
-        let cachedCollectibleParts = {}; // { giftId: { models: [], backdrops: [], patterns: [] } }
-
-        // NEW: Triple tap tracking for collectible modal
+        let cachedCollectibleParts = {};
         let lastTap = 0;
         let tapCount = 0;
         
@@ -1030,7 +1033,7 @@
             container.lottieInstance = anim;
             if (isGridItem && !loop) {
                 anim.addEventListener('complete', () => {
-                    if (container.lottieInstance === anim) { // Ensure it's the current animation
+                    if (container.lottieInstance === anim) {
                         container.dataset.playedOnce = 'true';
                     }
                 });
@@ -1040,8 +1043,8 @@
             if (container && container.lottieInstance) {
                 container.lottieInstance.destroy();
                 delete container.lottieInstance;
-                delete container.dataset.playedOnce; // Reset for re-play on re-view
-                container.innerHTML = ''; // Clear container
+                delete container.dataset.playedOnce;
+                container.innerHTML = '';
             }
         }
         
@@ -1055,14 +1058,13 @@
                 if (entry.isIntersecting) {
                     if (lottiePath && lottieContainer) {
                         if(staticFallback) staticFallback.style.display = 'none';
-                        lottieContainer.style.display = 'flex'; // Make sure it's visible
-                        // Play once, then stop. Replay if it scrolls out and back in.
+                        lottieContainer.style.display = 'flex';
                         playLottieAnimation(lottieContainer, lottiePath, false, true);
                     }
                 } else {
                     if (lottieContainer) {
                         destroyLottieAnimation(lottieContainer);
-                        if(staticFallback) staticFallback.style.display = 'block'; // Show fallback
+                        if(staticFallback) staticFallback.style.display = 'block';
                         lottieContainer.style.display = 'none';
                     }
                 }
@@ -1071,9 +1073,9 @@
         
         function initLottieObserver() {
             lottieIntersectionObserver = new IntersectionObserver(handleLottieIntersection, {
-                root: null, // viewport
-                rootMargin: '100px', // Load/unload when 100px from viewport edge
-                threshold: 0.01 // Trigger even if 1% is visible
+                root: null,
+                rootMargin: '100px',
+                threshold: 0.01
             });
         }
         
@@ -1083,10 +1085,10 @@
             }
         }
         function unobserveLottieElement(element) {
-             if (lottieIntersectionObserver && element.dataset.lottiePath) { // Check if it was observed
+             if (lottieIntersectionObserver && element.dataset.lottiePath) {
                 lottieIntersectionObserver.unobserve(element);
                 const lottieContainer = element.querySelector('.lottie-animation-container');
-                if(lottieContainer) destroyLottieAnimation(lottieContainer); // Clean up immediately
+                if(lottieContainer) destroyLottieAnimation(lottieContainer);
             }
         }
         
@@ -1104,13 +1106,14 @@
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
+            collectibleMenuButton.innerHTML = MENU_DOTS_SVG; // Set SVG for menu button
         
             loadUserData(); loadState();
             applyWornGiftStyles(wornGiftInstanceId);
             renderProfileGifts();
             setupEventListeners();
             fetchAvailableGifts();
-            displayFilterExitButton(); // NEW: Initial display of filter button
+            displayFilterExitButton();
         }
         
         function applyTheme(themeParams) { 
@@ -1128,7 +1131,7 @@
                 document.body.style.backgroundColor = themeParams.bg_color || 'var(--tg-theme-bg-color)';
                 document.body.style.color = themeParams.text_color || 'var(--tg-theme-text-color)';
                 if (upgradeAllGiftsButton) upgradeAllGiftsButton.style.backgroundColor = themeParams.accent_text_color || 'var(--tg-theme-accent-blue)';
-                if (exitFilterModeButton) exitFilterModeButton.style.backgroundColor = themeParams.accent_text_color || 'var(--tg-theme-accent-blue)'; // NEW: Apply theme to new button
+                if (exitFilterModeButton) exitFilterModeButton.style.backgroundColor = themeParams.accent_text_color || 'var(--tg-theme-accent-blue)';
                 applyWornGiftStyles(wornGiftInstanceId);
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
@@ -1157,11 +1160,11 @@
         
         function applyWornGiftStyles(instanceId) {
             const currentWornGift = ownedGifts.find(g => g.instanceId === instanceId && g.isCollectible);
-            destroyLottieAnimation(wornGiftIconContainer); // Clear previous if any
+            destroyLottieAnimation(wornGiftIconContainer);
             if (currentWornGift && currentWornGift.collectibleData) {
                 if (currentWornGift.collectibleData.lottieModelPath) {
                     playLottieAnimation(wornGiftIconContainer, currentWornGift.collectibleData.lottieModelPath, true);
-                } else if (currentWornGift.collectibleData.modelImage) { // Fallback to static if no Lottie
+                } else if (currentWornGift.collectibleData.modelImage) {
                     wornGiftIconContainer.innerHTML = `<img src="${currentWornGift.collectibleData.modelImage}" style="width:100%; height:100%; object-fit:contain;">`;
                 }
                 wornGiftIconContainer.classList.remove('hidden');
@@ -1191,7 +1194,7 @@
                 const response = await fetch(GIFTS_JSON_URL);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 allAvailableGifts = await response.json();
-                renderAvailableGifts(); // This will now set up Lottie observation for buy grid
+                renderAvailableGifts();
                 populateFilterOptions();
             } catch (error) {
                 console.error("Не удалось загрузить доступные подарки:", error);
@@ -1201,7 +1204,7 @@
             }
         }
         
-        function renderAvailableGifts() { // Modified for Lottie
+        function renderAvailableGifts() {
             buyGiftsGrid.innerHTML = '';
             if (Object.keys(allAvailableGifts).length === 0 && !buyGiftsLoadingSpinner.classList.contains('hidden')) {
                 buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">Сейчас нет доступных подарков.</p>`; return;
@@ -1215,7 +1218,7 @@
                 item.className = 'buy-gift-item';
                 item.dataset.id = id; item.dataset.name = name;
                 item.dataset.originalImage = originalImageUrl;
-                item.dataset.lottiePath = lottiePath; // For IntersectionObserver
+                item.dataset.lottiePath = lottiePath;
         
                 item.innerHTML = `
                     <div class="image-container">
@@ -1226,14 +1229,14 @@
                     <div class="gift-price"><span class="star-icon">⭐</span> Бесплатно</div>
                     <div class="limited-label">Ограничено</div>
                 `;
-                item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1)); // Pass Lottie path
+                item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
                 let buyItemLongPressTimer;
                 item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
                 item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
                 
-                observeLottieElement(item); // Observe for intersection-based animation
+                observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
             }
         }
@@ -1243,8 +1246,7 @@
             if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} подарка`;
             return `${count} подарков`;
         }
-        function renderProfileGifts() { /* Modified to unobserve old elements */ 
-            // Unobserve old elements before clearing
+        function renderProfileGifts() {
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
             
@@ -1272,29 +1274,29 @@
                 sortedGifts.forEach(gift => {
                     const card = createGiftCardDOM(gift);
                     giftsGrid.appendChild(card);
-                    observeLottieElement(card); // Observe new card
+                    observeLottieElement(card);
                 });
             }
-            renderTopPinnedGiftsPreview(); // This will also handle Lottie for pinned gifts
+            renderTopPinnedGiftsPreview();
             const hasNonCollectible = ownedGifts.some(g => !g.isCollectible);
             if (upgradeAllGiftsButton) { 
                 upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
                 if (!hasNonCollectible) { upgradeAllGiftsButton.textContent = '✨ Улучшить все'; upgradeAllGiftsButton.disabled = false; }
             }
-            displayFilterExitButton(); // NEW: Update button visibility after rendering
+            displayFilterExitButton();
         }
         
-        function createGiftCardDOM(gift) { // Modified for Lottie in grid
+        function createGiftCardDOM(gift) {
             const card = document.createElement('div');
             card.className = 'gift-card';
             card.dataset.instanceId = gift.instanceId;
         
             const imageContainer = document.createElement('div');
-            imageContainer.className = 'image-container'; // Generic container class from CSS
+            imageContainer.className = 'image-container';
             
             const lottieContainer = document.createElement('div');
             lottieContainer.className = 'lottie-animation-container';
-            lottieContainer.style.display = 'none'; // Initially hidden, observer will show
+            lottieContainer.style.display = 'none';
         
             const staticImage = document.createElement('img');
             staticImage.className = 'static-image-fallback';
@@ -1306,8 +1308,7 @@
                 const cd = gift.collectibleData;
                 staticImage.src = cd.modelImage || gift.originalImage;
                 staticImage.alt = cd.model?.name || gift.name;
-                lottiePathForCard = cd.lottieModelPath; // Use model's Lottie
-                // ... (bg, pattern, badges setup - same as before) ...
+                lottiePathForCard = cd.lottieModelPath;
                 const bgDiv = document.createElement('div'); bgDiv.className = 'gift-card-bg-pattern';
                 if (cd.backdropColors) bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
                 else bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
@@ -1316,15 +1317,15 @@
                 const numDiv = document.createElement('div'); numDiv.className = 'collectible-number-badge'; numDiv.textContent = `#${cd.number}`; card.appendChild(numDiv);
                 if (cd.model?.rarityPermille) { const rBadge = document.createElement('div'); rBadge.className = 'gift-rarity-badge'; const tMock = Math.floor(1/(cd.model.rarityPermille/100000))*Math.max(100,cd.number/100); rBadge.textContent = `1 of ${(tMock/1000).toFixed(1)}K`; card.appendChild(rBadge); }
         
-            } else { // Non-collectible
+            } else {
                 staticImage.src = gift.originalImage;
                 staticImage.alt = gift.name;
-                lottiePathForCard = gift.lottiePath; // Use original's Lottie
+                lottiePathForCard = gift.lottiePath;
             }
             
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
         
-            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';}; // Simple placeholder
+            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';};
             
             imageContainer.appendChild(lottieContainer);
             imageContainer.appendChild(staticImage);
@@ -1348,8 +1349,7 @@
             return placeholder;
         }
         
-        function renderTopPinnedGiftsPreview() { // Modified for Lottie
-            // Destroy Lottie for old pinned gifts
+        function renderTopPinnedGiftsPreview() {
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => {
                 destroyLottieAnimation(childLottieContainer);
             });
@@ -1359,7 +1359,7 @@
                 const gift = ownedGifts.find(g => g.instanceId === instanceId);
                 if (gift) {
                     const lottieContainer = document.createElement('div');
-                    lottieContainer.className = 'pinned-gift-item lottie-animation-container'; // Reused class for sizing
+                    lottieContainer.className = 'pinned-gift-item lottie-animation-container';
                     
                     let lottiePathForPinned = null;
                     if (gift.isCollectible && gift.collectibleData?.lottieModelPath) {
@@ -1369,8 +1369,8 @@
                     }
         
                     if (lottiePathForPinned) {
-                        playLottieAnimation(lottieContainer, lottiePathForPinned, true); // Loop pinned gifts
-                    } else { // Fallback to static image if no Lottie
+                        playLottieAnimation(lottieContainer, lottiePathForPinned, true);
+                    } else {
                         lottieContainer.innerHTML = `<img src="${gift.isCollectible && gift.collectibleData?.modelImage ? gift.collectibleData.modelImage : gift.originalImage}" alt="${gift.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
                     }
                     profileTopPinnedGifts.appendChild(lottieContainer);
@@ -1378,15 +1378,15 @@
             });
         }
         
-        function openBuyMultipleModal(id, name, originalImage, lottiePath) { // Pass Lottie path
-            currentGiftToBuyMultiple = { id, name, originalImage, lottiePath }; // Store Lottie path
+        function openBuyMultipleModal(id, name, originalImage, lottiePath) {
+            currentGiftToBuyMultiple = { id, name, originalImage, lottiePath };
             buyMultipleModalTitle.textContent = `Купить "${name}"`;
             buyMultipleGiftName.textContent = `Укажите количество для "${name}"`;
             buyMultipleQuantityInput.value = "1";
             buyMultipleModal.classList.add('active');
             buyMultipleQuantityInput.focus();
         }
-        function handleConfirmBuyMultiple() { /* Modified to pass lottiePath to buyGift */
+        function handleConfirmBuyMultiple() {
             if (!currentGiftToBuyMultiple) return;
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Пожалуйста, введите корректное количество."); return; }
@@ -1394,10 +1394,10 @@
             closeModal(buyMultipleModal);
             currentGiftToBuyMultiple = null;
         }
-        function buyGift(id, name, originalImage, lottiePath, quantity = 1) { // Accept lottiePath
+        function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
             for (let i = 0; i < quantity; i++) {
                 ownedGifts.unshift({
-                    id, instanceId: generateUniqueId(), name, originalImage, lottiePath, // Store Lottie path
+                    id, instanceId: generateUniqueId(), name, originalImage, lottiePath,
                     isCollectible: false, collectibleData: null, acquiredDate: new Date().toISOString()
                 });
             }
@@ -1407,11 +1407,10 @@
             tg.showAlert(message); showPage('profile-page');
         }
         
-        function openGiftDetailByInstanceId(instanceId) { /* Same as previous version with Lottie in modals */ 
+        function openGiftDetailByInstanceId(instanceId) {
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift) return;
 
-            // NEW: Reset tap count
             tapCount = 0;
         
             if (gift.isCollectible && gift.collectibleData) {
@@ -1434,7 +1433,6 @@
                 collectibleActionWear.querySelector('.text').textContent = (wornGiftInstanceId === gift.instanceId) ? 'Снять' : 'Надеть';
                 collectibleDetailModal.classList.add('active');
 
-                // NEW: Add triple-tap listeners to collectible info rows
                 const modelValueEl = document.getElementById('collectible-model-value');
                 const backdropValueEl = document.getElementById('collectible-backdrop-value');
                 const patternValueEl = document.getElementById('collectible-pattern-value');
@@ -1459,7 +1457,7 @@
                 if (inlineUpgradeBtn) inlineUpgradeBtn.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
             }
         }
-        async function upgradeSingleGiftLogic(giftToUpgrade) { /* Same as previous, ensures lottieModelPath is set */ 
+        async function upgradeSingleGiftLogic(giftToUpgrade) {
             if (giftToUpgrade.isCollectible) return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'skipped' };
             const giftNameEncoded = encodeURIComponent(giftToUpgrade.name);
             try {
@@ -1528,15 +1526,12 @@
                 if (cardElement) cardElement.classList.remove('is-updating');
                 if (result.status === 'success') {
                     successCount++;
-                    if (cardElement && result.collectibleData) { // Card still exists and upgrade was successful
+                    if (cardElement && result.collectibleData) {
                         const updatedGiftData = ownedGifts.find(g => g.instanceId === gift.instanceId);
                         if (updatedGiftData) {
-                             // The card's content will be complex, direct innerHTML might be easier if Lottie instances are managed by observer
-                            const newCard = createGiftCardDOM(updatedGiftData); // Create new DOM fragment
-                            cardElement.innerHTML = newCard.innerHTML; // Replace content
-                            // Crucially, re-observe if necessary or ensure data attributes are correct
+                            const newCard = createGiftCardDOM(updatedGiftData);
+                            cardElement.innerHTML = newCard.innerHTML;
                             cardElement.dataset.lottiePath = updatedGiftData.isCollectible && updatedGiftData.collectibleData ? updatedGiftData.collectibleData.lottieModelPath : updatedGiftData.lottiePath;
-                            // Old Lottie instance on cardElement (if any via observer) might be orphaned. Observer should handle this.
                             setupLongPress(cardElement, updatedGiftData);
                         }
                     }
@@ -1563,15 +1558,13 @@
             }
             return items[items.length - 1];
         }
-        function closeModal(modalElement) { /* Modified to stop Lottie */ 
+        function closeModal(modalElement) {
             if (modalElement.id === 'gift-detail-modal') destroyLottieAnimation(modalLottieGiftOriginal);
             if (modalElement.id === 'collectible-detail-modal') destroyLottieAnimation(modalLottieCollectibleModel);
-            // NEW: Clear specific selection on custom buy modal close
             if (modalElement.id === 'custom-buy-modal') {
                 selectedCustomGift = { id: null, name: null, originalImage: null, lottiePath: null, model: null, backdrop: null, pattern: null, modelImage: null, lottieModelPath: null, patternImage: null, backdropColors: null };
                 customBuyConfirmButton.disabled = true;
             }
-            // NEW: Clear generated image modal content on close
             if (modalElement.id === 'generated-image-modal') {
                 generatedImagePreview.src = '';
                 generatedImagePreview.removeAttribute('data-download-url');
@@ -1581,7 +1574,7 @@
 
             modalElement.classList.remove('active');
         }
-        let currentLongPressGift = null; let longPressTimer; /* Long press logic same as before */
+        let currentLongPressGift = null; let longPressTimer;
         function setupLongPress(element, gift) { 
             element.addEventListener('touchstart', (e) => {
                 clearTimeout(longPressTimer);
@@ -1596,7 +1589,6 @@
             if (!gift.isCollectible) { menuPinAction.textContent = 'Закрепить (только коллекционные)'; menuPinAction.classList.add('disabled'); }
             else { const isPinned = pinnedGifts.includes(gift.instanceId); menuPinAction.textContent = isPinned ? 'Открепить' : 'Закрепить'; menuPinAction.classList.remove('disabled'); }
             
-            // NEW: Show/hide share image action based on gift type
             if (gift.isCollectible) {
                 menuShareImageAction.classList.remove('hidden');
             } else {
@@ -1609,10 +1601,8 @@
             document.addEventListener('click', closeLongPressMenuOnClickOutside, { once: true, capture: true });
         }
 
-        // NEW: Function to open collectible menu from "..." button
         function openCollectibleMenu(gift, eventCoords) {
-            currentLongPressGift = gift; // Set current gift for context
-            // Update pin button state
+            currentLongPressGift = gift;
             const isPinned = pinnedGifts.includes(gift.instanceId);
             if (!gift.isCollectible) { 
                 menuPinAction.textContent = 'Закрепить (только коллекционные)'; 
@@ -1622,21 +1612,27 @@
                 menuPinAction.classList.remove('disabled'); 
             }
 
-            // Show/hide share image action based on gift type
             if (gift.isCollectible) {
                 menuShareImageAction.classList.remove('hidden');
             } else {
-                menuShareImageAction.classList.add('hidden'); // Hide for non-collectible gifts
+                menuShareImageAction.classList.add('hidden');
             }
 
-            // Position the menu relative to the click/touch event
             let x = eventCoords.clientX || (eventCoords.touches && eventCoords.touches[0] ? eventCoords.touches[0].clientX : 0);
             let y = eventCoords.clientY || (eventCoords.touches && eventCoords.touches[0] ? eventCoords.touches[0].clientY : 0);
 
-            longPressMenu.style.top = `${Math.min(y, window.innerHeight - longPressMenu.offsetHeight - 10)}px`;
-            longPressMenu.style.left = `${Math.min(x, window.innerWidth - longPressMenu.offsetWidth - 10)}px`;
-            longPressMenu.classList.remove('hidden');
+            // Adjust position to appear near the menu button, not necessarily where tapped
+            // For a top-right menu, offset it slightly left/up from the exact click
+            const menuWidth = longPressMenu.offsetWidth || 180; // Fallback if not rendered yet
+            const menuHeight = longPressMenu.offsetHeight || 100; // Fallback
 
+            x = window.innerWidth - menuWidth - 20; // 20px from right edge
+            y = (collectibleMenuButton.getBoundingClientRect().top + collectibleMenuButton.offsetHeight + 10); // Below the menu button + 10px offset
+
+            longPressMenu.style.top = `${Math.min(y, window.innerHeight - menuHeight - 10)}px`;
+            longPressMenu.style.left = `${Math.min(x, window.innerWidth - menuWidth - 10)}px`;
+            
+            longPressMenu.classList.remove('hidden');
             document.addEventListener('click', closeLongPressMenuOnClickOutside, { once: true, capture: true });
         }
 
@@ -1661,7 +1657,7 @@
             pinnedGifts.forEach(pinnedInstanceId => {
                 const giftToUnpin = ownedGifts.find(g => g.instanceId === pinnedInstanceId);
                 if (giftToUnpin) {
-                    const card = createGiftCardDOM(giftToUnpin); // This will setup for Lottie observation too
+                    const card = createGiftCardDOM(giftToUnpin);
                     card.addEventListener('click', () => {
                         pinnedGifts = pinnedGifts.filter(id => id !== pinnedInstanceId);
                         if (currentLongPressGift && currentLongPressGift.isCollectible && !pinnedGifts.includes(currentLongPressGift.instanceId)) {
@@ -1671,18 +1667,18 @@
                         tg.HapticFeedback.impactOccurred('medium'); currentLongPressGift = null;
                     });
                     unpinSelectionGrid.appendChild(card);
-                    observeLottieElement(card); // Observe the card in the modal grid
+                    observeLottieElement(card);
                 }
             });
             tooManyPinsModal.classList.add('active');
         }
-        function handleWearAction() { /* Same as before, relies on applyWornGiftStyles for Lottie */
+        function handleWearAction() {
             const currentModalInstanceId = collectibleDetailModal.dataset.instanceId; if (!currentModalInstanceId) return;
             if (wornGiftInstanceId === currentModalInstanceId) { wornGiftInstanceId = null; collectibleActionWear.querySelector('.text').textContent = 'Надеть'; }
             else { wornGiftInstanceId = currentModalInstanceId; collectibleActionWear.querySelector('.text').textContent = 'Снять'; }
             applyWornGiftStyles(wornGiftInstanceId); saveState(); tg.HapticFeedback.impactOccurred('light');
         }
-        let filterPopupLongPressTimer; /* Filter logic same as before */
+        let filterPopupLongPressTimer;
         function setupFilterPopupTrigger() {
             filterLongPressTarget.addEventListener('touchstart', (e) => { filterPopupLongPressTimer = setTimeout(openFilterPopup, 700); }, { passive: true });
             filterLongPressTarget.addEventListener('touchend', () => clearTimeout(filterPopupLongPressTimer));
@@ -1725,17 +1721,16 @@
                 container.appendChild(optionEl);
             });
         }
-        function handleApplyFilters() { renderProfileGifts(); saveState(); closeModal(filterPopup); displayFilterExitButton(); } // Updated
+        function handleApplyFilters() { renderProfileGifts(); saveState(); closeModal(filterPopup); displayFilterExitButton(); }
         function handleClearFilters() {
             activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-            populateFilterOptions(); renderProfileGifts(); saveState(); displayFilterExitButton(); // Updated
+            populateFilterOptions(); renderProfileGifts(); saveState(); displayFilterExitButton();
         }
         function handleClearAllData() {
             tg.showConfirm("Вы уверены, что хотите удалить все свои подарки и данные? Это действие необратимо.", (confirmed) => {
                 if (confirmed) {
                     ownedGifts = []; pinnedGifts = []; wornGiftInstanceId = null;
                     activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-                    // Clear Lottie from grids and pinned area
                     Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
                     Array.from(buyGiftsGrid.children).forEach(child => unobserveLottieElement(child));
                     Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
@@ -1743,14 +1738,12 @@
                     saveState(); applyWornGiftStyles(null); renderProfileGifts(); populateFilterOptions();
                     tg.HapticFeedback.notificationOccurred('success'); tg.showAlert("Все данные удалены.");
                     closeModal(filterPopup);
-                    displayFilterExitButton(); // Updated
+                    displayFilterExitButton();
                 }
             });
         }
 
-        // NEW: Function to open the custom buy modal
         function openCustomBuyModal() {
-            // Reset selection
             selectedCustomGift = { id: null, name: null, originalImage: null, lottiePath: null, model: null, backdrop: null, pattern: null, modelImage: null, lottieModelPath: null, patternImage: null, backdropColors: null };
             customBuyConfirmButton.disabled = true;
 
@@ -1767,9 +1760,8 @@
                 const originalImageUrl = `${CDN_BASE_URL}originals/${id}/Original.png`;
 
                 const item = document.createElement('div');
-                item.className = 'filter-option'; // Reusing filter-option for grid item style
+                item.className = 'filter-option';
                 item.dataset.id = id;
-                // Using .label for the text as per new CSS
                 item.innerHTML = `<img src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='${originalImageUrl}';">
                                   <div class="label">${name}</div>`;
                 item.addEventListener('click', () => selectCustomBaseGift(id, name, originalImageUrl));
@@ -1778,9 +1770,7 @@
             customBuyModal.classList.add('active');
         }
 
-        // NEW: Function to handle selection of base gift in custom buy modal
         async function selectCustomBaseGift(id, name, originalImage) {
-            // Clear previous selections for parts
             selectedCustomGift.model = null;
             selectedCustomGift.backdrop = null;
             selectedCustomGift.pattern = null;
@@ -1797,16 +1787,14 @@
             customBuyPatternsSection.classList.add('hidden');
             customBuyConfirmButton.disabled = true;
 
-            // Highlight selected base gift
             Array.from(customBuyBaseGiftsGrid.children).forEach(el => el.classList.remove('selected'));
             document.querySelector(`#custom-buy-base-gifts-grid [data-id="${id}"]`).classList.add('selected');
 
             selectedCustomGift.id = id;
             selectedCustomGift.name = name;
             selectedCustomGift.originalImage = originalImage;
-            selectedCustomGift.lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`; // Default Lottie path for original
+            selectedCustomGift.lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`;
 
-            // Fetch collectible parts
             const giftNameEncoded = encodeURIComponent(name);
             if (!cachedCollectibleParts[id]) {
                 try {
@@ -1823,13 +1811,12 @@
                     cachedCollectibleParts[id] = { models: modelsData, backdrops: backdropsData, patterns: patternsData };
                 } catch (error) {
                     console.error(`Failed to fetch collectible parts for ${name}:`, error);
-                    cachedCollectibleParts[id] = { models: [], backdrops: [], patterns: [] }; // Cache empty to avoid re-tries
+                    cachedCollectibleParts[id] = { models: [], backdrops: [], patterns: [] };
                 }
             }
 
             const { models, backdrops, patterns } = cachedCollectibleParts[id];
 
-            // Render models
             if (models.length > 0) {
                 customBuyModelsSection.classList.remove('hidden');
                 models.forEach(model => {
@@ -1842,13 +1829,11 @@
                     item.addEventListener('click', () => selectCustomPart('model', model, modelImage, models, giftNameEncoded));
                     customBuyModelsGrid.appendChild(item);
                 });
-                // Auto-select first model
                 selectCustomPart('model', models[0], `${CDN_BASE_URL}models/${giftNameEncoded}/png/${encodeURIComponent(models[0].name)}.png`, models, giftNameEncoded);
             } else {
                 customBuyModelsSection.classList.add('hidden');
             }
 
-            // Render backdrops
             if (backdrops.length > 0) {
                 customBuyBackdropsSection.classList.remove('hidden');
                 backdrops.forEach(backdrop => {
@@ -1860,13 +1845,11 @@
                     item.addEventListener('click', () => selectCustomPart('backdrop', backdrop));
                     customBuyBackdropsGrid.appendChild(item);
                 });
-                // Auto-select first backdrop
                 selectCustomPart('backdrop', backdrops[0]);
             } else {
                 customBuyBackdropsSection.classList.add('hidden');
             }
 
-            // Render patterns
             if (patterns.length > 0) {
                 customBuyPatternsSection.classList.remove('hidden');
                 patterns.forEach(pattern => {
@@ -1879,7 +1862,6 @@
                     item.addEventListener('click', () => selectCustomPart('pattern', pattern, patternImage));
                     customBuyPatternsGrid.appendChild(item);
                 });
-                // Auto-select first pattern
                 selectCustomPart('pattern', patterns[0], `${CDN_BASE_URL}patterns/${giftNameEncoded}/png/${encodeURIComponent(patterns[0].name)}.png`);
             } else {
                 customBuyPatternsSection.classList.add('hidden');
@@ -1888,16 +1870,13 @@
             checkCustomBuyCompleteness();
         }
 
-        // NEW: Function to handle selection of model, backdrop, or pattern
         function selectCustomPart(type, data, imagePath = null, allModels = [], giftNameEncoded = '') {
-            // Highlight selected option
             const container = document.getElementById(`custom-buy-${type}s-grid`);
             Array.from(container.children).forEach(el => el.classList.remove('selected'));
             document.querySelector(`#custom-buy-${type}s-grid [data-name="${data.name}"]`).classList.add('selected');
 
             selectedCustomGift[type] = data;
 
-            // Special handling for model image and Lottie path
             if (type === 'model') {
                 selectedCustomGift.modelImage = imagePath;
                 selectedCustomGift.lottieModelPath = `${CDN_BASE_URL}models/${giftNameEncoded}/lottie/${encodeURIComponent(data.name)}.json`;
@@ -1910,11 +1889,9 @@
             checkCustomBuyCompleteness();
         }
 
-        // NEW: Check if all necessary parts are selected to enable "Create" button
         function checkCustomBuyCompleteness() {
             const isBaseSelected = selectedCustomGift.id !== null;
             
-            // Check if sections are hidden (meaning no options for that part exist)
             const modelsExist = !customBuyModelsSection.classList.contains('hidden');
             const backdropsExist = !customBuyBackdropsSection.classList.contains('hidden');
             const patternsExist = !customBuyPatternsSection.classList.contains('hidden');
@@ -1926,7 +1903,6 @@
             customBuyConfirmButton.disabled = !(isBaseSelected && isModelSelected && isBackdropSelected && isPatternSelected);
         }
 
-        // NEW: Handle confirmation of custom gift creation
         function handleCustomBuyConfirm() {
             if (customBuyConfirmButton.disabled) return;
 
@@ -1935,13 +1911,13 @@
                 instanceId: generateUniqueId(),
                 name: selectedCustomGift.name,
                 originalImage: selectedCustomGift.originalImage,
-                lottiePath: selectedCustomGift.lottiePath, // Original Lottie for non-collectible fallback
-                isCollectible: true, // Custom gifts are always collectible
+                lottiePath: selectedCustomGift.lottiePath,
+                isCollectible: true,
                 collectibleData: {
                     model: selectedCustomGift.model,
                     backdrop: selectedCustomGift.backdrop,
-                    pattern: selectedCustomGift.pattern, // Typo fixed from selectedCustomCustomGift
-                    number: Math.floor(Math.random() * 200000) + 1, // Random unique number
+                    pattern: selectedCustomGift.pattern,
+                    number: Math.floor(Math.random() * 200000) + 1,
                     modelImage: selectedCustomGift.modelImage,
                     lottieModelPath: selectedCustomGift.lottieModelPath,
                     patternImage: selectedCustomGift.patternImage,
@@ -1960,10 +1936,9 @@
             showPage('profile-page');
         }
 
-        // NEW: Triple tap handler for filtering
         function handleTripleTap(e, filterType, value) {
             const now = Date.now();
-            const DURATION = 300; // ms between taps
+            const DURATION = 300;
 
             if (now - lastTap < DURATION) {
                 tapCount++;
@@ -1973,10 +1948,9 @@
             lastTap = now;
 
             if (tapCount === 3) {
-                tapCount = 0; // Reset
+                tapCount = 0;
                 tg.HapticFeedback.impactOccurred('medium');
                 
-                // Clear all filters first, then apply the specific one
                 activeFilters.collection = null; 
                 activeFilters.model = null;
                 activeFilters.backdrop = null;
@@ -1993,11 +1967,10 @@
                 saveState();
                 renderProfileGifts();
                 displayFilterExitButton();
-                closeModal(collectibleDetailModal); // Close the detail modal after applying filter
+                closeModal(collectibleDetailModal);
             }
         }
 
-        // NEW: Display/hide the "Exit Filter Mode" button
         function displayFilterExitButton() {
             const hasActiveFilter = Object.values(activeFilters).some(f => f !== null);
             if (hasActiveFilter) {
@@ -2007,34 +1980,30 @@
             }
         }
 
-        // NEW: Function to generate and display the gift image (3:4 aspect)
         async function generateGiftImage(gift) {
             const cd = gift.collectibleData;
             if (!cd) return null;
 
-            // Create a temporary container for rendering
             const tempContainer = document.createElement('div');
             tempContainer.style.position = 'absolute';
             tempContainer.style.left = '-9999px';
             tempContainer.style.top = '-9999px';
-            tempContainer.style.width = '450px'; // Render resolution (3:4 aspect, e.g., 450x600)
+            tempContainer.style.width = '450px';
             tempContainer.style.height = '600px';
             tempContainer.style.display = 'flex';
             tempContainer.style.flexDirection = 'column';
             tempContainer.style.alignItems = 'center';
-            tempContainer.style.justifyContent = 'flex-start'; // Align to top
-            tempContainer.style.padding = '30px'; // Inner padding
-            tempContainer.style.borderRadius = '24px'; // Rounded corners, like a card
-            tempContainer.style.boxSizing = 'border-box'; // Include padding in width/height
+            tempContainer.style.justifyContent = 'flex-start';
+            tempContainer.style.padding = '30px';
+            tempContainer.style.borderRadius = '24px';
+            tempContainer.style.boxSizing = 'border-box';
 
-            // Apply backdrop
             if (cd.backdropColors) {
                 tempContainer.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
             } else {
-                tempContainer.style.background = 'linear-gradient(45deg, #2a3745, #17212b)'; // Default fallback background
+                tempContainer.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
             }
 
-            // Apply pattern
             if (cd.patternImage) {
                 const patternOverlay = document.createElement('div');
                 patternOverlay.style.position = 'absolute';
@@ -2045,21 +2014,20 @@
                 patternOverlay.style.backgroundImage = `url('${cd.patternImage}')`;
                 patternOverlay.style.backgroundRepeat = 'repeat';
                 patternOverlay.style.backgroundSize = '30% auto';
-                patternOverlay.style.opacity = '0.07'; // Reduced opacity
+                patternOverlay.style.opacity = '0.07';
                 tempContainer.appendChild(patternOverlay);
             }
             
-            // Container for gift model
             const giftModelContainer = document.createElement('div');
             giftModelContainer.style.width = '70%';
-            giftModelContainer.style.height = 'auto'; // Height adapts to content
-            giftModelContainer.style.aspectRatio = '1 / 1'; // Maintain square shape
+            giftModelContainer.style.height = 'auto';
+            giftModelContainer.style.aspectRatio = '1 / 1';
             giftModelContainer.style.display = 'flex';
             giftModelContainer.style.alignItems = 'center';
             giftModelContainer.style.justifyContent = 'center';
             giftModelContainer.style.position = 'relative';
-            giftModelContainer.style.zIndex = '10'; // Above pattern
-            giftModelContainer.style.marginBottom = '20px'; // Spacing to text
+            giftModelContainer.style.zIndex = '10';
+            giftModelContainer.style.marginBottom = '20px';
 
             const modelImageEl = document.createElement('img');
             modelImageEl.src = cd.modelImage || gift.originalImage;
@@ -2069,7 +2037,6 @@
             giftModelContainer.appendChild(modelImageEl);
             tempContainer.appendChild(giftModelContainer);
 
-            // "Upgraded Gift" text
             const upgradedGiftText = document.createElement('div');
             upgradedGiftText.textContent = 'Upgraded Gift';
             upgradedGiftText.style.fontSize = '2.2em';
@@ -2080,7 +2047,6 @@
             upgradedGiftText.style.zIndex = '10';
             tempContainer.appendChild(upgradedGiftText);
 
-            // Gift name and number
             const giftNameAndNumber = document.createElement('div');
             giftNameAndNumber.textContent = `${gift.name} #${cd.number}`;
             giftNameAndNumber.style.fontSize = '1.8em';
@@ -2092,22 +2058,20 @@
             giftNameAndNumber.style.zIndex = '10';
             tempContainer.appendChild(giftNameAndNumber);
 
-            // Model, backdrop, symbol info
             const infoSection = document.createElement('div');
             infoSection.style.display = 'flex';
             infoSection.style.flexDirection = 'column';
-            infoSection.style.alignItems = 'flex-start'; // Align text to left
-            infoSection.style.width = '80%'; // Constrain width
+            infoSection.style.alignItems = 'flex-start';
+            infoSection.style.width = '80%';
             infoSection.style.position = 'relative';
             infoSection.style.zIndex = '10';
             
-            // Helper function for info row
             const createInfoRow = (label, value) => {
                 const row = document.createElement('div');
                 row.style.display = 'flex';
-                row.style.justifyContent = 'space-between'; // For text alignment
+                row.style.justifyContent = 'space-between';
                 row.style.width = '100%';
-                row.style.marginBottom = '10px'; // Spacing between rows
+                row.style.marginBottom = '10px';
 
                 const labelEl = document.createElement('span');
                 labelEl.textContent = label;
@@ -2136,38 +2100,37 @@
             let dataUrl = null;
             try {
                 const canvas = await html2canvas(tempContainer, {
-                    backgroundColor: null, // Use element's background
-                    scale: 2, // Improve quality for rendering (2x from 450x600 -> 900x1200)
-                    useCORS: true // Allow loading images from other domains
+                    backgroundColor: null,
+                    scale: 2,
+                    useCORS: true
                 });
                 dataUrl = canvas.toDataURL('image/png');
             } catch (error) {
                 console.error("Ошибка при генерации изображения:", error);
                 tg.showAlert(`Не удалось сгенерировать изображение: ${error.message}`);
             } finally {
-                document.body.removeChild(tempContainer); // Remove temporary container
+                document.body.removeChild(tempContainer);
             }
             return dataUrl;
         }
 
-        // NEW: Handler for "Поделиться изображением" from the three dots menu
         async function handleShareImageAction() {
-            longPressMenu.classList.add('hidden'); // Close the menu immediately
+            longPressMenu.classList.add('hidden');
             if (!currentLongPressGift || !currentLongPressGift.isCollectible) {
                 tg.showAlert("Невозможно поделиться изображением для этого подарка.");
                 return;
             }
 
             generatedImageMessage.textContent = 'Генерация изображения...';
-            generatedImagePreview.src = ''; // Clear previous image
-            downloadGeneratedImageButton.disabled = true; // Disable download button
-            generatedImageModal.classList.add('active'); // Open popup with message
+            generatedImagePreview.src = '';
+            downloadGeneratedImageButton.disabled = true;
+            generatedImageModal.classList.add('active');
 
             const imageDataUrl = await generateGiftImage(currentLongPressGift);
             
             if (imageDataUrl) {
                 generatedImagePreview.src = imageDataUrl;
-                generatedImagePreview.dataset.downloadUrl = imageDataUrl; // Store for download
+                generatedImagePreview.dataset.downloadUrl = imageDataUrl;
                 generatedImageMessage.textContent = 'Изображение готово. Нажмите "Скачать"';
                 downloadGeneratedImageButton.disabled = false;
                 tg.HapticFeedback.notificationOccurred('success');
@@ -2178,7 +2141,6 @@
             }
         }
 
-        // NEW: Handler for downloading the generated image
         function handleDownloadImage() {
             const url = generatedImagePreview.dataset.downloadUrl;
             if (url) {
@@ -2192,14 +2154,14 @@
             }
         }
 
-        function setupEventListeners() { 
+        function setupEventListeners() {
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
             backToProfileBuyButton.addEventListener('click', () => showPage('profile-page'));
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
             collectibleActionWear.addEventListener('click', handleWearAction);
-            collectibleMenuButton.addEventListener('click', (e) => { // NEW: Handle click on collectible modal menu button
+            collectibleMenuButton.addEventListener('click', (e) => { // Handle click on collectible modal menu button
                 const currentModalInstanceId = collectibleDetailModal.dataset.instanceId;
                 const gift = ownedGifts.find(g => g.instanceId === currentModalInstanceId);
                 if (gift) {
@@ -2208,13 +2170,12 @@
             });
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
             menuPinAction.addEventListener('click', handlePinAction);
-            // NEW: Add event listener for the new share image action
             menuShareImageAction.addEventListener('click', handleShareImageAction);
             
             cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
             cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, customBuyModal, generatedImageModal].forEach(modal => { // Added customBuyModal and generatedImageModal
+            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, customBuyModal, generatedImageModal].forEach(modal => {
                 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
             });
             setupFilterPopupTrigger();
@@ -2222,7 +2183,6 @@
             clearFiltersButton.addEventListener('click', handleClearFilters);
             clearAllDataButton.addEventListener('click', handleClearAllData);
 
-            // NEW: Long press on "Магазин подарков" header for custom buy
             document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchstart', (e) => {
                 filterPopupLongPressTimer = setTimeout(openCustomBuyModal, 700);
             }, { passive: true });
@@ -2230,14 +2190,11 @@
             document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchmove', () => clearTimeout(filterPopupLongPressTimer));
             document.querySelector('#buy-gifts-page .page-header h2').addEventListener('contextmenu', (e) => { e.preventDefault(); openCustomBuyModal(); });
 
-            // NEW: Custom Buy Modal buttons
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             customBuyCancelButton.addEventListener('click', () => closeModal(customBuyModal));
 
-            // NEW: Exit Filter Mode Button
             exitFilterModeButton.addEventListener('click', handleClearFilters);
 
-            // NEW: Generated Image Modal Buttons
             downloadGeneratedImageButton.addEventListener('click', handleDownloadImage);
             closeGeneratedImageModalButton.addEventListener('click', () => closeModal(generatedImageModal));
         }
