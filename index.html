@@ -6,6 +6,7 @@
     <title>Симулятор Подарков Telegram</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --tg-theme-bg-color: #0e1621;
@@ -705,6 +706,7 @@
                         <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Передать</span></button>
                         <button id="collectible-action-wear"><span class="icon"></span><span class="text">Надеть</span></button>
                         <button id="collectible-action-sell"><span class="icon"></span><span class="text">Продать</span></button>
+                        <!-- Кнопки share/share to story удалены отсюда -->
                     </div>
                     <div class="collectible-info-section">
                         <div id="modal-collectible-info-table" class="modal-info-table"></div>
@@ -826,11 +828,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- NEW: Modal for generated image -->
+        <div id="generated-image-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar">
+                    <h3>Ваш подарок</h3>
+                </div>
+                <div class="modal-scrollable-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
+                    <div id="generated-image-container" style="width: 100%; max-width: 300px; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; background-color: var(--tg-theme-bg-color); display: flex; align-items: center; justify-content: center;">
+                        <img id="generated-image-preview" src="" alt="Сгенерированный подарок" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    </div>
+                    <p id="generated-image-message" style="margin-top: 15px; color: var(--tg-theme-hint-color); font-size: 0.9em;"></p>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="download-generated-image" class="modal-button" disabled>Скачать</button>
+                    <button id="close-generated-image-modal" class="modal-button secondary">Закрыть</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="long-press-menu" class="hidden">
         <ul>
             <li id="menu-pin-action">Закрепить</li>
+            <li id="menu-share-image-action" class="hidden">Поделиться изображением</li> <!-- NEW: Added share image action -->
         </ul>
     </div>
     <script>
@@ -900,6 +922,7 @@
         const collectibleActionWear = document.getElementById('collectible-action-wear');
         const collectibleActionSell = document.getElementById('collectible-action-sell');
         const closeCollectibleDetailModalButton = document.getElementById('close-collectible-detail-modal');
+        const collectibleMenuButton = collectibleDetailModal.querySelector('.menu-button'); // NEW: Get menu button from collectible modal
         
         const tooManyPinsModal = document.getElementById('too-many-pins-modal');
         const unpinSelectionGrid = document.getElementById('unpin-selection-grid');
@@ -937,6 +960,17 @@
         const customBuyPatternsGrid = document.getElementById('custom-buy-patterns-grid');
         const customBuyConfirmButton = document.getElementById('custom-buy-confirm-button');
         const customBuyCancelButton = document.getElementById('custom-buy-cancel-button');
+
+        // NEW: Generated Image Modal elements
+        const generatedImageModal = document.getElementById('generated-image-modal');
+        const generatedImagePreview = document.getElementById('generated-image-preview');
+        const generatedImageMessage = document.getElementById('generated-image-message');
+        const downloadGeneratedImageButton = document.getElementById('download-generated-image');
+        const closeGeneratedImageModalButton = document.getElementById('close-generated-image-modal');
+
+        // NEW: Share Image Action in Long Press Menu
+        const menuShareImageAction = document.getElementById('menu-share-image-action');
+
 
         // NEW: Exit Filter Mode button
         const exitFilterModeButton = document.createElement('button');
@@ -1079,7 +1113,7 @@
             displayFilterExitButton(); // NEW: Initial display of filter button
         }
         
-        function applyTheme(themeParams) { /* Same as before */ 
+        function applyTheme(themeParams) { 
             if (themeParams && Object.keys(themeParams).length > 0) {
                 const root = document.documentElement;
                 const setVar = (varName, value) => { if (value) root.style.setProperty(varName, value); };
@@ -1098,7 +1132,7 @@
                 applyWornGiftStyles(wornGiftInstanceId);
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
-        function loadUserData() { /* Same as before */ 
+        function loadUserData() { 
             const user = tg.initDataUnsafe?.user || mockUser;
             profileName.textContent = user.first_name || mockUser.first_name;
             profileAvatar.src = user.photo_url || mockUser.photo_url;
@@ -1107,13 +1141,13 @@
             profileBio.textContent = user.bio || mockUser.bio;
             profilePhone.textContent = user.phone || mockUser.phone;
         }
-        function saveState() { /* Same as before */ 
+        function saveState() { 
             localStorage.setItem('ownedGifts_v7', JSON.stringify(ownedGifts));
             localStorage.setItem('pinnedGifts_v7', JSON.stringify(pinnedGifts));
             localStorage.setItem('wornGiftInstanceId_v7', wornGiftInstanceId);
             localStorage.setItem('activeFilters_v7', JSON.stringify(activeFilters));
         }
-        function loadState() { /* Same as before */ 
+        function loadState() { 
             const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v7')) || [];
             ownedGifts = loadedOwnedGifts.map(gift => ({ ...gift, instanceId: gift.instanceId || generateUniqueId() }));
             pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v7')) || [];
@@ -1146,11 +1180,11 @@
             }
         }
         
-        function showPage(pageId) { /* Same as before */ 
+        function showPage(pageId) { 
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
         }
-        async function fetchAvailableGifts() { /* Same as before, ensure populateFilterOptions is called */ 
+        async function fetchAvailableGifts() { 
             buyGiftsLoadingSpinner.classList.remove('hidden');
             buyGiftsGrid.innerHTML = '';
             try {
@@ -1204,7 +1238,7 @@
             }
         }
         
-        function getGiftCountText(count) { /* Same as before */ 
+        function getGiftCountText(count) { 
             if (count % 10 === 1 && count % 100 !== 11) return `${count} подарок`;
             if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} подарка`;
             return `${count} подарков`;
@@ -1214,7 +1248,7 @@
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
             
-            const filteredGifts = ownedGifts.filter(gift => { /* ... filter logic same ... */ 
+            const filteredGifts = ownedGifts.filter(gift => { 
                 if (activeFilters.collection && gift.id !== activeFilters.collection) return false;
                 if (gift.isCollectible && gift.collectibleData) {
                     if (activeFilters.model && gift.collectibleData.model?.name !== activeFilters.model) return false;
@@ -1225,12 +1259,12 @@
             });
             profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
             if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) profileGiftCountSubtext.textContent += ` из ${ownedGifts.length}`;
-            const sortedGifts = [...filteredGifts].sort((a, b) => { /* ... sort logic same ... */ 
+            const sortedGifts = [...filteredGifts].sort((a, b) => { 
                 const aIsPinned = pinnedGifts.includes(a.instanceId); const bIsPinned = pinnedGifts.includes(b.instanceId);
                 if (aIsPinned && !bIsPinned) return -1; if (!aIsPinned && bIsPinned) return 1;
                 return (new Date(b.acquiredDate || 0)) - (new Date(a.acquiredDate || 0));
             });
-            if (sortedGifts.length === 0) { /* ... empty message logic same ... */ 
+            if (sortedGifts.length === 0) { 
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
                 giftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">Папка пуста или нет подарков, соответствующих фильтрам.</p>`;
             } else {
@@ -1243,7 +1277,7 @@
             }
             renderTopPinnedGiftsPreview(); // This will also handle Lottie for pinned gifts
             const hasNonCollectible = ownedGifts.some(g => !g.isCollectible);
-            if (upgradeAllGiftsButton) { /* ... button visibility logic same ... */ 
+            if (upgradeAllGiftsButton) { 
                 upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
                 if (!hasNonCollectible) { upgradeAllGiftsButton.textContent = '✨ Улучшить все'; upgradeAllGiftsButton.disabled = false; }
             }
@@ -1296,7 +1330,7 @@
             imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
         
-            if (pinnedGifts.includes(gift.instanceId)) { /* ... pin indicator logic same ... */ 
+            if (pinnedGifts.includes(gift.instanceId)) { 
                 const pinDiv = document.createElement('div'); pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG; pinDiv.querySelector('svg').style.fill = 'var(--tg-theme-link-color)';
                 card.appendChild(pinDiv);
@@ -1306,7 +1340,7 @@
             return card;
         }
         
-        function createPlaceholderImage() { /* Fallback for onerror, not used directly in createGiftCardDOM anymore */ 
+        function createPlaceholderImage() { 
             const placeholder = document.createElement('div');
             placeholder.className = 'placeholder-image';
             placeholder.style.width = '100%'; placeholder.style.height = '100%';
@@ -1460,7 +1494,7 @@
                 return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'failed', error: error.message };
             }
         }
-        async function handleSingleGiftUpgradeFromModal(instanceId) { /* Same as before */ 
+        async function handleSingleGiftUpgradeFromModal(instanceId) { 
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift || gift.isCollectible) return;
             const upgradeButton = document.getElementById(`modal-action-upgrade-gift-${instanceId}`);
@@ -1479,7 +1513,7 @@
                 if (upgradeButton) { upgradeButton.textContent = 'Улучшить'; upgradeButton.disabled = false; }
             }
         }
-        async function handleUpgradeAllGifts() { /* Same as before, relies on createGiftCardDOM for render update */ 
+        async function handleUpgradeAllGifts() { 
             const giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible);
             if (giftsToUpgrade.length === 0) { tg.showAlert("Нет подарков для улучшения."); return; }
             const originalButtonText = upgradeAllGiftsButton.textContent;
@@ -1518,7 +1552,7 @@
             upgradeAllGiftsButton.style.display = stillHasNonCollectible ? 'inline-block' : 'none';
             if (stillHasNonCollectible) { upgradeAllGiftsButton.textContent = originalButtonText; upgradeAllGiftsButton.disabled = false; }
         }
-        function selectWeightedRandom(items) { /* Same as before */ 
+        function selectWeightedRandom(items) { 
             if (!items || items.length === 0) return null;
             let totalWeight = items.reduce((sum, item) => sum + (item.rarityPermille || 1), 0);
             if (totalWeight === 0) return items[Math.floor(Math.random() * items.length)];
@@ -1537,6 +1571,14 @@
                 selectedCustomGift = { id: null, name: null, originalImage: null, lottiePath: null, model: null, backdrop: null, pattern: null, modelImage: null, lottieModelPath: null, patternImage: null, backdropColors: null };
                 customBuyConfirmButton.disabled = true;
             }
+            // NEW: Clear generated image modal content on close
+            if (modalElement.id === 'generated-image-modal') {
+                generatedImagePreview.src = '';
+                generatedImagePreview.removeAttribute('data-download-url');
+                generatedImageMessage.textContent = '';
+                downloadGeneratedImageButton.disabled = true;
+            }
+
             modalElement.classList.remove('active');
         }
         let currentLongPressGift = null; let longPressTimer; /* Long press logic same as before */
@@ -1553,11 +1595,52 @@
             currentLongPressGift = gift;
             if (!gift.isCollectible) { menuPinAction.textContent = 'Закрепить (только коллекционные)'; menuPinAction.classList.add('disabled'); }
             else { const isPinned = pinnedGifts.includes(gift.instanceId); menuPinAction.textContent = isPinned ? 'Открепить' : 'Закрепить'; menuPinAction.classList.remove('disabled'); }
+            
+            // NEW: Show/hide share image action based on gift type
+            if (gift.isCollectible) {
+                menuShareImageAction.classList.remove('hidden');
+            } else {
+                menuShareImageAction.classList.add('hidden');
+            }
+
             longPressMenu.style.top = `${Math.min(eventCoords.clientY, window.innerHeight - longPressMenu.offsetHeight - 10)}px`;
             longPressMenu.style.left = `${Math.min(eventCoords.clientX, window.innerWidth - longPressMenu.offsetWidth - 10)}px`;
             longPressMenu.classList.remove('hidden');
             document.addEventListener('click', closeLongPressMenuOnClickOutside, { once: true, capture: true });
         }
+
+        // NEW: Function to open collectible menu from "..." button
+        function openCollectibleMenu(gift, eventCoords) {
+            currentLongPressGift = gift; // Set current gift for context
+            // Update pin button state
+            const isPinned = pinnedGifts.includes(gift.instanceId);
+            if (!gift.isCollectible) { 
+                menuPinAction.textContent = 'Закрепить (только коллекционные)'; 
+                menuPinAction.classList.add('disabled'); 
+            } else { 
+                menuPinAction.textContent = isPinned ? 'Открепить' : 'Закрепить'; 
+                menuPinAction.classList.remove('disabled'); 
+            }
+
+            // Show/hide share image action based on gift type
+            if (gift.isCollectible) {
+                menuShareImageAction.classList.remove('hidden');
+            } else {
+                menuShareImageAction.classList.add('hidden'); // Hide for non-collectible gifts
+            }
+
+            // Position the menu relative to the click/touch event
+            let x = eventCoords.clientX || (eventCoords.touches && eventCoords.touches[0] ? eventCoords.touches[0].clientX : 0);
+            let y = eventCoords.clientY || (eventCoords.touches && eventCoords.touches[0] ? eventCoords.touches[0].clientY : 0);
+
+            longPressMenu.style.top = `${Math.min(y, window.innerHeight - longPressMenu.offsetHeight - 10)}px`;
+            longPressMenu.style.left = `${Math.min(x, window.innerWidth - longPressMenu.offsetWidth - 10)}px`;
+            longPressMenu.classList.remove('hidden');
+
+            document.addEventListener('click', closeLongPressMenuOnClickOutside, { once: true, capture: true });
+        }
+
+
         function closeLongPressMenuOnClickOutside(event) {
             if (!longPressMenu.contains(event.target) && event.target !== longPressMenu) { longPressMenu.classList.add('hidden'); currentLongPressGift = null; }
         }
@@ -1923,24 +2006,217 @@
                 exitFilterModeButton.classList.add('hidden');
             }
         }
-        
-        function setupEventListeners() { /* Same as before, ensures IntersectionObserver related calls are in place */
+
+        // NEW: Function to generate and display the gift image (3:4 aspect)
+        async function generateGiftImage(gift) {
+            const cd = gift.collectibleData;
+            if (!cd) return null;
+
+            // Create a temporary container for rendering
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.top = '-9999px';
+            tempContainer.style.width = '450px'; // Render resolution (3:4 aspect, e.g., 450x600)
+            tempContainer.style.height = '600px';
+            tempContainer.style.display = 'flex';
+            tempContainer.style.flexDirection = 'column';
+            tempContainer.style.alignItems = 'center';
+            tempContainer.style.justifyContent = 'flex-start'; // Align to top
+            tempContainer.style.padding = '30px'; // Inner padding
+            tempContainer.style.borderRadius = '24px'; // Rounded corners, like a card
+            tempContainer.style.boxSizing = 'border-box'; // Include padding in width/height
+
+            // Apply backdrop
+            if (cd.backdropColors) {
+                tempContainer.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
+            } else {
+                tempContainer.style.background = 'linear-gradient(45deg, #2a3745, #17212b)'; // Default fallback background
+            }
+
+            // Apply pattern
+            if (cd.patternImage) {
+                const patternOverlay = document.createElement('div');
+                patternOverlay.style.position = 'absolute';
+                patternOverlay.style.top = '0';
+                patternOverlay.style.left = '0';
+                patternOverlay.style.width = '100%';
+                patternOverlay.style.height = '100%';
+                patternOverlay.style.backgroundImage = `url('${cd.patternImage}')`;
+                patternOverlay.style.backgroundRepeat = 'repeat';
+                patternOverlay.style.backgroundSize = '30% auto';
+                patternOverlay.style.opacity = '0.07'; // Reduced opacity
+                tempContainer.appendChild(patternOverlay);
+            }
+            
+            // Container for gift model
+            const giftModelContainer = document.createElement('div');
+            giftModelContainer.style.width = '70%';
+            giftModelContainer.style.height = 'auto'; // Height adapts to content
+            giftModelContainer.style.aspectRatio = '1 / 1'; // Maintain square shape
+            giftModelContainer.style.display = 'flex';
+            giftModelContainer.style.alignItems = 'center';
+            giftModelContainer.style.justifyContent = 'center';
+            giftModelContainer.style.position = 'relative';
+            giftModelContainer.style.zIndex = '10'; // Above pattern
+            giftModelContainer.style.marginBottom = '20px'; // Spacing to text
+
+            const modelImageEl = document.createElement('img');
+            modelImageEl.src = cd.modelImage || gift.originalImage;
+            modelImageEl.style.maxWidth = '100%';
+            modelImageEl.style.maxHeight = '100%';
+            modelImageEl.style.objectFit = 'contain';
+            giftModelContainer.appendChild(modelImageEl);
+            tempContainer.appendChild(giftModelContainer);
+
+            // "Upgraded Gift" text
+            const upgradedGiftText = document.createElement('div');
+            upgradedGiftText.textContent = 'Upgraded Gift';
+            upgradedGiftText.style.fontSize = '2.2em';
+            upgradedGiftText.style.fontWeight = '600';
+            upgradedGiftText.style.color = 'var(--tg-theme-text-color)';
+            upgradedGiftText.style.marginBottom = '10px';
+            upgradedGiftText.style.position = 'relative';
+            upgradedGiftText.style.zIndex = '10';
+            tempContainer.appendChild(upgradedGiftText);
+
+            // Gift name and number
+            const giftNameAndNumber = document.createElement('div');
+            giftNameAndNumber.textContent = `${gift.name} #${cd.number}`;
+            giftNameAndNumber.style.fontSize = '1.8em';
+            giftNameAndNumber.style.fontWeight = '500';
+            giftNameAndNumber.style.color = 'var(--tg-theme-text-color)';
+            giftNameAndNumber.style.opacity = '0.9';
+            giftNameAndNumber.style.marginBottom = '25px';
+            giftNameAndNumber.style.position = 'relative';
+            giftNameAndNumber.style.zIndex = '10';
+            tempContainer.appendChild(giftNameAndNumber);
+
+            // Model, backdrop, symbol info
+            const infoSection = document.createElement('div');
+            infoSection.style.display = 'flex';
+            infoSection.style.flexDirection = 'column';
+            infoSection.style.alignItems = 'flex-start'; // Align text to left
+            infoSection.style.width = '80%'; // Constrain width
+            infoSection.style.position = 'relative';
+            infoSection.style.zIndex = '10';
+            
+            // Helper function for info row
+            const createInfoRow = (label, value) => {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between'; // For text alignment
+                row.style.width = '100%';
+                row.style.marginBottom = '10px'; // Spacing between rows
+
+                const labelEl = document.createElement('span');
+                labelEl.textContent = label;
+                labelEl.style.fontSize = '1.2em';
+                labelEl.style.fontWeight = 'normal';
+                labelEl.style.color = 'var(--tg-theme-text-color)';
+                row.appendChild(labelEl);
+
+                const valueEl = document.createElement('span');
+                valueEl.textContent = value;
+                valueEl.style.fontSize = '1.2em';
+                valueEl.style.fontWeight = '500';
+                valueEl.style.color = 'var(--tg-theme-text-color)';
+                valueEl.style.opacity = '0.7';
+                row.appendChild(valueEl);
+                return row;
+            };
+
+            infoSection.appendChild(createInfoRow('Model', cd.model?.name || 'N/A'));
+            infoSection.appendChild(createInfoRow('Backdrop', cd.backdrop?.name || 'N/A'));
+            infoSection.appendChild(createInfoRow('Symbol', cd.pattern?.name || 'N/A'));
+            tempContainer.appendChild(infoSection);
+
+            document.body.appendChild(tempContainer);
+
+            let dataUrl = null;
+            try {
+                const canvas = await html2canvas(tempContainer, {
+                    backgroundColor: null, // Use element's background
+                    scale: 2, // Improve quality for rendering (2x from 450x600 -> 900x1200)
+                    useCORS: true // Allow loading images from other domains
+                });
+                dataUrl = canvas.toDataURL('image/png');
+            } catch (error) {
+                console.error("Ошибка при генерации изображения:", error);
+                tg.showAlert(`Не удалось сгенерировать изображение: ${error.message}`);
+            } finally {
+                document.body.removeChild(tempContainer); // Remove temporary container
+            }
+            return dataUrl;
+        }
+
+        // NEW: Handler for "Поделиться изображением" from the three dots menu
+        async function handleShareImageAction() {
+            longPressMenu.classList.add('hidden'); // Close the menu immediately
+            if (!currentLongPressGift || !currentLongPressGift.isCollectible) {
+                tg.showAlert("Невозможно поделиться изображением для этого подарка.");
+                return;
+            }
+
+            generatedImageMessage.textContent = 'Генерация изображения...';
+            generatedImagePreview.src = ''; // Clear previous image
+            downloadGeneratedImageButton.disabled = true; // Disable download button
+            generatedImageModal.classList.add('active'); // Open popup with message
+
+            const imageDataUrl = await generateGiftImage(currentLongPressGift);
+            
+            if (imageDataUrl) {
+                generatedImagePreview.src = imageDataUrl;
+                generatedImagePreview.dataset.downloadUrl = imageDataUrl; // Store for download
+                generatedImageMessage.textContent = 'Изображение готово. Нажмите "Скачать"';
+                downloadGeneratedImageButton.disabled = false;
+                tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                generatedImageMessage.textContent = 'Не удалось сгенерировать изображение.';
+                downloadGeneratedImageButton.disabled = true;
+                tg.HapticFeedback.notificationOccurred('error');
+            }
+        }
+
+        // NEW: Handler for downloading the generated image
+        function handleDownloadImage() {
+            const url = generatedImagePreview.dataset.downloadUrl;
+            if (url) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `gift_${currentLongPressGift.id}_${currentLongPressGift.collectibleData.number}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function setupEventListeners() { 
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
             backToProfileBuyButton.addEventListener('click', () => showPage('profile-page'));
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
             collectibleActionWear.addEventListener('click', handleWearAction);
+            collectibleMenuButton.addEventListener('click', (e) => { // NEW: Handle click on collectible modal menu button
+                const currentModalInstanceId = collectibleDetailModal.dataset.instanceId;
+                const gift = ownedGifts.find(g => g.instanceId === currentModalInstanceId);
+                if (gift) {
+                    openCollectibleMenu(gift, e); 
+                }
+            });
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
             menuPinAction.addEventListener('click', handlePinAction);
+            // NEW: Add event listener for the new share image action
+            menuShareImageAction.addEventListener('click', handleShareImageAction);
+            
             cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
             cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, customBuyModal].forEach(modal => { // Added customBuyModal
+            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, customBuyModal, generatedImageModal].forEach(modal => { // Added customBuyModal and generatedImageModal
                 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
             });
-            // Scroll listeners are handled by IntersectionObserver for Lottie grid items
-            // giftsGrid.addEventListener('scroll', () => { if(!longPressMenu.classList.contains('hidden')) { longPressMenu.classList.add('hidden'); currentLongPressGift = null; } });
             setupFilterPopupTrigger();
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
@@ -1960,6 +2236,10 @@
 
             // NEW: Exit Filter Mode Button
             exitFilterModeButton.addEventListener('click', handleClearFilters);
+
+            // NEW: Generated Image Modal Buttons
+            downloadGeneratedImageButton.addEventListener('click', handleDownloadImage);
+            closeGeneratedImageModalButton.addEventListener('click', () => closeModal(generatedImageModal));
         }
         
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
