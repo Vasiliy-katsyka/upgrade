@@ -582,6 +582,63 @@
             width: 100%;
         }
 
+        /* NEW: Toggle switch styles for Animations On/Off */
+        .toggle-switch {
+            position: relative;
+            display: flex; /* Use flex to align label with slider */
+            align-items: center; /* Vertically center items */
+            width: 100%; /* Take full width of parent grid cell */
+            height: 34px;
+            padding: 0 5px; /* Add padding for internal content */
+            background-color: var(--tg-theme-bg-color);
+            border-radius: 8px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-switch .slider {
+            position: relative; /* Changed from absolute */
+            display: inline-block; /* For width/height */
+            width: 60px;
+            height: 34px;
+            background-color: var(--tg-theme-hint-color); /* Off state */
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+            flex-shrink: 0; /* Prevent slider from shrinking */
+        }
+        .toggle-switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--tg-theme-bg-color); /* Knob color */
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        .toggle-switch input:checked + .slider {
+            background-color: var(--tg-theme-link-color); /* On state */
+        }
+        .toggle-switch input:focus + .slider {
+            box-shadow: 0 0 1px var(--tg-theme-link-color);
+        }
+        .toggle-switch input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+        .toggle-switch .toggle-label {
+            color: var(--tg-theme-text-color);
+            font-size: 0.9em;
+            margin-left: 10px; /* Space between slider and label */
+            flex-grow: 1; /* Allow label to take remaining space */
+        }
+
 
         .spinner {
             border: 4px solid var(--tg-theme-hint-color);
@@ -655,7 +712,7 @@
         <div id="buy-gifts-page" class="page">
             <div class="page-header">
                 <button id="back-to-profile-buy" class="back-button"></button>
-                <h2>Магазин подарков</h2> <!-- Long-press target for custom buy -->
+                <h2 id="buy-gifts-page-title">Магазин подарков</h2> <!-- Long-press target for custom buy -->
             </div>
             <div id="buy-gifts-grid" class="gifts-grid">
                 <div class="spinner" id="buy-gifts-loading-spinner"></div>
@@ -770,6 +827,17 @@
                         <h4>Символы</h4>
                         <div class="filter-options-grid" id="filter-options-patterns"></div>
                     </div>
+                    <!-- NEW: Animations Toggle Section -->
+                    <div class="filter-section">
+                        <h4>Анимации</h4>
+                        <div class="filter-options-grid" style="grid-template-columns: 1fr;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="animations-toggle">
+                                <span class="slider"></span>
+                                <span class="toggle-label">Включить все анимации</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-buttons-footer">
                     <button id="apply-filters-button" class="modal-button">Применить фильтры</button>
@@ -875,6 +943,7 @@
         const buyGiftsPage = document.getElementById('buy-gifts-page');
         const backToProfileBuyButton = document.getElementById('back-to-profile-buy');
         const buyGiftsGrid = document.getElementById('buy-gifts-grid');
+        const buyGiftsPageTitle = document.getElementById('buy-gifts-page-title'); // NEW
         
         const giftDetailModal = document.getElementById('gift-detail-modal');
         const modalGiftName = document.getElementById('modal-gift-name');
@@ -925,6 +994,10 @@
         const clearFiltersButton = document.getElementById('clear-filters-button');
         const clearAllDataButton = document.getElementById('clear-all-data-button');
         const clearDataIconPlaceholder = document.getElementById('clear-data-icon-placeholder');
+
+        // NEW: Animations Toggle
+        const animationsToggle = document.getElementById('animations-toggle');
+        let animationsEnabled = JSON.parse(localStorage.getItem('animationsEnabled_v1')) !== false; // Default to true
 
         // NEW: Custom Buy Modal elements
         const customBuyModal = document.getElementById('custom-buy-modal');
@@ -987,9 +1060,28 @@
         let tapCount = 0;
         
         function playLottieAnimation(container, path, loop = true, isGridItem = false) {
+            if (!animationsEnabled) { // NEW: Check global animation toggle
+                if (container) {
+                    // Try to show static fallback if animation is disabled
+                    const staticFallback = container.nextElementSibling; // Assuming static is next to lottie container
+                    if (staticFallback && staticFallback.classList.contains('static-image-fallback')) {
+                        staticFallback.style.display = 'block';
+                    }
+                    container.style.display = 'none'; // Hide Lottie container
+                }
+                return;
+            }
+
             if (!container || !path) return;
             if (container.lottieInstance) { container.lottieInstance.destroy(); delete container.lottieInstance; }
             container.innerHTML = '';
+            
+            // Ensure container is visible for Lottie
+            if (container.classList.contains('lottie-animation-container') && container.previousElementSibling && container.previousElementSibling.classList.contains('static-image-fallback')) {
+                container.previousElementSibling.style.display = 'none'; // Hide static if Lottie is playing
+            }
+            container.style.display = 'flex'; // Make sure Lottie container itself is visible
+
             const anim = bodymovin.loadAnimation({
                 container: container, path: path, renderer: 'svg', loop: loop, autoplay: true
             });
@@ -998,6 +1090,13 @@
                 anim.addEventListener('complete', () => {
                     if (container.lottieInstance === anim) { // Ensure it's the current animation
                         container.dataset.playedOnce = 'true';
+                        // Stop and hide after playing once, show fallback
+                        if (container.lottieInstance) container.lottieInstance.pause(); // Pause instead of destroy for smoother re-play
+                        container.style.display = 'none';
+                        const staticFallback = container.nextElementSibling;
+                        if (staticFallback && staticFallback.classList.contains('static-image-fallback')) {
+                            staticFallback.style.display = 'block';
+                        }
                     }
                 });
             }
@@ -1009,9 +1108,17 @@
                 delete container.dataset.playedOnce; // Reset for re-play on re-view
                 container.innerHTML = ''; // Clear container
             }
+            if (container) { // Ensure static fallback is visible if Lottie is destroyed
+                const staticFallback = container.nextElementSibling;
+                if (staticFallback && staticFallback.classList.contains('static-image-fallback')) {
+                    staticFallback.style.display = 'block';
+                }
+                container.style.display = 'none';
+            }
         }
         
         function handleLottieIntersection(entries, observer) {
+            if (!animationsEnabled) return; // NEW: Skip if animations are disabled
             entries.forEach(entry => {
                 const cardElement = entry.target;
                 const lottieContainer = cardElement.querySelector('.lottie-animation-container');
@@ -1020,10 +1127,16 @@
         
                 if (entry.isIntersecting) {
                     if (lottiePath && lottieContainer) {
-                        if(staticFallback) staticFallback.style.display = 'none';
-                        lottieContainer.style.display = 'flex'; // Make sure it's visible
-                        // Play once, then stop. Replay if it scrolls out and back in.
-                        playLottieAnimation(lottieContainer, lottiePath, false, true);
+                        // NEW: Only play if it hasn't played once already (or if it's new to viewport)
+                        if (!lottieContainer.dataset.playedOnce || lottieContainer.lottieInstance === undefined) {
+                            if(staticFallback) staticFallback.style.display = 'none';
+                            lottieContainer.style.display = 'flex'; // Make sure it's visible
+                            playLottieAnimation(lottieContainer, lottiePath, false, true); // Play once for grid items
+                        } else {
+                            // If it has played once and is still intersecting, keep static visible
+                            if(staticFallback) staticFallback.style.display = 'block';
+                            lottieContainer.style.display = 'none';
+                        }
                     }
                 } else {
                     if (lottieContainer) {
@@ -1036,6 +1149,7 @@
         }
         
         function initLottieObserver() {
+            if (lottieIntersectionObserver) lottieIntersectionObserver.disconnect(); // Disconnect existing observer
             lottieIntersectionObserver = new IntersectionObserver(handleLottieIntersection, {
                 root: null, // viewport
                 rootMargin: '100px', // Load/unload when 100px from viewport edge
@@ -1056,7 +1170,51 @@
             }
         }
         
-        
+        // NEW: Function to update the state of all currently rendered Lottie animations
+        function updateAllLottieStates() {
+            // Update profile section animations (worn gift, pinned gifts)
+            applyWornGiftStyles(wornGiftInstanceId);
+            renderTopPinnedGiftsPreview();
+
+            // Update visible grid items
+            const allGridItems = document.querySelectorAll('.gifts-grid .gift-card, .gifts-grid .buy-gift-item');
+            allGridItems.forEach(item => {
+                const lottieContainer = item.querySelector('.lottie-animation-container');
+                const staticFallback = item.querySelector('.static-image-fallback');
+                const lottiePath = item.dataset.lottiePath;
+
+                if (lottieContainer && staticFallback && lottiePath) {
+                    if (animationsEnabled) {
+                        // If animations are enabled, ensure the observer picks them up
+                        observeLottieElement(item); 
+                        // For items already in view, trigger re-evaluation (simulate intersection)
+                        const entry = [{ target: item, isIntersecting: true }];
+                        handleLottieIntersection(entry, lottieIntersectionObserver);
+                    } else {
+                        // If animations are disabled, ensure they are destroyed and static shown
+                        destroyLottieAnimation(lottieContainer);
+                        staticFallback.style.display = 'block';
+                    }
+                }
+            });
+
+            // Update modals if they are open (though modals are usually closed on toggle, defensive)
+            if (giftDetailModal.classList.contains('active')) {
+                const gift = ownedGifts.find(g => g.instanceId === giftDetailModal.dataset.instanceId);
+                if (gift && gift.lottiePath) {
+                    if (animationsEnabled) playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true);
+                    else destroyLottieAnimation(modalLottieGiftOriginal);
+                }
+            }
+            if (collectibleDetailModal.classList.contains('active')) {
+                const gift = ownedGifts.find(g => g.instanceId === collectibleDetailModal.dataset.instanceId);
+                if (gift && gift.isCollectible && gift.collectibleData.lottieModelPath) {
+                    if (animationsEnabled) playLottieAnimation(modalLottieCollectibleModel, gift.collectibleData.lottieModelPath, true);
+                    else destroyLottieAnimation(modalLottieCollectibleModel);
+                }
+            }
+        }
+
         function initApp() {
             tg.ready(); tg.expand();
             applyTheme(tg.themeParams);
@@ -1072,7 +1230,12 @@
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
         
             loadUserData(); loadState();
-            applyWornGiftStyles(wornGiftInstanceId);
+            
+            // NEW: Set initial state of the animations toggle
+            animationsToggle.checked = animationsEnabled;
+            // NEW: Apply initial animation states after loading state and before rendering
+            updateAllLottieStates();
+
             renderProfileGifts();
             setupEventListeners();
             fetchAvailableGifts();
@@ -1112,6 +1275,7 @@
             localStorage.setItem('pinnedGifts_v7', JSON.stringify(pinnedGifts));
             localStorage.setItem('wornGiftInstanceId_v7', wornGiftInstanceId);
             localStorage.setItem('activeFilters_v7', JSON.stringify(activeFilters));
+            localStorage.setItem('animationsEnabled_v1', JSON.stringify(animationsEnabled)); // NEW: Save animations toggle state
         }
         function loadState() { /* Same as before */ 
             const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v7')) || [];
@@ -1119,12 +1283,13 @@
             pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v7')) || [];
             wornGiftInstanceId = localStorage.getItem('wornGiftInstanceId_v7') || null;
             activeFilters = JSON.parse(localStorage.getItem('activeFilters_v7')) || { collection: null, model: null, backdrop: null, pattern: null };
+            animationsEnabled = JSON.parse(localStorage.getItem('animationsEnabled_v1')) !== false; // NEW: Load animations toggle state
         }
         
         function applyWornGiftStyles(instanceId) {
             const currentWornGift = ownedGifts.find(g => g.instanceId === instanceId && g.isCollectible);
             destroyLottieAnimation(wornGiftIconContainer); // Clear previous if any
-            if (currentWornGift && currentWornGift.collectibleData) {
+            if (currentWornGift && currentWornGift.collectibleData && animationsEnabled) { // NEW: Check animationsEnabled
                 if (currentWornGift.collectibleData.lottieModelPath) {
                     playLottieAnimation(wornGiftIconContainer, currentWornGift.collectibleData.lottieModelPath, true);
                 } else if (currentWornGift.collectibleData.modelImage) { // Fallback to static if no Lottie
@@ -1168,6 +1333,8 @@
         }
         
         function renderAvailableGifts() { // Modified for Lottie
+            // Unobserve old elements before clearing
+            Array.from(buyGiftsGrid.children).forEach(child => unobserveLottieElement(child)); // NEW: Unobserve for buy grid too
             buyGiftsGrid.innerHTML = '';
             if (Object.keys(allAvailableGifts).length === 0 && !buyGiftsLoadingSpinner.classList.contains('hidden')) {
                 buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">Сейчас нет доступных подарков.</p>`; return;
@@ -1186,7 +1353,7 @@
                 item.innerHTML = `
                     <div class="image-container">
                         <div class="lottie-animation-container" style="display:none;"></div>
-                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.innerHTML = '🖼️';">
+                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23${tg.themeParams.hint_color?.substring(1) || '708499'}\\' d=\\'M2,5.27L3.28,4H20C21.11,4 22,4.89 22,6V18C22,18.34 21.91,18.66 21.75,18.94L20.27,17.47L2.53,C2.17,17.11 2,16.59 2,16V5.27M20,6L11,12L20,18V6Z\' /%3E%3C/svg%3E'; this.style.backgroundColor='var(--tg-theme-secondary-bg-color)';">
                     </div>
                     <div class="gift-name">${name}</div>
                     <div class="gift-price"><span class="star-icon">⭐</span> Бесплатно</div>
@@ -1290,7 +1457,7 @@
             
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
         
-            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';}; // Simple placeholder
+            staticImage.onerror = function() { this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23${tg.themeParams.hint_color?.substring(1) || '708499'}\\' d=\\'M2,5.27L3.28,4H20C21.11,4 22,4.89 22,6V18C22,18.34 21.91,18.66 21.75,18.94L20.27,17.47L2.53,C2.17,17.11 2,16.59 2,16V5.27M20,6L11,12L20,18V6Z\' /%3E%3C/svg%3E'; this.style.backgroundColor='var(--tg-theme-secondary-bg-color)'; this.style.display='block'; lottieContainer.style.display='none';};
             
             imageContainer.appendChild(lottieContainer);
             imageContainer.appendChild(staticImage);
@@ -1321,6 +1488,8 @@
             });
             profileTopPinnedGifts.innerHTML = '';
         
+            if (!animationsEnabled) return; // NEW: Skip if animations are disabled
+
             pinnedGifts.slice(0, 7).forEach(instanceId => {
                 const gift = ownedGifts.find(g => g.instanceId === instanceId);
                 if (gift) {
@@ -1388,7 +1557,7 @@
                 modalCollectibleNumberSubtext.textContent = `Коллекционный #${cd.number}`;
                 modalCollectibleBg.style.background = `radial-gradient(circle, ${cd.backdropColors?.centerColor || '#555'}, ${cd.backdropColors?.edgeColor || '#333'})`;
                 modalCollectiblePattern.style.backgroundImage = cd.patternImage ? `url('${cd.patternImage}')` : 'none';
-                if (cd.lottieModelPath) { playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true); modalCollectibleModelImgStatic.style.display = 'none'; } 
+                if (animationsEnabled && cd.lottieModelPath) { playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true); modalCollectibleModelImgStatic.style.display = 'none'; } 
                 else { destroyLottieAnimation(modalLottieCollectibleModel); modalCollectibleModelImgStatic.src = cd.modelImage || gift.originalImage; modalCollectibleModelImgStatic.style.display = 'block'; modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; }; }
                 const ownerName = profileName.textContent; const ownerAvatar = profileAvatar.src;
                 modalCollectibleInfoTable.innerHTML = `
@@ -1411,7 +1580,7 @@
 
             } else {
                 modalGiftName.textContent = "Сохраненный подарок";
-                if (gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; } 
+                if (animationsEnabled && gift.lottiePath) { playLottieAnimation(modalLottieGiftOriginal, gift.lottiePath, true); modalGiftImageStatic.style.display = 'none'; } 
                 else { destroyLottieAnimation(modalLottieGiftOriginal); modalGiftImageStatic.src = gift.originalImage; modalGiftImageStatic.style.display = 'block'; modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };}
                 modalGiftDescription1.textContent = `Добавьте «${gift.name}» в свой профиль или улучшите его.`;
                 modalGiftDescription2.textContent = "Только вы можете видеть имя отправителя.";
@@ -1857,7 +2026,7 @@
                 collectibleData: {
                     model: selectedCustomGift.model,
                     backdrop: selectedCustomGift.backdrop,
-                    pattern: selectedCustomGift.pattern, // Typo fixed from selectedCustomCustomGift
+                    pattern: selectedCustomGift.pattern,
                     number: Math.floor(Math.random() * 200000) + 1, // Random unique number
                     modelImage: selectedCustomGift.modelImage,
                     lottieModelPath: selectedCustomGift.lottieModelPath,
@@ -1947,12 +2116,12 @@
             clearAllDataButton.addEventListener('click', handleClearAllData);
 
             // NEW: Long press on "Магазин подарков" header for custom buy
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchstart', (e) => {
+            buyGiftsPageTitle.addEventListener('touchstart', (e) => {
                 filterPopupLongPressTimer = setTimeout(openCustomBuyModal, 700);
             }, { passive: true });
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchend', () => clearTimeout(filterPopupLongPressTimer));
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchmove', () => clearTimeout(filterPopupLongPressTimer));
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('contextmenu', (e) => { e.preventDefault(); openCustomBuyModal(); });
+            buyGiftsPageTitle.addEventListener('touchend', () => clearTimeout(filterPopupLongPressTimer));
+            buyGiftsPageTitle.addEventListener('touchmove', () => clearTimeout(filterPopupLongPressTimer));
+            buyGiftsPageTitle.addEventListener('contextmenu', (e) => { e.preventDefault(); openCustomBuyModal(); });
 
             // NEW: Custom Buy Modal buttons
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
@@ -1960,6 +2129,13 @@
 
             // NEW: Exit Filter Mode Button
             exitFilterModeButton.addEventListener('click', handleClearFilters);
+
+            // NEW: Animations Toggle Event Listener
+            animationsToggle.addEventListener('change', () => {
+                animationsEnabled = animationsToggle.checked;
+                saveState(); // Save the new state
+                updateAllLottieStates(); // Re-evaluate all animations
+            });
         }
         
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
