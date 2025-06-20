@@ -798,7 +798,7 @@ const mockUser = {
     username: `${getRandomElement(russianFirstNames).toLowerCase().replace(/\s/g, '')}${Math.floor(Math.random() * 1000)}`
 };
 
-// --- Serialization and Deserialization Logic with FULL Sanitization ---
+// --- Serialization and Deserialization Logic with Sanitization ---
 
 const GIFT_BLUEPRINT_ESSENTIAL = [
     'instanceId', 'id', 'collectionName', 'modelName', 'backdropName', 'patternName',
@@ -806,36 +806,24 @@ const GIFT_BLUEPRINT_ESSENTIAL = [
 ];
 
 /**
- * Encodes a string to be URL-safe by replacing special characters with placeholders.
- * The order of replacement is critical.
+ * Encodes a string to be URL-safe for our specific case.
+ * We only need to protect our chosen delimiter, the hyphen '-'.
  * @param {string} str The raw string.
  * @returns {string} The sanitized string.
  */
 function sanitizeForLink(str) {
-    return String(str)
-        .replace(/\s/g, '_SP_')    // Spaces
-        .replace(/-/g, '_HPH_')   // Hyphens
-        .replace(/:/g, '_CLN_')   // Colons
-        .replace(/\./g, '_DOT_')  // Dots
-        .replace(/\//g, '_SLH_')  // Slashes
-        .replace(/_/g, '_US_');    // Original underscores (MUST BE LAST)
+    return String(str).replace(/-/g, '_HPH_'); // Replace Hyphen with placeholder
 }
 
 /**
- * Decodes a URL-safe string by replacing placeholders with their original characters.
- * The order of replacement must be the reverse of the sanitization process.
+ * Decodes a URL-safe string by restoring the original characters.
  * @param {string} str The sanitized string.
  * @returns {string} The original raw string.
  */
 function desanitizeFromLink(str) {
-    return String(str)
-        .replace(/_US_/g, '_')    // Original underscores (MUST BE FIRST)
-        .replace(/_SLH_/g, '/')   // Slashes
-        .replace(/_DOT_/g, '.')   // Dots
-        .replace(/_CLN_/g, ':')   // Colons
-        .replace(/_HPH_/g, '-')   // Hyphens
-        .replace(/_SP_/g, ' ');   // Spaces
+    return String(str).replace(/_HPH_/g, '-'); // Restore Hyphen
 }
+
 
 function serializeGiftToString_essential(gift) {
     if (!gift || !gift.isCollectible || !gift.collectibleData) {
@@ -862,34 +850,20 @@ function serializeGiftToString_essential(gift) {
         return sanitizeForLink(value);
     });
 
-    return values.join('_');
+    return values.join('-'); // Use hyphen as the delimiter
 }
 
 async function deserializeStringAndFetchDetails(str) {
-    const parts = str.split('_'); // Simple split is fine now, post-processing will handle it
-    const reconstructedParts = [];
-    let buffer = '';
-
-    // Reconstruct parts that were split due to placeholders containing '_'
-    for (let i = 0; i < parts.length; i++) {
-        buffer += parts[i];
-        if (buffer === '_NULL_' || (!buffer.includes('_SP') && !buffer.includes('_HPH') && !buffer.includes('_CLN') && !buffer.includes('_DOT') && !buffer.includes('_SLH') && !buffer.includes('_US'))) {
-            reconstructedParts.push(buffer);
-            buffer = '';
-        } else if (i < parts.length -1 ) {
-             buffer += '_';
-        }
-    }
-     if (buffer) reconstructedParts.push(buffer);
+    const parts = str.split('-'); // Simple, reliable split
     
-    if (reconstructedParts.length !== GIFT_BLUEPRINT_ESSENTIAL.length) {
-         console.error("Deserialization failed: incorrect number of parts after reconstruction.", { reconstructedParts, blueprintLength: GIFT_BLUEPRINT_ESSENTIAL.length });
+    if (parts.length !== GIFT_BLUEPRINT_ESSENTIAL.length) {
+         console.error("Deserialization failed: incorrect number of parts.", { partsCount: parts.length, blueprintLength: GIFT_BLUEPRINT_ESSENTIAL.length });
          return null;
     }
 
     const data = {};
     GIFT_BLUEPRINT_ESSENTIAL.forEach((key, index) => {
-        data[key] = reconstructedParts[index] === '_NULL_' ? null : desanitizeFromLink(reconstructedParts[index]);
+        data[key] = parts[index] === '_NULL_' ? null : desanitizeFromLink(parts[index]);
     });
 
     try {
@@ -952,13 +926,7 @@ function playLottieAnimation(container, path, loop = true, isGridItem = false) {
         delete container.lottieInstance;
     }
     container.innerHTML = '';
-    const anim = bodymovin.loadAnimation({
-        container: container,
-        path: path,
-        renderer: 'svg',
-        loop: loop,
-        autoplay: true
-    });
+    const anim = bodymovin.loadAnimation({ container: container, path: path, renderer: 'svg', loop: loop, autoplay: true });
     container.lottieInstance = anim;
     if (isGridItem && !loop) {
         anim.addEventListener('complete', () => {
@@ -998,11 +966,7 @@ function handleLottieIntersection(entries, observer) {
     });
 }
 function initLottieObserver() {
-    lottieIntersectionObserver = new IntersectionObserver(handleLottieIntersection, {
-        root: null,
-        rootMargin: '100px',
-        threshold: 0.01
-    });
+    lottieIntersectionObserver = new IntersectionObserver(handleLottieIntersection, { root: null, rootMargin: '100px', threshold: 0.01 });
 }
 function observeLottieElement(element) {
     if (lottieIntersectionObserver && element.dataset.lottiePath) {
@@ -1054,9 +1018,7 @@ async function initApp() {
 function applyTheme(themeParams) {
     if (themeParams && Object.keys(themeParams).length > 0) {
         const root = document.documentElement;
-        const setVar = (varName, value) => {
-            if (value) root.style.setProperty(varName, value);
-        };
+        const setVar = (varName, value) => { if (value) root.style.setProperty(varName, value); };
         setVar('--tg-theme-bg-color', themeParams.bg_color);
         setVar('--tg-theme-text-color', themeParams.text_color);
         setVar('--tg-theme-hint-color', themeParams.hint_color);
@@ -1080,38 +1042,28 @@ function loadUserData() {
     const user = tg.initDataUnsafe?.user || mockUser;
     pageElements.profileName.textContent = user.first_name || mockUser.first_name;
     pageElements.profileAvatar.src = user.photo_url || mockUser.photo_url;
-    pageElements.profileAvatar.onerror = () => {
-        pageElements.profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`;
-    };
+    pageElements.profileAvatar.onerror = () => { pageElements.profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
     pageElements.profileUsername.textContent = user.username ? `@${user.username}` : `@${mockUser.username}`;
     pageElements.profileBio.textContent = user.bio || mockUser.bio;
     pageElements.profilePhone.textContent = user.phone || mockUser.phone;
 }
 
 function saveState() {
-    localStorage.setItem('ownedGifts_v13', JSON.stringify(ownedGifts));
-    localStorage.setItem('pinnedGifts_v13', JSON.stringify(pinnedGifts));
-    localStorage.setItem('wornGiftInstanceId_v13', wornGiftInstanceId);
-    localStorage.setItem('activeFilters_v13', JSON.stringify(activeFilters));
+    localStorage.setItem('ownedGifts_v14', JSON.stringify(ownedGifts));
+    localStorage.setItem('pinnedGifts_v14', JSON.stringify(pinnedGifts));
+    localStorage.setItem('wornGiftInstanceId_v14', wornGiftInstanceId);
+    localStorage.setItem('activeFilters_v14', JSON.stringify(activeFilters));
 }
 
 function loadState() {
-    const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v13')) || [];
-    ownedGifts = loadedOwnedGifts.map(gift => ({
-        ...gift,
-        instanceId: gift.instanceId || generateUniqueId()
-    }));
-    pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v13')) || [];
-    wornGiftInstanceId = localStorage.getItem('wornGiftInstanceId_v13') || null;
-    activeFilters = JSON.parse(localStorage.getItem('activeFilters_v13')) || {
-        collection: null,
-        model: null,
-        backdrop: null,
-        pattern: null
-    };
+    const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v14')) || [];
+    ownedGifts = loadedOwnedGifts.map(gift => ({ ...gift, instanceId: gift.instanceId || generateUniqueId() }));
+    pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v14')) || [];
+    wornGiftInstanceId = localStorage.getItem('wornGiftInstanceId_v14') || null;
+    activeFilters = JSON.parse(localStorage.getItem('activeFilters_v14')) || { collection: null, model: null, backdrop: null, pattern: null };
 }
 
-// --- Core Application Logic ---
+// --- Core Application Logic (with new sanitization) ---
 
 async function handleStartParam() {
     const startParam = tg.initDataUnsafe?.start_param;
@@ -1123,7 +1075,7 @@ async function handleStartParam() {
 
     try {
         if (startParam.startsWith('receive_')) {
-            const commandParts = startParam.substring(8).split('_'); // remove "receive_"
+            const commandParts = startParam.substring(8).split('_');
             const recipient = desanitizeFromLink(commandParts[0]);
             const senderUsername = desanitizeFromLink(commandParts[1]);
             const giftDataString = commandParts.slice(2).join('_');
@@ -1134,10 +1086,9 @@ async function handleStartParam() {
             if (recipient.toLowerCase() === currentIdentifier) {
                 const gift = await deserializeStringAndFetchDetails(giftDataString);
                 if (!gift) {
-                    tg.showAlert("Не удалось прочитать данные подарка из ссылки. Возможно, ссылка повреждена.");
+                    tg.showAlert("Не удалось прочитать данные из ссылки. Возможно, ссылка повреждена.");
                     return;
                 }
-
                 if (ownedGifts.some(g => g.instanceId === gift.instanceId)) {
                     tg.showAlert("Вы уже получили этот подарок.");
                     openGiftDetailByInstanceId(gift.instanceId);
@@ -1166,7 +1117,7 @@ async function handleStartParam() {
             const gift = await deserializeStringAndFetchDetails(giftDataString);
 
             if (!gift) {
-                tg.showAlert("Не удалось прочитать данные подарка из ссылки. Возможно, ссылка повреждена.");
+                tg.showAlert("Не удалось прочитать данные из ссылки. Возможно, ссылка повреждена.");
                 return;
             }
 
