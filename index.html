@@ -479,8 +479,8 @@
         .collectible-info-section .info-row:not(:last-child) { margin-bottom: 2px; }
         .collectible-info-section .info-label { color: var(--tg-theme-text-color); }
         .collectible-info-section .info-value { color: var(--tg-theme-hint-color); display: flex; align-items: center; }
-        .collectible-info-section .info-value.clickable-info { cursor: pointer; } /* NEW: Cursor for triple-tap */
-        .collectible-info-section .info-value.clickable-info:active { opacity: 0.7; } /* NEW: Active state for click feedback */
+        .collectible-info-section .info-value.clickable-info { cursor: pointer; }
+        .collectible-info-section .info-value.clickable-info:active { opacity: 0.7; }
 
 
         .collectible-info-section .info-value img.owner-avatar { width: 24px; height: 24px; border-radius: 50%; margin-right: 8px; }
@@ -795,7 +795,7 @@
             </div>
         </div>
 
-        <!-- NEW: Custom Buy Modal -->
+        <!-- Custom Buy Modal -->
         <div id="custom-buy-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar">
@@ -841,7 +841,7 @@
             </div>
         </div>
 
-        <!-- NEW: Modal for generated image -->
+        <!-- Modal for generated image -->
         <div id="generated-image-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar">
@@ -873,11 +873,11 @@
         
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
-        const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`; // Corrected Diamond SVG
+        const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>`;
-        const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`; // Vertical dots SVG
+        const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
         
         let allAvailableGifts = {};
         let ownedGifts = [];
@@ -1106,7 +1106,7 @@
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
-            collectibleMenuButton.innerHTML = MENU_DOTS_SVG; // Set SVG for menu button
+            collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
         
             loadUserData(); loadState();
             applyWornGiftStyles(wornGiftInstanceId);
@@ -1492,7 +1492,7 @@
                 return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'failed', error: error.message };
             }
         }
-        async function handleSingleGiftUpgradeFromModal(instanceId) { 
+        async function handleSingleGiftUpgradeFromModal(instanceId) {
             const gift = ownedGifts.find(g => g.instanceId === instanceId);
             if (!gift || gift.isCollectible) return;
             const upgradeButton = document.getElementById(`modal-action-upgrade-gift-${instanceId}`);
@@ -1511,7 +1511,7 @@
                 if (upgradeButton) { upgradeButton.textContent = 'Улучшить'; upgradeButton.disabled = false; }
             }
         }
-        async function handleUpgradeAllGifts() { 
+        async function handleUpgradeAllGifts() {
             const giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible);
             if (giftsToUpgrade.length === 0) { tg.showAlert("Нет подарков для улучшения."); return; }
             const originalButtonText = upgradeAllGiftsButton.textContent;
@@ -1547,7 +1547,7 @@
             upgradeAllGiftsButton.style.display = stillHasNonCollectible ? 'inline-block' : 'none';
             if (stillHasNonCollectible) { upgradeAllGiftsButton.textContent = originalButtonText; upgradeAllGiftsButton.disabled = false; }
         }
-        function selectWeightedRandom(items) { 
+        function selectWeightedRandom(items) {
             if (!items || items.length === 0) return null;
             let totalWeight = items.reduce((sum, item) => sum + (item.rarityPermille || 1), 0);
             if (totalWeight === 0) return items[Math.floor(Math.random() * items.length)];
@@ -1623,8 +1623,8 @@
 
             // Adjust position to appear near the menu button, not necessarily where tapped
             // For a top-right menu, offset it slightly left/up from the exact click
-            const menuWidth = longPressMenu.offsetWidth || 180; // Fallback if not rendered yet
-            const menuHeight = longPressMenu.offsetHeight || 100; // Fallback
+            const menuWidth = longPressMenu.offsetWidth || 180;
+            const menuHeight = longPressMenu.offsetHeight || 100;
 
             x = window.innerWidth - menuWidth - 20; // 20px from right edge
             y = (collectibleMenuButton.getBoundingClientRect().top + collectibleMenuButton.offsetHeight + 10); // Below the menu button + 10px offset
@@ -1889,20 +1889,6 @@
             checkCustomBuyCompleteness();
         }
 
-        function checkCustomBuyCompleteness() {
-            const isBaseSelected = selectedCustomGift.id !== null;
-            
-            const modelsExist = !customBuyModelsSection.classList.contains('hidden');
-            const backdropsExist = !customBuyBackdropsSection.classList.contains('hidden');
-            const patternsExist = !customBuyPatternsSection.classList.contains('hidden');
-
-            const isModelSelected = !modelsExist || selectedCustomGift.model !== null;
-            const isBackdropSelected = !backdropsExist || selectedCustomGift.backdrop !== null;
-            const isPatternSelected = !patternsExist || selectedCustomGift.pattern !== null;
-
-            customBuyConfirmButton.disabled = !(isBaseSelected && isModelSelected && isBackdropSelected && isPatternSelected);
-        }
-
         function handleCustomBuyConfirm() {
             if (customBuyConfirmButton.disabled) return;
 
@@ -1980,9 +1966,32 @@
             }
         }
 
+        // Helper to preload images for faster html2canvas rendering
+        async function preloadImage(url) {
+            return new Promise((resolve, reject) => {
+                if (!url) {
+                    resolve(); // Resolve immediately if no URL
+                    return;
+                }
+                const img = new Image();
+                img.src = url;
+                img.onload = resolve;
+                img.onerror = () => {
+                    console.warn(`Failed to preload image: ${url}`);
+                    resolve(); // Resolve even on error to not block main flow
+                };
+            });
+        }
+
         async function generateGiftImage(gift) {
             const cd = gift.collectibleData;
             if (!cd) return null;
+
+            // Preload images for faster rendering
+            await Promise.all([
+                preloadImage(cd.modelImage || gift.originalImage),
+                preloadImage(cd.patternImage)
+            ]);
 
             const tempContainer = document.createElement('div');
             tempContainer.style.position = 'absolute';
@@ -2099,9 +2108,10 @@
 
             let dataUrl = null;
             try {
+                // Use a smaller scale if 2 is too slow, e.g., 1.5 or 1
                 const canvas = await html2canvas(tempContainer, {
                     backgroundColor: null,
-                    scale: 2,
+                    scale: 2, // Keep 2 for now, but optimize here if needed
                     useCORS: true
                 });
                 dataUrl = canvas.toDataURL('image/png');
@@ -2130,7 +2140,7 @@
             
             if (imageDataUrl) {
                 generatedImagePreview.src = imageDataUrl;
-                generatedImagePreview.dataset.downloadUrl = imageDataUrl;
+                downloadGeneratedImageButton.href = imageDataUrl; // Set href directly
                 generatedImageMessage.textContent = 'Изображение готово. Нажмите "Скачать"';
                 downloadGeneratedImageButton.disabled = false;
                 tg.HapticFeedback.notificationOccurred('success');
@@ -2142,16 +2152,9 @@
         }
 
         function handleDownloadImage() {
-            const url = generatedImagePreview.dataset.downloadUrl;
-            if (url) {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `gift_${currentLongPressGift.id}_${currentLongPressGift.collectibleData.number}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                tg.HapticFeedback.impactOccurred('light');
-            }
+            // The href is already set by handleShareImageAction, so just trigger click
+            // This is handled by the browser's default behavior for <a> with download attribute
+            // No need for a.click() explicitly in JS if it's a direct user interaction
         }
 
         function setupEventListeners() {
@@ -2161,11 +2164,11 @@
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
             collectibleActionWear.addEventListener('click', handleWearAction);
-            collectibleMenuButton.addEventListener('click', (e) => { // Handle click on collectible modal menu button
+            collectibleMenuButton.addEventListener('click', (e) => {
                 const currentModalInstanceId = collectibleDetailModal.dataset.instanceId;
                 const gift = ownedGifts.find(g => g.instanceId === currentModalInstanceId);
                 if (gift) {
-                    openCollectibleMenu(gift, e); 
+                    openCollectibleMenu(gift, e);
                 }
             });
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
@@ -2195,7 +2198,11 @@
 
             exitFilterModeButton.addEventListener('click', handleClearFilters);
 
-            downloadGeneratedImageButton.addEventListener('click', handleDownloadImage);
+            // For download button, we only need to set download attribute and href
+            // The click itself is handled by the browser if it's a direct user interaction
+            downloadGeneratedImageButton.addEventListener('click', handleDownloadImage); 
+            downloadGeneratedImageButton.download = "generated_gift.png"; // Set a default filename
+
             closeGeneratedImageModalButton.addEventListener('click', () => closeModal(generatedImageModal));
         }
         
