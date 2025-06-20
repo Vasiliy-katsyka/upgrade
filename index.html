@@ -772,7 +772,6 @@ let currentLongPressGift = null;
 let longPressTimer;
 let lottieIntersectionObserver;
 
-// A single object to hold all cached DOM elements
 const pageElements = {};
 
 // --- Utility Functions ---
@@ -785,18 +784,6 @@ function getRandomElement(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function generateRandomPhoneNumber() {
-    let num = '+7 (9';
-    for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10);
-    num += ') ';
-    for (let i = 0; i < 3; i++) num += Math.floor(Math.random() * 10);
-    num += '-';
-    for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10);
-    num += '-';
-    for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10);
-    return num;
-}
-
 function generateUniqueId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
 }
@@ -807,38 +794,47 @@ const mockUser = {
     last_name: getRandomElement(russianLastNames),
     photo_url: `https://i.pravatar.cc/140?u=${generateUniqueId()}`,
     bio: getRandomElement(russianBios),
-    phone: generateRandomPhoneNumber(),
+    phone: `+79${Math.floor(100000000 + Math.random() * 900000000)}`,
     username: `${getRandomElement(russianFirstNames).toLowerCase().replace(/\s/g, '')}${Math.floor(Math.random() * 1000)}`
 };
 
-// --- Serialization and Deserialization Logic with Sanitization ---
+// --- Serialization and Deserialization Logic with FULL Sanitization ---
 
 const GIFT_BLUEPRINT_ESSENTIAL = [
     'instanceId', 'id', 'collectionName', 'modelName', 'backdropName', 'patternName',
     'number', 'acquiredDate'
 ];
 
-// New Sanitization Helpers
+/**
+ * Encodes a string to be URL-safe by replacing special characters with placeholders.
+ * The order of replacement is critical.
+ * @param {string} str The raw string.
+ * @returns {string} The sanitized string.
+ */
 function sanitizeForLink(str) {
     return String(str)
-        .replace(/\s/g, '_SP_')  // Replace spaces first
-        .replace(/_/g, '_US_');  // Then replace original underscores
+        .replace(/\s/g, '_SP_')    // Spaces
+        .replace(/-/g, '_HPH_')   // Hyphens
+        .replace(/:/g, '_CLN_')   // Colons
+        .replace(/\./g, '_DOT_')  // Dots
+        .replace(/\//g, '_SLH_')  // Slashes
+        .replace(/_/g, '_US_');    // Original underscores (MUST BE LAST)
 }
 
+/**
+ * Decodes a URL-safe string by replacing placeholders with their original characters.
+ * The order of replacement must be the reverse of the sanitization process.
+ * @param {string} str The sanitized string.
+ * @returns {string} The original raw string.
+ */
 function desanitizeFromLink(str) {
     return String(str)
-        .replace(/_US_/g, '_')    // Restore underscores first
-        .replace(/_SP_/g, ' '); // Then restore spaces
-}
-
-function sanitizePhotoUrl(url) {
-    if (!url) return '';
-    return url.replace('https://', '').replace(/\./g, '_DOT_').replace(/\//g, '_SLASH_');
-}
-
-function desanitizePhotoUrl(sanitizedUrl) {
-    if (!sanitizedUrl) return '';
-    return 'https://' + sanitizedUrl.replace(/_DOT_/g, '.').replace(/_SLASH_/g, '/');
+        .replace(/_US_/g, '_')    // Original underscores (MUST BE FIRST)
+        .replace(/_SLH_/g, '/')   // Slashes
+        .replace(/_DOT_/g, '.')   // Dots
+        .replace(/_CLN_/g, ':')   // Colons
+        .replace(/_HPH_/g, '-')   // Hyphens
+        .replace(/_SP_/g, ' ');   // Spaces
 }
 
 function serializeGiftToString_essential(gift) {
@@ -870,15 +866,30 @@ function serializeGiftToString_essential(gift) {
 }
 
 async function deserializeStringAndFetchDetails(str) {
-    const parts = str.split(/(?<!_US)_/g); // Split on underscores that are NOT preceded by _US
+    const parts = str.split('_'); // Simple split is fine now, post-processing will handle it
+    const reconstructedParts = [];
+    let buffer = '';
+
+    // Reconstruct parts that were split due to placeholders containing '_'
+    for (let i = 0; i < parts.length; i++) {
+        buffer += parts[i];
+        if (buffer === '_NULL_' || (!buffer.includes('_SP') && !buffer.includes('_HPH') && !buffer.includes('_CLN') && !buffer.includes('_DOT') && !buffer.includes('_SLH') && !buffer.includes('_US'))) {
+            reconstructedParts.push(buffer);
+            buffer = '';
+        } else if (i < parts.length -1 ) {
+             buffer += '_';
+        }
+    }
+     if (buffer) reconstructedParts.push(buffer);
+    
+    if (reconstructedParts.length !== GIFT_BLUEPRINT_ESSENTIAL.length) {
+         console.error("Deserialization failed: incorrect number of parts after reconstruction.", { reconstructedParts, blueprintLength: GIFT_BLUEPRINT_ESSENTIAL.length });
+         return null;
+    }
 
     const data = {};
     GIFT_BLUEPRINT_ESSENTIAL.forEach((key, index) => {
-        if (parts[index]) {
-            data[key] = parts[index] === '_NULL_' ? null : desanitizeFromLink(parts[index]);
-        } else {
-            data[key] = null;
-        }
+        data[key] = reconstructedParts[index] === '_NULL_' ? null : desanitizeFromLink(reconstructedParts[index]);
     });
 
     try {
@@ -1078,21 +1089,21 @@ function loadUserData() {
 }
 
 function saveState() {
-    localStorage.setItem('ownedGifts_v12', JSON.stringify(ownedGifts));
-    localStorage.setItem('pinnedGifts_v12', JSON.stringify(pinnedGifts));
-    localStorage.setItem('wornGiftInstanceId_v12', wornGiftInstanceId);
-    localStorage.setItem('activeFilters_v12', JSON.stringify(activeFilters));
+    localStorage.setItem('ownedGifts_v13', JSON.stringify(ownedGifts));
+    localStorage.setItem('pinnedGifts_v13', JSON.stringify(pinnedGifts));
+    localStorage.setItem('wornGiftInstanceId_v13', wornGiftInstanceId);
+    localStorage.setItem('activeFilters_v13', JSON.stringify(activeFilters));
 }
 
 function loadState() {
-    const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v12')) || [];
+    const loadedOwnedGifts = JSON.parse(localStorage.getItem('ownedGifts_v13')) || [];
     ownedGifts = loadedOwnedGifts.map(gift => ({
         ...gift,
         instanceId: gift.instanceId || generateUniqueId()
     }));
-    pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v12')) || [];
-    wornGiftInstanceId = localStorage.getItem('wornGiftInstanceId_v12') || null;
-    activeFilters = JSON.parse(localStorage.getItem('activeFilters_v12')) || {
+    pinnedGifts = JSON.parse(localStorage.getItem('pinnedGifts_v13')) || [];
+    wornGiftInstanceId = localStorage.getItem('wornGiftInstanceId_v13') || null;
+    activeFilters = JSON.parse(localStorage.getItem('activeFilters_v13')) || {
         collection: null,
         model: null,
         backdrop: null,
@@ -1100,7 +1111,7 @@ function loadState() {
     };
 }
 
-// --- Core Application Logic (with new sanitization) ---
+// --- Core Application Logic ---
 
 async function handleStartParam() {
     const startParam = tg.initDataUnsafe?.start_param;
@@ -1112,16 +1123,10 @@ async function handleStartParam() {
 
     try {
         if (startParam.startsWith('receive_')) {
-            // Reconstruct the payload correctly, knowing the first 3 parts are command/meta
-            const payloadIndex = startParam.indexOf('_', startParam.indexOf('_') + 1) + 1;
-            const metaPart = startParam.substring(0, payloadIndex);
-            const giftDataString = startParam.substring(payloadIndex);
-
-            const metaParts = metaPart.split('_');
-            if (metaParts.length < 3) return;
-
-            const recipient = desanitizeFromLink(metaParts[1]);
-            const senderUsername = desanitizeFromLink(metaParts[2]);
+            const commandParts = startParam.substring(8).split('_'); // remove "receive_"
+            const recipient = desanitizeFromLink(commandParts[0]);
+            const senderUsername = desanitizeFromLink(commandParts[1]);
+            const giftDataString = commandParts.slice(2).join('_');
 
             const currentUser = tg.initDataUnsafe?.user || mockUser;
             const currentIdentifier = (currentUser.username || currentUser.id.toString()).toLowerCase();
@@ -1151,13 +1156,13 @@ async function handleStartParam() {
             }
         } else if (startParam.startsWith('view_')) {
             const fullPayload = startParam.substring(5);
-            const [ownerDataString, giftDataString] = fullPayload.split('$$');
+            const [ownerDataString, giftDataString] = fullPayload.split('_DLM_');
             if (!ownerDataString || !giftDataString) return;
 
             const ownerParts = ownerDataString.split('_');
             const ownerUsername = desanitizeFromLink(ownerParts[0]);
             const sanitizedPhotoUrl = ownerParts.slice(1).join('_');
-
+            
             const gift = await deserializeStringAndFetchDetails(giftDataString);
 
             if (!gift) {
@@ -1169,7 +1174,7 @@ async function handleStartParam() {
                 gift: gift,
                 owner: {
                     username: ownerUsername,
-                    photo_url: desanitizePhotoUrl(sanitizedPhotoUrl)
+                    photo_url: desanitizeFromLink(sanitizedPhotoUrl)
                 }
             };
             showSharedGiftModal(shareData);
@@ -1193,7 +1198,6 @@ async function handleConfirmTransfer() {
 
     const sender = tg.initDataUnsafe?.user || mockUser;
     
-    // Sanitize all parts of the command
     const recipient = sanitizeForLink(recipientInput);
     const senderUsername = sanitizeForLink(sender.username || 'unknown_user');
     const giftDataString = serializeGiftToString_essential(giftToTransfer);
@@ -1210,9 +1214,7 @@ async function handleConfirmTransfer() {
         tg.showConfirm("Ссылка для передачи скопирована. Отправьте ее получателю. После подтверждения подарок будет удален из вашего профиля. Вы уверены?", (confirmed) => {
             if (confirmed) {
                 ownedGifts = ownedGifts.filter(g => g.instanceId !== instanceId);
-                if (pinnedGifts.includes(instanceId)) {
-                    pinnedGifts = pinnedGifts.filter(id => id !== instanceId);
-                }
+                pinnedGifts = pinnedGifts.filter(id => id !== instanceId);
                 if (wornGiftInstanceId === instanceId) {
                     wornGiftInstanceId = null;
                 }
@@ -1244,10 +1246,10 @@ async function handleCopyShareLink() {
     }
 
     const ownerUsername = sanitizeForLink(owner.username || 'user');
-    const sanitizedPhoto = sanitizePhotoUrl(owner.photo_url || pageElements.profileAvatar.src);
+    const sanitizedPhoto = sanitizeForLink(owner.photo_url || pageElements.profileAvatar.src);
     const ownerDataString = `${ownerUsername}_${sanitizedPhoto}`;
 
-    const finalData = `${ownerDataString}$$${giftDataString}`;
+    const finalData = `${ownerDataString}_DLM_${giftDataString}`;
     const link = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=view_${finalData}`;
 
     try {
@@ -1259,7 +1261,6 @@ async function handleCopyShareLink() {
     }
 }
 
-// ... (all other functions are unchanged) ...
 function applyWornGiftStyles(instanceId) {
     const currentWornGift = ownedGifts.find(g => g.instanceId === instanceId && g.isCollectible);
     destroyLottieAnimation(pageElements.wornGiftIconContainer);
@@ -1690,9 +1691,7 @@ function handleClearAllData() {
 
 function setupEventListeners() {
     pageElements.goToBuyGifts.addEventListener('click', () => showPage('buy-gifts-page'));
-    if (pageElements.upgradeAllGiftsButton) {
-        pageElements.upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
-    }
+    if (pageElements.upgradeAllGiftsButton) { pageElements.upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts); }
     pageElements.backToProfileBuy.addEventListener('click', () => showPage('profile-page'));
     pageElements.closeGiftDetailModal.addEventListener('click', () => closeModal(pageElements.giftDetailModal));
     pageElements.backFromCollectibleModal.addEventListener('click', () => closeModal(pageElements.collectibleDetailModal));
@@ -1726,9 +1725,7 @@ if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.i
 } else {
     console.warn("Telegram WebApp не найден. Используются мок-данные и тема по умолчанию.");
     document.addEventListener('DOMContentLoaded', () => {
-        tg.initDataUnsafe = {
-            user: mockUser,
-        };
+        tg.initDataUnsafe = { user: mockUser };
         tg.themeParams = {};
         tg.showAlert = (message) => alert(message);
         tg.showConfirm = (message, callback) => callback(confirm(message));
