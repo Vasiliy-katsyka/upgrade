@@ -767,6 +767,7 @@
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const BOT_USERNAME = 'upgradeDemoBot';
+        const APP_SHORT_NAME = 'upgrade';
         
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
@@ -1524,7 +1525,7 @@
             const senderUsername = sender.username || 'unknown_user';
             
             const giftDataB64 = b64Encode(JSON.stringify(giftToTransfer));
-            const link = `https://t.me/${BOT_USERNAME}?startapp=receive_${recipient}_${senderUsername}_${giftDataB64}`;
+            const link = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=receive_${recipient}_${senderUsername}_${giftDataB64}`;
             
             try {
                 await navigator.clipboard.writeText(link);
@@ -1560,7 +1561,7 @@
                 owner: { username: owner.username || 'user', photo_url: owner.photo_url || profileAvatar.src }
             };
             const shareDataB64 = b64Encode(JSON.stringify(shareData));
-            const link = `https://t.me/${BOT_USERNAME}?startapp=view_${shareDataB64}`;
+            const link = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=view_${shareDataB64}`;
             try {
                 await navigator.clipboard.writeText(link);
                 tg.HapticFeedback.notificationOccurred('success');
