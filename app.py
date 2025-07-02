@@ -151,7 +151,7 @@ async def notify_sale():
 
 async def setup_bot():
     """
-    This function runs once on application startup.
+    Thi function runs once on application startup.
     It initializes the bot application, discovers the public URL from the Render environment,
     and sets the webhook with Telegram.
     """
