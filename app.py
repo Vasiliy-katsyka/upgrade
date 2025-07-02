@@ -152,32 +152,25 @@ async def notify_sale():
 async def setup_bot():
     """
     This function runs once on application startup.
-    It automatically discovers the public URL from the Render environment
+    It initializes the bot application, discovers the public URL from the Render environment,
     and sets the webhook with Telegram.
     """
     if not TELEGRAM_TOKEN or not RENDER_EXTERNAL_URL:
         logger.error("FATAL: TELEGRAM_TOKEN or RENDER_EXTERNAL_URL environment variables not set.")
         return
 
-    # The full URL for our webhook endpoint.
+    # 1. Initialize the bot application. This runs tasks like fetching bot info.
+    await application.initialize() # <-- ADD THIS LINE
+
+    # 2. Set the webhook.
     webhook_url = f"https://{RENDER_EXTERNAL_URL}/telegram"
-    
     try:
-        # Tell the Telegram API where to send updates for our bot.
         await application.bot.set_webhook(url=webhook_url)
-        # You can check your bot's webhook status with: https://api.telegram.org/bot<TOKEN>/getWebhookInfo
         logger.info(f"Webhook successfully set to {webhook_url}")
     except Exception as e:
         logger.error(f"Failed to set webhook: {e}", exc_info=True)
 
-# This logic ensures the async `setup_bot` function is run correctly
-# when the application starts up in the Gunicorn/production environment.
-try:
-    loop = asyncio.get_running_loop()
-except RuntimeError:
-    loop = None
+    # 3. Start the application. This activates the handlers and dispatchers.
+    await application.start() # <-- ADD THIS LINE
 
-if loop and loop.is_running():
-    loop.create_task(setup_bot())
-else:
-    asyncio.run(setup_bot())
+    logger.info("Bot application initialized and started successfully.")
