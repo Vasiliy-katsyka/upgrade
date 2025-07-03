@@ -133,6 +133,10 @@
              text-align: left;
              font-size: 1em;
              cursor: pointer;
+             border-radius: 8px;
+        }
+        .sidebar-footer button:hover {
+            background-color: rgba(255,255,255,0.05);
         }
         .sidebar-overlay {
             position: fixed;
@@ -284,7 +288,7 @@
             font-weight: normal; font-size: 0.9em; margin-bottom: 4px;
         }
         .profile-details p span { color: var(--tg-theme-text-color); }
-        .profile-details p span#profile-username { color: var(--tg-theme-link-color); }
+        .profile-details p span.collectible-value { color: var(--tg-theme-link-color); }
 
         .profile-tabs {
             display: flex; justify-content: space-around;
@@ -504,6 +508,8 @@
             border: none; padding: 13px; border-radius: 8px;
             font-size: 1em; cursor: pointer; text-align: center;
             font-weight: 500; width: 100%;
+            text-decoration: none;
+            display: inline-block;
         }
         .modal-button.secondary {
             background-color: var(--app-action-button-bg);
@@ -560,6 +566,13 @@
         }
         .collectible-display-area p {
             font-size: 0.95em; color: var(--tg-theme-hint-color); margin-bottom: 10px;
+        }
+        .collectible-display-area p a {
+            color: var(--tg-theme-hint-color);
+            text-decoration: none;
+        }
+        .collectible-display-area p a:hover {
+            color: var(--tg-theme-link-color);
         }
         .modal-collectible-visual {
             width: 60%; max-width: 220px;
@@ -792,6 +805,48 @@
             display: flex; align-items: center; justify-content: center;
             color: var(--tg-theme-bg-color); font-size: 0.8em; border-radius: 8px;
         }
+
+        /* Collectible Numbers/Usernames Modal */
+        #numbers-modal .collectible-list, #usernames-modal .collectible-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        #numbers-modal .collectible-list-item, #usernames-modal .collectible-list-item {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            font-weight: 500;
+            border-bottom: 1px solid var(--tg-theme-bg-color);
+            cursor: pointer;
+            color: var(--tg-theme-link-color);
+            font-family: monospace;
+        }
+        #usernames-modal .collectible-list-item {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--tg-theme-text-color);
+        }
+        #usernames-modal .collectible-list-item .at-symbol {
+            color: var(--tg-theme-hint-color);
+            margin-right: 2px;
+        }
+        #numbers-modal .collectible-list-item:hover, #usernames-modal .collectible-list-item:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        #usernames-modal .search-bar-container {
+            padding: 10px 20px;
+            background-color: var(--tg-theme-secondary-bg-color);
+        }
+        #usernames-modal #username-search-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-bg-color);
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-size: 1em;
+        }
     </style>
 </head>
 <body>
@@ -800,11 +855,11 @@
             <img id="sidebar-current-avatar" src="" alt="Avatar">
             <span id="sidebar-current-name" class="name"></span>
         </div>
-        <ul class="accounts-list" id="accounts-list">
-            <!-- Account items will be populated here -->
-        </ul>
+        <ul class="accounts-list" id="accounts-list"></ul>
         <div class="sidebar-footer">
             <button id="add-account-button">+ Добавить аккаунт</button>
+            <button id="open-numbers-button">📞 Номера</button>
+            <button id="open-usernames-button">@ Имена пользователей</button>
         </div>
     </div>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -837,7 +892,8 @@
                     <div id="profile-details" class="profile-details">
                         <p><strong>Телефон</strong><span id="profile-phone"></span></p>
                         <p><strong>О себе</strong><span id="profile-bio"></span></p>
-                        <p><strong>Имя пользователя</strong><span id="profile-username"></span></p>
+                        <p><strong>Имя пользователя</strong><span id="profile-username" class="collectible-value"></span></p>
+                        <!-- Collectible username will be inserted here -->
                     </div>
                 </div>
 
@@ -872,6 +928,7 @@
             </div>
         </div>
 
+        <!-- Modals below -->
         <div id="gift-detail-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar">
@@ -1081,8 +1138,8 @@
                     </div>
                     <p id="generated-image-message" style="margin-top: 15px; color: var(--tg-theme-hint-color); font-size: 0.9em;"></p>
                 </div>
-                <div class="modal-buttons-footer">
-                    <button id="download-generated-image" class="modal-button" disabled>Скачать</button>
+                <div class="modal-buttons-footer" id="generated-image-footer">
+                    <button id="download-generated-image-placeholder" class="modal-button" disabled>Скачать</button>
                     <button id="close-generated-image-modal" class="modal-button secondary">Закрыть</button>
                 </div>
             </div>
@@ -1117,6 +1174,36 @@
             </div>
         </div>
 
+        <div id="numbers-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Анонимные номера +888</h3></div>
+                <div class="modal-scrollable-content" style="padding: 0;">
+                    <ul class="collectible-list" id="numbers-list">
+                        <!-- Numbers will be populated here -->
+                    </ul>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="close-numbers-modal" class="modal-button">Закрыть</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="usernames-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Коллекционные имена</h3></div>
+                <div class="search-bar-container">
+                    <input type="text" id="username-search-input" placeholder="Поиск имени пользователя...">
+                </div>
+                <div class="modal-scrollable-content" style="padding: 0;">
+                    <ul class="collectible-list" id="usernames-list">
+                        <!-- Usernames will be populated here -->
+                    </ul>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="close-usernames-modal" class="modal-button">Закрыть</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="long-press-menu" class="hidden">
@@ -1128,7 +1215,7 @@
         </ul>
     </div>
     <script>
-        const APP_VERSION_SUFFIX = '_v8'; // Increment to reset storage on major changes
+        const APP_VERSION_SUFFIX = '_v9'; // Increment to reset storage on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
@@ -1143,12 +1230,15 @@
         const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
         
+        // --- Global State ---
         let allAvailableGifts = {};
         let giftPrices = {};
         let accounts = [];
         let currentAccountId = null;
-        
-        // Per-account state variables
+        let purchasedNumbers = [];
+        let purchasedUsernames = [];
+
+        // --- Per-account state variables ---
         let ownedGifts = [];
         let pinnedGifts = [];
         let wornGiftInstanceId = null;
@@ -1160,7 +1250,7 @@
         const MAX_PINS = 6;
         let tg = window.Telegram.WebApp;
 
-        // DOM Elements
+        // --- DOM Elements ---
         const appContainer = document.querySelector('.app-container');
         const accountSidebar = document.getElementById('account-sidebar');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -1168,6 +1258,8 @@
         const sidebarCurrentName = document.getElementById('sidebar-current-name');
         const accountsList = document.getElementById('accounts-list');
         const addAccountButton = document.getElementById('add-account-button');
+        const openNumbersButton = document.getElementById('open-numbers-button');
+        const openUsernamesButton = document.getElementById('open-usernames-button');
 
         const profilePage = document.getElementById('profile-page');
         const profileBackButton = document.getElementById('profile-back-button');
@@ -1178,6 +1270,7 @@
         const wornGiftIconContainer = document.getElementById('worn-gift-icon-container');
         const profileGiftCountSubtext = document.getElementById('profile-gift-count-subtext');
         const profileStatus = document.getElementById('profile-status');
+        const profileDetails = document.getElementById('profile-details');
         const profilePhone = document.getElementById('profile-phone');
         const profileBio = document.getElementById('profile-bio');
         const profileUsername = document.getElementById('profile-username');
@@ -1251,9 +1344,9 @@
         const customBuyConfirmButton = document.getElementById('custom-buy-confirm-button');
         const customBuyCancelButton = document.getElementById('custom-buy-cancel-button');
         const generatedImageModal = document.getElementById('generated-image-modal');
+        const generatedImageFooter = document.getElementById('generated-image-footer');
         const generatedImagePreview = document.getElementById('generated-image-preview');
         const generatedImageMessage = document.getElementById('generated-image-message');
-        const downloadGeneratedImageButton = document.getElementById('download-generated-image');
         const closeGeneratedImageModalButton = document.getElementById('close-generated-image-modal');
         const menuShareImageAction = document.getElementById('menu-share-image-action');
         const chancesModal = document.getElementById('chances-modal');
@@ -1275,7 +1368,14 @@
         const sellUsdAmount = document.getElementById('sell-usd-amount');
         const confirmSellButton = document.getElementById('confirm-sell-button');
         const cancelSellButton = document.getElementById('cancel-sell-button');
-        
+        const numbersModal = document.getElementById('numbers-modal');
+        const numbersList = document.getElementById('numbers-list');
+        const closeNumbersModal = document.getElementById('close-numbers-modal');
+        const usernamesModal = document.getElementById('usernames-modal');
+        const usernameSearchInput = document.getElementById('username-search-input');
+        const usernamesList = document.getElementById('usernames-list');
+        const closeUsernamesModal = document.getElementById('close-usernames-modal');
+
         const exitFilterModeButton = document.createElement('button');
         exitFilterModeButton.id = 'exit-filter-mode-button';
         exitFilterModeButton.className = 'action-button hidden';
@@ -1305,7 +1405,8 @@
                 name: `${firstName} ${lastName}`,
                 firstName,
                 lastName,
-                username: `${firstName.toLowerCase()}${Math.floor(Math.random() * 1000)}`,
+                username: `${firstName.toLowerCase().substring(0,5)}${Math.floor(Math.random() * 1000)}`,
+                collectibleUsername: null,
                 avatar: `https://i.pravatar.cc/140?u=${generateUniqueId()}`,
                 bio: getRandomElement(russianBios),
                 phone: `+7 (9${Math.floor(10 + Math.random() * 90)}) ${Math.floor(100 + Math.random() * 900)}-${Math.floor(10+Math.random()*90)}-${Math.floor(10+Math.random()*90)}`,
@@ -1393,17 +1494,17 @@
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
             collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
         
+            loadGlobalState();
             loadAccounts();
             if (!currentAccountId || accounts.length === 0) {
                 createInitialAccount();
             }
-            // Ensure currentAccountId is valid
             if (!accounts.some(acc => acc.id === currentAccountId)) {
                 currentAccountId = accounts[0]?.id || null;
                 if (!currentAccountId) createInitialAccount();
             }
             
-            await switchAccount(currentAccountId);
+            await switchAccount(currentAccountId, true); // Pass true for initial load
 
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
@@ -1443,6 +1544,18 @@
             profileUsername.textContent = account.username ? `@${account.username}` : 'нет имени';
             profileBio.textContent = account.bio || "Нет информации о себе";
             profilePhone.textContent = account.phone || "Не указан";
+            
+            // Handle collectible username display
+            const existingCollectibleP = profileDetails.querySelector('#p-collectible-username');
+            if (existingCollectibleP) {
+                existingCollectibleP.remove();
+            }
+            if (account.collectibleUsername) {
+                const p = document.createElement('p');
+                p.id = 'p-collectible-username';
+                p.innerHTML = `<strong>Коллекционное имя</strong><span class="collectible-value">@${account.collectibleUsername}</span>`;
+                profileDetails.appendChild(p);
+            }
 
             // Update sidebar header
             sidebarCurrentAvatar.src = account.avatar;
@@ -1450,6 +1563,15 @@
         }
 
         // --- Account Management ---
+        function loadGlobalState() {
+            purchasedNumbers = JSON.parse(localStorage.getItem('giftSim_purchasedNumbers' + APP_VERSION_SUFFIX)) || [];
+            purchasedUsernames = JSON.parse(localStorage.getItem('giftSim_purchasedUsernames' + APP_VERSION_SUFFIX)) || [];
+        }
+        function saveGlobalState() {
+            localStorage.setItem('giftSim_purchasedNumbers' + APP_VERSION_SUFFIX, JSON.stringify(purchasedNumbers));
+            localStorage.setItem('giftSim_purchasedUsernames' + APP_VERSION_SUFFIX, JSON.stringify(purchasedUsernames));
+        }
+
         function loadAccounts() {
             accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
             currentAccountId = localStorage.getItem('giftSimCurrentAccountId' + APP_VERSION_SUFFIX);
@@ -1467,6 +1589,7 @@
                 name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : 'Аккаунт 1',
                 avatar: user ? user.photo_url : `https://i.pravatar.cc/140?u=${generateUniqueId()}`,
                 username: user ? user.username : 'account1',
+                collectibleUsername: null,
                 bio: 'Мой первый аккаунт!',
                 phone: 'Не указан'
             };
@@ -1483,16 +1606,16 @@
             closeSidebar();
         }
 
-        async function switchAccount(accountId) {
-            // Only save the outgoing account's state if we are actually switching from a different, loaded account.
-            if (currentAccountId && currentAccountId !== accountId) {
-                saveState(); // Save state of the outgoing account
+        async function switchAccount(accountId, isInitialLoad = false) {
+            if (currentAccountId && !isInitialLoad && currentAccountId !== accountId) {
+                saveState();
             }
             currentAccountId = accountId;
             saveAccounts();
-            await loadState(); // Load state for the new account
+            await loadState();
             renderAll();
         }
+
 
         function renderAll() {
             loadUserData();
@@ -1776,7 +1899,12 @@
                 card.appendChild(bgDiv);
                 if (cd.patternImage) { const pOverlay = document.createElement('div'); pOverlay.className = 'gift-card-pattern-overlay'; pOverlay.style.backgroundImage = `url('${cd.patternImage}')`; card.appendChild(pOverlay); }
                 const numDiv = document.createElement('div'); numDiv.className = 'collectible-number-badge'; numDiv.textContent = `#${cd.number}`; card.appendChild(numDiv);
-                if (cd.model?.rarityPermille) { const rBadge = document.createElement('div'); rBadge.className = 'gift-rarity-badge'; const tMock = Math.floor(1/(cd.model.rarityPermille/100000))*Math.max(100,cd.number/100); rBadge.textContent = `1 of ${(tMock/1000).toFixed(1)}K`; card.appendChild(rBadge); }
+                if (cd.supply) { 
+                    const rBadge = document.createElement('div'); 
+                    rBadge.className = 'gift-rarity-badge'; 
+                    rBadge.textContent = `1 of ${(cd.supply / 1000).toFixed(1)}K`; 
+                    card.appendChild(rBadge); 
+                }
             } else {
                 staticImage.src = gift.originalImage; staticImage.alt = gift.name;
                 lottiePathForCard = gift.lottiePath;
@@ -1871,7 +1999,11 @@
                 const cd = gift.collectibleData;
                 modalCollectibleHeaderTitle.textContent = gift.name;
                 modalCollectibleMainName.textContent = cd.model?.name || gift.name;
-                modalCollectibleNumberSubtext.textContent = `Коллекционный #${cd.number}`;
+
+                const giftNameForLink = gift.name.replace(/\s+/g, '');
+                const numberForLink = cd.number;
+                modalCollectibleNumberSubtext.innerHTML = `<a href="https://t.me/nft/${giftNameForLink}-${numberForLink}" target="_blank" rel="noopener noreferrer">Коллекционный #${numberForLink}</a>`;
+
                 modalCollectibleBg.style.background = `radial-gradient(circle, ${cd.backdropColors?.centerColor || '#555'}, ${cd.backdropColors?.edgeColor || '#333'})`;
                 modalCollectiblePattern.style.backgroundImage = cd.patternImage ? `url('${cd.patternImage}')` : 'none';
                 destroyLottieAnimation(modalLottieCollectibleModel);
@@ -1891,7 +2023,7 @@
                     <div class="info-row"><span class="info-label">Модель</span><span id="collectible-model-value" class="info-value clickable-info">${cd.model?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.model?.rarityPermille || 0)}</span></span></div>
                     <div class="info-row"><span class="info-label">Фон</span><span id="collectible-backdrop-value" class="info-value clickable-info">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.backdrop?.rarityPermille || 0)}</span></span></div>
                     <div class="info-row"><span class="info-label">Символ</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
-                    <div class="info-row"><span class="info-label">Количество</span><span class="info-value">#${cd.number} (Уникальный)</span></div>`;
+                    <div class="info-row"><span class="info-label">Количество</span><span class="info-value">#${cd.number} из ${cd.supply.toLocaleString('ru-RU')}</span></div>`;
                 collectibleActionWear.querySelector('.text').textContent = (wornGiftInstanceId === gift.instanceId) ? 'Снять' : 'Надеть';
                 collectibleDetailModal.classList.add('active');
                 const modelValueEl = document.getElementById('collectible-model-value');
@@ -1979,12 +2111,18 @@
                 if (!modelsRes.ok || !backdropsRes.ok || !patternsRes.ok) throw new Error(`Коллекционные части для "${giftToUpgrade.name}" не найдены.`);
                 const [modelsData, backdropsData, patternsData] = await Promise.all([modelsRes.json(), backdropsRes.json(), patternsRes.json()]);
                 if (!modelsData?.length || !backdropsData?.length || !patternsData?.length) throw new Error(`Нет данных для улучшения "${giftToUpgrade.name}".`);
-                const selectedModel = selectWeightedRandom(modelsData); const selectedBackdrop = selectWeightedRandom(backdropsData);
-                const selectedPattern = selectWeightedRandom(patternsData); const randomNumber = Math.floor(Math.random() * 200000) + 1;
+                const selectedModel = selectWeightedRandom(modelsData); 
+                const selectedBackdrop = selectWeightedRandom(backdropsData);
+                const selectedPattern = selectWeightedRandom(patternsData); 
+                const randomNumber = Math.floor(Math.random() * 1000) + 1; // 1 to 1000
+                const randomSupply = Math.floor(Math.random() * (10000 - 2000 + 1)) + 2000; // 2000 to 10000
+
                 const giftIndexInOwned = ownedGifts.findIndex(g => g.instanceId === giftToUpgrade.instanceId);
                 if (giftIndexInOwned !== -1) {
                     const newCollectibleData = {
-                        model: selectedModel, backdrop: selectedBackdrop, pattern: selectedPattern, number: randomNumber,
+                        model: selectedModel, backdrop: selectedBackdrop, pattern: selectedPattern,
+                        number: randomNumber,
+                        supply: randomSupply,
                         modelImage: `${CDN_BASE_URL}models/${giftNameEncoded}/png/${encodeURIComponent(selectedModel.name)}.png`,
                         lottieModelPath: `${CDN_BASE_URL}models/${giftNameEncoded}/lottie/${encodeURIComponent(selectedModel.name)}.json`,
                         patternImage: `${CDN_BASE_URL}patterns/${giftNameEncoded}/png/${encodeURIComponent(selectedPattern.name)}.png`,
@@ -2080,7 +2218,12 @@
                 selectedCustomGift = {}; customBuyConfirmButton.disabled = true;
             }
             if (modalElement.id === 'generated-image-modal') {
-                generatedImagePreview.src = ''; downloadGeneratedImageButton.disabled = true;
+                const placeholder = document.createElement('button');
+                placeholder.id = 'download-generated-image-placeholder';
+                placeholder.className = 'modal-button';
+                placeholder.disabled = true;
+                placeholder.textContent = 'Скачать';
+                generatedImageFooter.querySelector('a, button')?.replaceWith(placeholder);
             }
             if (modalElement.id === 'chances-modal') currentGiftForChances = null;
             if (modalElement.id === 'sell-gift-modal') currentGiftToSell = null;
@@ -2173,7 +2316,7 @@
             if (!currentLongPressGift) return;
             const giftToDelete = currentLongPressGift;
             longPressMenu.classList.add('hidden');
-            closeModal(collectibleDetailModal); // Close modal if open
+            closeModal(collectibleDetailModal);
             
             tg.showConfirm("Вы уверены, что хотите удалить этот подарок? Это действие необратимо.", (confirmed) => {
                 if (confirmed) {
@@ -2295,14 +2438,12 @@
 
         function handleAnimationToggle(event) {
             animationsEnabled = event.target.checked;
-            // No need to save here, will be saved on "Apply Filters"
             tg.HapticFeedback.impactOccurred('light');
             updateAllAnimationsState();
         }
         
         function handleShowHiddenToggle(event) {
             showHiddenGifts = event.target.checked;
-            // No need to save here, will be saved on "Apply Filters"
             tg.HapticFeedback.impactOccurred('light');
         }
 
@@ -2415,7 +2556,9 @@
                 lottiePath: selectedCustomGift.lottiePath, isCollectible: true,
                 collectibleData: {
                     model: selectedCustomGift.model, backdrop: selectedCustomGift.backdrop, pattern: selectedCustomGift.pattern,
-                    number: Math.floor(Math.random() * 200000) + 1, modelImage: selectedCustomGift.modelImage,
+                    number: Math.floor(Math.random() * 1000) + 1,
+                    supply: Math.floor(Math.random() * (10000 - 2000 + 1)) + 2000,
+                    modelImage: selectedCustomGift.modelImage,
                     lottieModelPath: selectedCustomGift.lottieModelPath, patternImage: selectedCustomGift.patternImage, backdropColors: selectedCustomGift.backdropColors,
                 }, acquiredDate: new Date().toISOString(),
                 isHidden: false,
@@ -2513,31 +2656,35 @@
             longPressMenu.classList.add('hidden');
             if (!currentLongPressGift || !currentLongPressGift.isCollectible) { tg.showAlert("Невозможно поделиться изображением для этого подарка."); return; }
             generatedImageMessage.textContent = 'Генерация изображения...';
-            generatedImagePreview.src = ''; downloadGeneratedImageButton.disabled = true;
+            generatedImagePreview.src = ''; 
+            
+            const placeholder = generatedImageFooter.querySelector('#download-generated-image-placeholder');
+            if(placeholder) placeholder.disabled = true;
+
             generatedImageModal.classList.add('active');
+            
             const imageDataUrl = await generateGiftImage(currentLongPressGift);
+            
             if (imageDataUrl) {
                 generatedImagePreview.src = imageDataUrl;
                 generatedImageMessage.textContent = 'Изображение готово. Нажмите "Скачать"';
-                downloadGeneratedImageButton.disabled = false;
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.id = 'download-generated-image';
+                downloadLink.className = 'modal-button';
+                downloadLink.href = imageDataUrl;
+                downloadLink.download = `gift-${currentLongPressGift.name.replace(/\s/g, '_')}-${currentLongPressGift.collectibleData.number}.png`;
+                downloadLink.textContent = 'Скачать';
+                
+                generatedImageFooter.querySelector('#download-generated-image-placeholder, #download-generated-image')?.replaceWith(downloadLink);
+
                 tg.HapticFeedback.notificationOccurred('success');
             } else {
                 generatedImageMessage.textContent = 'Не удалось сгенерировать изображение.';
-                downloadGeneratedImageButton.disabled = true;
                 tg.HapticFeedback.notificationOccurred('error');
             }
         }
-        function handleDownloadImage() {
-            const dataUrl = generatedImagePreview.src;
-            if (!dataUrl || downloadGeneratedImageButton.disabled) return;
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = `gift-${currentLongPressGift.name.replace(/\s/g, '_')}-${currentLongPressGift.collectibleData.number}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
+        
         let currentGiftForChances = null; let selectedChances = { model: null, backdrop: null, pattern: null };
         async function openChancesModal(gift) {
             closeModal(giftDetailModal); currentGiftForChances = gift;
@@ -2680,12 +2827,124 @@
             tg.showAlert(`Подарок "${currentGiftToSell.name}" выставлен на продажу за ${price} Stars! (симуляция)`);
             closeModal(sellGiftModal);
         }
+        
+        // --- Collectible Numbers & Usernames ---
+        const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", "+888 7777 7777"];
+        const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous"];
+        function generateRandom888Number() {
+            const part1 = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            const part2 = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `+888 ${part1} ${part2}`;
+        }
+
+        function handleOpenNumbersModal() {
+            numbersList.innerHTML = '';
+            const allPossibleNumbers = [...coolNumbers];
+            for (let i = 0; i < 20; i++) {
+                allPossibleNumbers.push(generateRandom888Number());
+            }
+            const availableNumbers = [...new Set(allPossibleNumbers)].filter(n => !purchasedNumbers.includes(n));
+            
+            availableNumbers.forEach(num => {
+                const li = document.createElement('li');
+                li.className = 'collectible-list-item';
+                li.textContent = num;
+                li.addEventListener('click', () => buyNumber(num));
+                numbersList.appendChild(li);
+            });
+
+            closeSidebar();
+            numbersModal.classList.add('active');
+        }
+
+        function buyNumber(number) {
+            tg.showConfirm(`Вы уверены, что хотите приобрести номер ${number}?`, (confirmed) => {
+                if(confirmed) {
+                    const account = accounts.find(acc => acc.id === currentAccountId);
+                    if (account) {
+                        account.phone = number;
+                        purchasedNumbers.push(number);
+                        saveAccounts();
+                        saveGlobalState();
+                        loadUserData(); // Update UI
+                        tg.HapticFeedback.notificationOccurred('success');
+                        tg.showAlert(`Номер ${number} успешно приобретен!`);
+                        closeModal(numbersModal);
+                    }
+                }
+            });
+        }
+        
+        function handleOpenUsernamesModal() {
+            populateUsernamesList();
+            usernameSearchInput.value = '';
+            closeSidebar();
+            usernamesModal.classList.add('active');
+        }
+
+        function populateUsernamesList(searchTerm = '') {
+            usernamesList.innerHTML = '';
+            let listToShow;
+            if (searchTerm) {
+                listToShow = [searchTerm.toLowerCase().replace(/[^a-z0-9_]/g, '')].filter(Boolean);
+            } else {
+                const shuffled = [...coolUsernames].sort(() => 0.5 - Math.random());
+                listToShow = shuffled.slice(0, 25);
+            }
+
+            listToShow.forEach(uname => {
+                const li = document.createElement('li');
+                li.className = 'collectible-list-item';
+                li.innerHTML = `<span class="at-symbol">@</span>${uname}`;
+                li.addEventListener('click', () => buyUsername(uname));
+                usernamesList.appendChild(li);
+            });
+        }
+        
+        function buyUsername(username) {
+            if (purchasedUsernames.includes(username)) {
+                tg.showAlert(`Имя @${username} уже занято.`);
+                return;
+            }
+            tg.showConfirm(`Вы уверены, что хотите приобрести имя @${username}?`, (confirmed) => {
+                if(confirmed) {
+                    const account = accounts.find(acc => acc.id === currentAccountId);
+                    if (account) {
+                        account.collectibleUsername = username;
+                        purchasedUsernames.push(username);
+                        saveAccounts();
+                        saveGlobalState();
+                        loadUserData();
+                        tg.HapticFeedback.notificationOccurred('success');
+                        tg.showAlert(`Имя @${username} успешно приобретено!`);
+                        closeModal(usernamesModal);
+                    }
+                }
+            });
+        }
+
 
         function setupEventListeners() {
+            // Main App
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
             backToProfileBuyButton.addEventListener('click', () => showPage('profile-page'));
+            
+            // Modals Close
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
+            closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
+            cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
+            cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
+            closeGeneratedImageModalButton.addEventListener('click', () => closeModal(generatedImageModal));
+            closeChancesModalButton.addEventListener('click', () => closeModal(chancesModal));
+            cancelSellButton.addEventListener('click', () => closeModal(sellGiftModal));
+            closeNumbersModal.addEventListener('click', () => closeModal(numbersModal));
+            closeUsernamesModal.addEventListener('click', () => closeModal(usernamesModal));
+            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, customBuyModal, generatedImageModal, chancesModal, sellGiftModal, numbersModal, usernamesModal].forEach(modal => {
+                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+            });
+
+            // Collectible Detail Modal
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
@@ -2698,53 +2957,46 @@
                 const gift = ownedGifts.find(g => g.instanceId === currentModalInstanceId);
                 if (gift) { openCollectibleMenu(gift, e); }
             });
-            closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
+            
+            // Long Press Menu
             menuPinAction.addEventListener('click', handlePinAction);
             menuHideAction.addEventListener('click', handleHideAction);
             menuDeleteAction.addEventListener('click', handleDeleteAction);
             menuShareImageAction.addEventListener('click', handleShareImageAction);
-            
-            cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
+
+            // Buy Multiple
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
-            cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            [giftDetailModal, collectibleDetailModal, tooManyPinsModal, buyMultipleModal, filterPopup, customBuyModal, generatedImageModal, chancesModal, sellGiftModal].forEach(modal => {
-                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
-            });
+
+            // Filters
             setupFilterPopupTrigger();
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
             clearAllDataButton.addEventListener('click', handleClearAllData);
             animationToggle.addEventListener('change', handleAnimationToggle);
             showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
+            exitFilterModeButton.addEventListener('click', handleClearFilters);
 
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchstart', (e) => {
-                filterPopupLongPressTimer = setTimeout(openCustomBuyModal, 700);
-            }, { passive: true });
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchend', () => clearTimeout(filterPopupLongPressTimer));
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchmove', () => clearTimeout(filterPopupLongPressTimer));
-            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('contextmenu', (e) => { e.preventDefault(); openCustomBuyModal(); });
-
+            // Custom Buy
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             customBuyCancelButton.addEventListener('click', () => closeModal(customBuyModal));
+            document.querySelector('#buy-gifts-page .page-header h2').addEventListener('contextmenu', (e) => { e.preventDefault(); openCustomBuyModal(); });
 
-            exitFilterModeButton.addEventListener('click', handleClearFilters);
-            
-            downloadGeneratedImageButton.addEventListener('click', handleDownloadImage); 
-            closeGeneratedImageModalButton.addEventListener('click', () => closeModal(generatedImageModal));
+            // Sell Gift
+            sellPriceInput.addEventListener('input', updateSellPriceDetails);
+            confirmSellButton.addEventListener('click', handleConfirmSell);
 
-            closeChancesModalButton.addEventListener('click', () => closeModal(chancesModal));
-
+            // Other
             wornGiftIconContainer.addEventListener('click', () => {
                 if (wornGiftInstanceId) openGiftDetailByInstanceId(wornGiftInstanceId);
             });
-            
-            sellPriceInput.addEventListener('input', updateSellPriceDetails);
-            confirmSellButton.addEventListener('click', handleConfirmSell);
-            cancelSellButton.addEventListener('click', () => closeModal(sellGiftModal));
 
-            // Sidebar events
+            // Sidebar & Collectibles
+            openNumbersButton.addEventListener('click', handleOpenNumbersModal);
+            openUsernamesButton.addEventListener('click', handleOpenUsernamesModal);
+            usernameSearchInput.addEventListener('input', (e) => populateUsernamesList(e.target.value));
+
+            // Sidebar Swipe
             let touchStartX = 0;
-            let touchEndX = 0;
             const swipeThreshold = 50; // min pixels for swipe
             const swipeEdge = 50; // pixels from left edge to start swipe
 
@@ -2753,7 +3005,7 @@
             }, { passive: true });
 
             appContainer.addEventListener('touchend', e => {
-                touchEndX = e.changedTouches[0].screenX;
+                const touchEndX = e.changedTouches[0].screenX;
                 if (touchStartX < swipeEdge && touchEndX - touchStartX > swipeThreshold) {
                     openSidebar();
                 }
