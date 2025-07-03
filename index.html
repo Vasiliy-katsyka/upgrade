@@ -34,7 +34,6 @@
             --app-action-button-text: var(--tg-theme-link-color);
             --app-profile-gradient-fallback: var(--tg-theme-secondary-bg-color);
             --app-clear-data-color: #ff3b30;
-            --app-delete-color: #ff3b30; /* Added for delete button */
         }
 
         * {
@@ -51,6 +50,7 @@
             overscroll-behavior-y: none;
             line-height: 1.4;
             font-size: 16px;
+            overflow-x: hidden;
         }
 
         .app-container {
@@ -59,21 +59,101 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            position: relative; /* Added for sidebar positioning */
-            overflow: hidden; /* Added to prevent horizontal scroll when sidebar is open */
+            position: relative;
         }
+        
+        /* Account Sidebar Styles */
+        .account-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 80%;
+            max-width: 320px;
+            background-color: var(--tg-theme-bg-color);
+            z-index: 2000;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+        }
+        .account-sidebar.active {
+            transform: translateX(0);
+        }
+        .sidebar-header {
+            padding: 15px;
+            background-color: var(--tg-theme-secondary-bg-color);
+            display: flex;
+            align-items: center;
+        }
+        .sidebar-header img {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .sidebar-header .name {
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+        .accounts-list {
+            list-style: none;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .accounts-list li {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
+        }
+        .accounts-list li:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        .accounts-list li.active {
+            background-color: var(--tg-theme-link-color);
+            color: var(--tg-theme-button-text-color);
+        }
+        .accounts-list li img {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .sidebar-footer {
+            padding: 10px 15px;
+            border-top: 1px solid var(--tg-theme-secondary-bg-color);
+        }
+        .sidebar-footer button {
+             width: 100%;
+             padding: 12px;
+             background: none;
+             border: none;
+             color: var(--tg-theme-link-color);
+             text-align: left;
+             font-size: 1em;
+             cursor: pointer;
+        }
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* End Account Sidebar */
 
         .page {
             display: none;
             flex-direction: column;
             flex-grow: 1;
             background-color: var(--tg-theme-bg-color);
-            position: absolute; /* Added for sidebar transition */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            transition: transform 0.3s ease-out; /* Added for sidebar transition */
         }
 
         .page.active {
@@ -125,20 +205,6 @@
             width: 24px;
             height: 24px;
             fill: var(--tg-theme-link-color);
-        }
-
-        /* Added for sidebar */
-        .page-header .account-button {
-            background: none; border: none;
-            padding: 5px; margin-right: 15px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%;
-            overflow: hidden;
-        }
-        .page-header .account-button img {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
         }
 
         .profile-page-content {
@@ -297,10 +363,11 @@
             align-items: center; justify-content: center;
             aspect-ratio: 1 / 1; cursor: pointer;
             position: relative; overflow: hidden;
-            transition: transform 0.1s ease-out;
+            transition: transform 0.1s ease-out, opacity 0.2s;
         }
-        .gift-card.hidden-gift { /* Style for hidden gifts in the grid */
-            opacity: 0.4;
+        .gift-card.is-hidden {
+            opacity: 0.5;
+            filter: grayscale(80%);
         }
         .buy-gift-item { aspect-ratio: 1/1.1; }
         .gift-card.is-updating { transform: scale(0.95); opacity: 0.7; }
@@ -567,12 +634,13 @@
             background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 1001; padding: 6px 0; min-width: 220px;
+            z-index: 2001; /* Higher than sidebar overlay */
+            padding: 6px 0; min-width: 220px;
         }
         #long-press-menu ul { list-style: none; }
         #long-press-menu li { padding: 10px 20px; cursor: pointer; color: var(--tg-theme-text-color); font-size: 0.95em; }
         #long-press-menu li.disabled { color: var(--tg-theme-hint-color); cursor: default; }
-        #long-press-menu li.destructive { color: var(--app-delete-color); } /* Style for delete button */
+        #long-press-menu li.danger { color: var(--app-clear-data-color); }
         #long-press-menu li:not(.disabled):hover { background-color: rgba(255,255,255,0.05); }
         
         #buy-multiple-quantity {
@@ -724,126 +792,26 @@
             display: flex; align-items: center; justify-content: center;
             color: var(--tg-theme-bg-color); font-size: 0.8em; border-radius: 8px;
         }
-
-        /* --- New CSS for Sidebar (Multiple Accounts) --- */
-        #sidebar-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 999;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease;
-        }
-        #sidebar-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        #sidebar-menu {
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            width: 70%; /* Adjust as needed */
-            max-width: 300px; /* Max width for larger screens */
-            background-color: var(--tg-theme-secondary-bg-color);
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-out;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-        }
-        #sidebar-menu.active {
-            transform: translateX(0);
-        }
-
-        #sidebar-header {
-            padding: 15px;
-            font-size: 1.2em;
-            font-weight: 500;
-            color: var(--tg-theme-text-color);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        #account-list {
-            list-style: none;
-            padding: 10px 0;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        .account-list-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 15px;
-            cursor: pointer;
-            color: var(--tg-theme-text-color);
-            font-size: 0.95em;
-        }
-
-        .account-list-item:hover {
-            background-color: rgba(255,255,255,0.05);
-        }
-
-        .account-list-item.active-account {
-            background-color: rgba(98, 188, 249, 0.1); /* Light highlight for active account */
-            color: var(--tg-theme-link-color);
-        }
-
-        .account-list-item img {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 12px;
-        }
-
-        .account-info {
-            flex-grow: 1;
-        }
-
-        .account-name {
-            font-weight: 500;
-        }
-
-        .account-username {
-            font-size: 0.85em;
-            color: var(--tg-theme-hint-color);
-        }
-
-        #add-account-button {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            padding: 15px;
-            font-size: 1em;
-            cursor: pointer;
-            text-align: center;
-            font-weight: 500;
-            margin: 10px 15px 15px 15px;
-            border-radius: 8px;
-        }
-        /* End Sidebar CSS */
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- New: Sidebar Menu for Accounts -->
-        <div id="sidebar-overlay"></div>
-        <div id="sidebar-menu">
-            <div id="sidebar-header">Аккаунты</div>
-            <ul id="account-list">
-                <!-- Account items will be injected here by JS -->
-            </ul>
-            <button id="add-account-button">Добавить аккаунт</button>
+    <div class="account-sidebar" id="account-sidebar">
+        <div class="sidebar-header">
+            <img id="sidebar-current-avatar" src="" alt="Avatar">
+            <span id="sidebar-current-name" class="name"></span>
         </div>
-        <!-- End New: Sidebar Menu -->
+        <ul class="accounts-list" id="accounts-list">
+            <!-- Account items will be populated here -->
+        </ul>
+        <div class="sidebar-footer">
+            <button id="add-account-button">+ Добавить аккаунт</button>
+        </div>
+    </div>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
+    <div class="app-container">
         <div id="profile-page" class="page active">
              <div class="page-header">
-                <!-- New: Account button to open sidebar -->
-                <button id="account-sidebar-button" class="account-button">
-                    <img id="profile-avatar-small" src="" alt="Avatar">
-                </button>
                 <button id="profile-back-button" class="back-button hidden"></button>
             </div>
             <div class="profile-page-content">
@@ -929,7 +897,7 @@
                 <div class="page-header">
                     <button id="back-from-collectible-modal" class="back-button"></button>
                     <h2 id="modal-collectible-header-title">Коллекционный</h2>
-                    <button id="collectible-modal-menu-button" class="menu-button">⋮</button> <!-- This is the button for the 3 dots menu -->
+                    <button class="menu-button">⋮</button> <!-- This is the button for the 3 dots menu -->
                 </div>
                 <div class="modal-scrollable-content">
                     <div class="collectible-display-area">
@@ -1015,16 +983,15 @@
                     <hr style="border-color: rgba(255,255,255,0.1); border-style: solid; border-width: 1px 0 0 0; margin: 20px 0;">
                     <div class="filter-section" id="filter-settings-section">
                         <h4>Настройки</h4>
-                        <div class="settings-row">
+                         <div class="settings-row">
                             <label>Анимации</label>
                             <label class="switch">
                                 <input type="checkbox" id="animation-toggle" checked>
                                 <span class="slider round"></span>
                             </label>
                         </div>
-                        <!-- New: Show Hidden Gifts Toggle -->
                         <div class="settings-row">
-                            <label>Показывать скрытые подарки</label>
+                            <label>Показывать скрытые</label>
                             <label class="switch">
                                 <input type="checkbox" id="show-hidden-toggle">
                                 <span class="slider round"></span>
@@ -1036,7 +1003,7 @@
                     <button id="apply-filters-button" class="modal-button">Применить фильтры</button>
                     <button id="clear-filters-button" class="modal-button secondary">Сбросить фильтры</button>
                     <button id="clear-all-data-button" class="clear-data-button">
-                        <span id="clear-data-icon-placeholder"></span> Очистить все данные
+                        <span id="clear-data-icon-placeholder"></span> Очистить данные аккаунта
                     </button>
                 </div>
             </div>
@@ -1155,16 +1122,18 @@
     <div id="long-press-menu" class="hidden">
         <ul>
             <li id="menu-pin-action">Закрепить</li>
-            <li id="menu-hide-action">Скрыть</li> <!-- New: Hide/Show gift -->
+            <li id="menu-hide-action">Скрыть</li>
             <li id="menu-share-image-action" class="hidden">Поделиться изображением</li>
-            <li id="menu-delete-action" class="destructive">Удалить подарок</li> <!-- New: Delete gift -->
+            <li id="menu-delete-action" class="danger">Удалить</li>
         </ul>
     </div>
     <script>
+        const APP_VERSION_SUFFIX = '_v8'; // Increment to reset storage on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
         const STAR_ICON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png";
+        const COLLECTIBLE_GIFT_LIMIT = 500;
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
@@ -1172,35 +1141,39 @@
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>`;
-        const EYE_OPEN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>eye-outline</title><path d="M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M12,4.5C17,4.5 21.27,7.61 23,12C21.27,16.39 17,19.5 12,19.5C7,19.5 2.73,16.39 1,12C2.73,7.61 7,4.5 12,4.5M3.18,12C4.84,15.32 8.2,17.5 12,17.5C15.8,17.5 19.16,15.32 20.82,12C19.16,8.68 15.8,6.5 12,6.5C8.2,6.5 4.84,8.68 3.18,12Z" /></svg>`;
-        const EYE_CLOSED_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>eye-off-outline</title><path d="M12,6.5C15.8,6.5 19.16,8.68 20.82,12C19.16,15.32 15.8,17.5 12,17.5C10.6,17.5 9.25,17.21 8,16.71L10.2,14.51C10.77,14.88 11.37,15.08 12,15.08A3,3 0 0,0 15,12.08C15,11.41 14.8,10.81 14.43,10.24L16.63,8.04C17.14,8.59 17.5,9.25 17.5,10C17.5,13.8 13.8,16.5 12,16.5C10.2,16.5 6.5,13.8 6.5,10A5,5 0 0,1 7.23,7.45L4.56,4.78L3.18,3.4L2.3,2.53L1.5,1.72L0.43,0.65L1.72,0.43L22.28,21.05L21.05,22.28L20.17,21.41L19.29,20.53L17.22,18.46L14.7,15.93L12.56,13.79L10.37,11.6L8.18,9.41L5.8,7.03L3.61,4.84L2.73,3.96L1.84,3.08L0.65,1.79L0.43,1.57L0,1.35L0.22,1.13Z" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
         
         let allAvailableGifts = {};
         let giftPrices = {};
+        let accounts = [];
+        let currentAccountId = null;
+        
+        // Per-account state variables
         let ownedGifts = [];
         let pinnedGifts = [];
         let wornGiftInstanceId = null;
-        const MAX_PINS = 6;
-        const COLLECTIBLE_GIFT_LIMIT = 500; // New: Limit for collectible gifts
-        let tg = window.Telegram.WebApp;
-        
         let activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
         let animationsEnabled = true;
-        let showHiddenGifts = false; // New: State for showing hidden gifts
+        let showHiddenGifts = false;
 
-        // New: Account Management variables
-        let currentAccountId = 'main'; // Default account ID
-        let allAccounts = []; // Stores list of all accounts
+
+        const MAX_PINS = 6;
+        let tg = window.Telegram.WebApp;
 
         // DOM Elements
-        const appContainer = document.querySelector('.app-container'); // New
+        const appContainer = document.querySelector('.app-container');
+        const accountSidebar = document.getElementById('account-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebarCurrentAvatar = document.getElementById('sidebar-current-avatar');
+        const sidebarCurrentName = document.getElementById('sidebar-current-name');
+        const accountsList = document.getElementById('accounts-list');
+        const addAccountButton = document.getElementById('add-account-button');
+
         const profilePage = document.getElementById('profile-page');
         const profileBackButton = document.getElementById('profile-back-button');
         const profileTopSection = document.getElementById('profile-top-section');
         const profileHeaderPatternOverlay = document.getElementById('profile-header-pattern-overlay');
         const profileAvatar = document.getElementById('profile-avatar');
-        const profileAvatarSmall = document.getElementById('profile-avatar-small'); // New
         const profileName = document.getElementById('profile-name');
         const wornGiftIconContainer = document.getElementById('worn-gift-icon-container');
         const profileGiftCountSubtext = document.getElementById('profile-gift-count-subtext');
@@ -1239,7 +1212,7 @@
         const collectibleActionWear = document.getElementById('collectible-action-wear');
         const collectibleActionSell = document.getElementById('collectible-action-sell');
         const closeCollectibleDetailModalButton = document.getElementById('close-collectible-detail-modal');
-        const collectibleModalMenuButton = document.getElementById('collectible-modal-menu-button'); // Renamed from collectibleMenuButton
+        const collectibleMenuButton = collectibleDetailModal.querySelector('.menu-button');
         const tooManyPinsModal = document.getElementById('too-many-pins-modal');
         const unpinSelectionGrid = document.getElementById('unpin-selection-grid');
         const cancelUnpinModal = document.getElementById('cancel-unpin-modal');
@@ -1251,8 +1224,8 @@
         const cancelBuyMultipleButton = document.getElementById('cancel-buy-multiple');
         const longPressMenu = document.getElementById('long-press-menu');
         const menuPinAction = document.getElementById('menu-pin-action');
-        const menuHideAction = document.getElementById('menu-hide-action'); // New: Hide/Show gift menu item
-        const menuDeleteAction = document.getElementById('menu-delete-action'); // New: Delete gift menu item
+        const menuHideAction = document.getElementById('menu-hide-action');
+        const menuDeleteAction = document.getElementById('menu-delete-action');
         const giftsLoadingSpinner = document.getElementById('gifts-loading-spinner');
         const buyGiftsLoadingSpinner = document.getElementById('buy-gifts-loading-spinner');
         const filterPopup = document.getElementById('filter-popup');
@@ -1266,7 +1239,7 @@
         const clearAllDataButton = document.getElementById('clear-all-data-button');
         const clearDataIconPlaceholder = document.getElementById('clear-data-icon-placeholder');
         const animationToggle = document.getElementById('animation-toggle');
-        const showHiddenToggle = document.getElementById('show-hidden-toggle'); // New: Show hidden gifts toggle
+        const showHiddenToggle = document.getElementById('show-hidden-toggle');
         const customBuyModal = document.getElementById('custom-buy-modal');
         const customBuyBaseGiftsGrid = document.getElementById('custom-buy-base-gifts-grid');
         const customBuyModelsSection = document.getElementById('custom-buy-models-section');
@@ -1308,17 +1281,10 @@
         exitFilterModeButton.className = 'action-button hidden';
         exitFilterModeButton.textContent = 'Выйти из режима фильтра';
         document.querySelector('.profile-gifts-actions').prepend(exitFilterModeButton);
-
-        // New: Sidebar elements
-        const accountSidebarButton = document.getElementById('account-sidebar-button');
-        const sidebarMenu = document.getElementById('sidebar-menu');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const accountList = document.getElementById('account-list');
-        const addAccountButton = document.getElementById('add-account-button');
         
-        const russianFirstNames = ["Василий", "Иван", "Алексей", "Дмитрий", "Сергей", "Елена", "Мария", "Анна", "Наталья", "Ольга"];
-        const russianLastNames = ["Дуров", "Петров", "Иванов", "Смирнов", "Кузнецов", "Сидорова", "Козлова", "Новикова", "Морозова", "Волкова"];
-        const russianBios = ["Всё только начинается.", "Люблю путешествовать.", "Кофеман.", "Учусь новому каждый день.", "Жизнь прекрасна!", "Мечтаю о звёздах."];
+        const russianFirstNames = ["Василий", "Иван", "Алексей", "Дмитрий", "Сергей", "Павел", "Анна", "Мария", "Екатерина"];
+        const russianLastNames = ["Дуров", "Петров", "Иванов", "Смирнов", "Кузнецов", "Попова", "Волкова"];
+        const russianBios = ["Всё только начинается.", "Люблю путешествовать.", "Кофеман.", "Читаю книги.", "Инвестор."];
         
         let currentGiftToBuyMultiple = null;
         let lottieIntersectionObserver;
@@ -1328,37 +1294,26 @@
         let tapCount = 0;
         let currentGiftToSell = null;
 
-        // New: Swipe variables for sidebar
-        let startX = 0;
-        let currentTranslateX = 0;
-        let isSwiping = false;
-
         function getRandomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-        function generateRandomPhoneNumber() {
-            let num = '+7 (9'; for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10); num += ') ';
-            for (let i = 0; i < 3; i++) num += Math.floor(Math.random() * 10); num += '-';
-            for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10); num += '-';
-            for (let i = 0; i < 2; i++) num += Math.floor(Math.random() * 10); return num;
-        }
         function generateUniqueId() { return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`; }
-
-        // New: generate a mock user object
-        function generateMockUser() {
+        
+        function generateMockUserData() {
             const firstName = getRandomElement(russianFirstNames);
             const lastName = getRandomElement(russianLastNames);
-            const id = generateUniqueId();
             return {
-                id: id,
-                first_name: firstName,
-                last_name: lastName,
-                photo_url: `https://i.pravatar.cc/140?u=${id}`,
+                id: generateUniqueId(),
+                name: `${firstName} ${lastName}`,
+                firstName,
+                lastName,
+                username: `${firstName.toLowerCase()}${Math.floor(Math.random() * 1000)}`,
+                avatar: `https://i.pravatar.cc/140?u=${generateUniqueId()}`,
                 bio: getRandomElement(russianBios),
-                phone: generateRandomPhoneNumber(),
-                username: `${firstName.toLowerCase().replace(' ', '')}${Math.floor(Math.random() * 1000)}`
+                phone: `+7 (9${Math.floor(10 + Math.random() * 90)}) ${Math.floor(100 + Math.random() * 900)}-${Math.floor(10+Math.random()*90)}-${Math.floor(10+Math.random()*90)}`,
             };
         }
-
+        
         function formatRarity(permille) {
+            if (!permille) return 'N/A';
             const percentage = permille / 1000;
             const oneInX = Math.round(100000 / permille);
             return `${percentage}% <span class="one-in-x">(1 из ${oneInX})</span>`;
@@ -1436,20 +1391,20 @@
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG;
-            collectibleModalMenuButton.innerHTML = MENU_DOTS_SVG; // Renamed
+            collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
         
-            loadInitialState(); // New: Initial state load for accounts
+            loadAccounts();
+            if (!currentAccountId) {
+                createInitialAccount();
+            }
+            await switchAccount(currentAccountId);
+
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
-            animationToggle.checked = animationsEnabled;
-            showHiddenToggle.checked = showHiddenGifts; // New: Set toggle state
-            applyWornGiftStyles(wornGiftInstanceId);
-            renderProfileGifts();
+
             setupEventListeners();
-            setupSidebarSwipe(); // New: Setup swipe gesture for sidebar
             await fetchGiftPrices();
             fetchAvailableGifts();
-            displayFilterExitButton();
         }
         
         function applyTheme(themeParams) { 
@@ -1471,127 +1426,130 @@
                 applyWornGiftStyles(wornGiftInstanceId);
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
+        
+        function loadUserData() {
+            const account = accounts.find(acc => acc.id === currentAccountId);
+            if (!account) return;
 
-        // New: Account management functions
-        function loadInitialState() {
-            // Load all accounts list
-            allAccounts = JSON.parse(localStorage.getItem('allAccounts_v1')) || [];
-            if (allAccounts.length === 0) {
-                // If no accounts, create the first one using Telegram WebApp data or mock
-                const mainUser = tg.initDataUnsafe?.user;
-                const mockUser = generateMockUser(); // Generate a new mock user for the first account
-                const initialUser = mainUser ? {
-                    id: 'telegram_user', // Use a fixed ID for the Telegram user
-                    first_name: mainUser.first_name || mockUser.first_name,
-                    last_name: mainUser.last_name || mockUser.last_name,
-                    photo_url: mainUser.photo_url || mockUser.photo_url,
-                    bio: mockUser.bio, // Bio often not in initData, so use mock
-                    phone: mockUser.phone, // Phone not in initData, so use mock
-                    username: mainUser.username || mockUser.username
-                } : mockUser;
-                allAccounts.push({ id: initialUser.id, name: `${initialUser.first_name} ${initialUser.last_name}`, user_data: initialUser });
-                localStorage.setItem('allAccounts_v1', JSON.stringify(allAccounts));
-            }
-            
-            // Set current account from saved state or to the first one
-            currentAccountId = localStorage.getItem('currentAccountId_v1') || allAccounts[0].id;
-            
-            // Load state for the current account
-            loadStateForCurrentAccount();
-            updateAccountListUI(); // Render sidebar accounts
-        }
-
-        function loadStateForCurrentAccount() {
-            const accountPrefix = currentAccountId + '_';
-            // Find the user data for the current account
-            const currentUserData = allAccounts.find(acc => acc.id === currentAccountId)?.user_data || generateMockUser(); // Fallback if somehow not found
-
-            profileName.textContent = [currentUserData.first_name, currentUserData.last_name].filter(Boolean).join(' ') || currentUserData.first_name;
-            profileAvatar.src = currentUserData.photo_url;
+            profileName.textContent = account.name || 'Пользователь';
+            profileAvatar.src = account.avatar || '';
             profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
-            profileAvatarSmall.src = profileAvatar.src; // Update small avatar in header
-            profileAvatarSmall.onerror = profileAvatar.onerror; // Copy error handler
-            profileUsername.textContent = currentUserData.username ? `@${currentUserData.username}` : `@${currentUserData.first_name}`;
-            profileBio.textContent = currentUserData.bio || "Нет информации о себе";
-            profilePhone.textContent = currentUserData.phone;
+            profileUsername.textContent = account.username ? `@${account.username}` : 'нет имени';
+            profileBio.textContent = account.bio || "Нет информации о себе";
+            profilePhone.textContent = account.phone || "Не указан";
 
-            const loadedOwnedGifts = JSON.parse(localStorage.getItem(accountPrefix + 'ownedGifts_v7')) || [];
-            ownedGifts = loadedOwnedGifts.map(gift => ({ ...gift, instanceId: gift.instanceId || generateUniqueId(), isHidden: gift.isHidden ?? false })); // Added isHidden default
-            pinnedGifts = JSON.parse(localStorage.getItem(accountPrefix + 'pinnedGifts_v7')) || [];
-            wornGiftInstanceId = localStorage.getItem(accountPrefix + 'wornGiftInstanceId_v7') || null;
-            activeFilters = JSON.parse(localStorage.getItem(accountPrefix + 'activeFilters_v7')) || { collection: null, model: null, backdrop: null, pattern: null };
-            animationsEnabled = JSON.parse(localStorage.getItem(accountPrefix + 'animationsEnabled_v7')) ?? true;
-            showHiddenGifts = JSON.parse(localStorage.getItem(accountPrefix + 'showHiddenGifts_v1')) ?? false; // New: Load showHiddenGifts
-            
-            animationToggle.checked = animationsEnabled;
-            showHiddenToggle.checked = showHiddenGifts; // New: Set toggle state in UI
+            // Update sidebar header
+            sidebarCurrentAvatar.src = account.avatar;
+            sidebarCurrentName.textContent = account.name;
         }
 
-        function saveStateForCurrentAccount() { 
-            const accountPrefix = currentAccountId + '_';
-            localStorage.setItem(accountPrefix + 'ownedGifts_v7', JSON.stringify(ownedGifts));
-            localStorage.setItem(accountPrefix + 'pinnedGifts_v7', JSON.stringify(pinnedGifts));
-            localStorage.setItem(accountPrefix + 'wornGiftInstanceId_v7', wornGiftInstanceId);
-            localStorage.setItem(accountPrefix + 'activeFilters_v7', JSON.stringify(activeFilters));
-            localStorage.setItem(accountPrefix + 'animationsEnabled_v7', JSON.stringify(animationsEnabled));
-            localStorage.setItem(accountPrefix + 'showHiddenGifts_v1', JSON.stringify(showHiddenGifts)); // New: Save showHiddenGifts
-            localStorage.setItem('currentAccountId_v1', currentAccountId); // Save current account
-            localStorage.setItem('allAccounts_v1', JSON.stringify(allAccounts)); // Save all accounts list
+        // --- Account Management ---
+        function loadAccounts() {
+            accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
+            currentAccountId = localStorage.getItem('giftSimCurrentAccountId' + APP_VERSION_SUFFIX);
         }
-        // Renamed and modified existing load/save functions
-        const loadState = loadStateForCurrentAccount; 
-        const saveState = saveStateForCurrentAccount;
 
-        function switchAccount(accountId) {
-            if (currentAccountId === accountId) return; // Already on this account
+        function saveAccounts() {
+            localStorage.setItem('giftSimAccounts' + APP_VERSION_SUFFIX, JSON.stringify(accounts));
+            localStorage.setItem('giftSimCurrentAccountId' + APP_VERSION_SUFFIX, currentAccountId);
+        }
 
-            // Save current account's state
-            saveStateForCurrentAccount(); 
+        function createInitialAccount() {
+            const user = tg.initDataUnsafe?.user;
+            const newAccount = {
+                id: generateUniqueId(),
+                name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : 'Аккаунт 1',
+                avatar: user ? user.photo_url : `https://i.pravatar.cc/140?u=${generateUniqueId()}`,
+                username: user ? user.username : 'account1',
+                bio: 'Мой первый аккаунт!',
+                phone: 'Не указан'
+            };
+            accounts.push(newAccount);
+            currentAccountId = newAccount.id;
+            saveAccounts();
+        }
 
-            // Update current account ID
-            currentAccountId = accountId;
-
-            // Load new account's state
-            loadStateForCurrentAccount();
-
-            // Rerender UI based on new account data
-            applyWornGiftStyles(wornGiftInstanceId);
-            renderProfileGifts();
-            populateFilterOptions();
-            updateAllAnimationsState();
-            updateAccountListUI(); // Highlight active account in sidebar
+        function handleAddAccount() {
+            const newAccount = generateMockUserData();
+            newAccount.name = `Аккаунт ${accounts.length + 1}`;
+            accounts.push(newAccount);
+            switchAccount(newAccount.id);
             closeSidebar();
         }
 
-        function createNewAccount() {
-            const newMockUser = generateMockUser();
-            const newAccountId = newMockUser.id;
-            allAccounts.push({ id: newAccountId, name: `${newMockUser.first_name} ${newMockUser.last_name}`, user_data: newMockUser });
-            switchAccount(newAccountId);
-            tg.showAlert(`Новый аккаунт "${newMockUser.first_name} ${newMockUser.last_name}" создан!`);
+        async function switchAccount(accountId) {
+            if (currentAccountId) {
+                saveState(); // Save state of the outgoing account
+            }
+            currentAccountId = accountId;
+            saveAccounts();
+            await loadState(); // Load state for the new account
+            renderAll();
         }
 
-        function updateAccountListUI() {
-            accountList.innerHTML = '';
-            allAccounts.forEach(account => {
+        function renderAll() {
+            loadUserData();
+            renderAccountsList();
+            animationToggle.checked = animationsEnabled;
+            showHiddenToggle.checked = showHiddenGifts;
+            applyWornGiftStyles(wornGiftInstanceId);
+            renderProfileGifts();
+            displayFilterExitButton();
+        }
+
+        function renderAccountsList() {
+            accountsList.innerHTML = '';
+            accounts.forEach(acc => {
                 const li = document.createElement('li');
-                li.className = 'account-list-item';
-                if (account.id === currentAccountId) {
-                    li.classList.add('active-account');
+                li.dataset.accountId = acc.id;
+                li.innerHTML = `<img src="${acc.avatar}" alt="Avatar"> <span>${acc.name}</span>`;
+                if (acc.id === currentAccountId) {
+                    li.classList.add('active');
                 }
-                li.dataset.accountId = account.id;
-                li.innerHTML = `
-                    <img src="${account.user_data.photo_url}" alt="Avatar" onerror="this.src='https://i.pravatar.cc/140?u=fallback${generateUniqueId()}'">
-                    <div class="account-info">
-                        <div class="account-name">${account.name}</div>
-                        <div class="account-username">@${account.user_data.username}</div>
-                    </div>
-                `;
-                li.addEventListener('click', () => switchAccount(account.id));
-                accountList.appendChild(li);
+                li.addEventListener('click', () => {
+                    if (acc.id !== currentAccountId) {
+                        switchAccount(acc.id);
+                    }
+                    closeSidebar();
+                });
+                accountsList.appendChild(li);
             });
         }
-        // End New: Account management functions
+
+        function openSidebar() {
+            renderAccountsList();
+            accountSidebar.classList.add('active');
+            sidebarOverlay.classList.add('active');
+        }
+
+        function closeSidebar() {
+            accountSidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        }
+
+
+        // --- State Management (Per-Account) ---
+        function getStorageKey(key) { return `${currentAccountId}_${key}${APP_VERSION_SUFFIX}`; }
+
+        function saveState() { 
+            if (!currentAccountId) return;
+            localStorage.setItem(getStorageKey('ownedGifts'), JSON.stringify(ownedGifts));
+            localStorage.setItem(getStorageKey('pinnedGifts'), JSON.stringify(pinnedGifts));
+            localStorage.setItem(getStorageKey('wornGiftInstanceId'), wornGiftInstanceId);
+            localStorage.setItem(getStorageKey('activeFilters'), JSON.stringify(activeFilters));
+            localStorage.setItem(getStorageKey('animationsEnabled'), JSON.stringify(animationsEnabled));
+            localStorage.setItem(getStorageKey('showHiddenGifts'), JSON.stringify(showHiddenGifts));
+        }
+
+        async function loadState() {
+            const loadedOwnedGifts = JSON.parse(localStorage.getItem(getStorageKey('ownedGifts'))) || [];
+            ownedGifts = loadedOwnedGifts.map(gift => ({ ...gift, instanceId: gift.instanceId || generateUniqueId() }));
+            pinnedGifts = JSON.parse(localStorage.getItem(getStorageKey('pinnedGifts'))) || [];
+            wornGiftInstanceId = localStorage.getItem(getStorageKey('wornGiftInstanceId')) || null;
+            activeFilters = JSON.parse(localStorage.getItem(getStorageKey('activeFilters'))) || { collection: null, model: null, backdrop: null, pattern: null };
+            animationsEnabled = JSON.parse(localStorage.getItem(getStorageKey('animationsEnabled'))) ?? true;
+            showHiddenGifts = JSON.parse(localStorage.getItem(getStorageKey('showHiddenGifts'))) ?? false;
+        }
         
         function applyWornGiftStyles(instanceId) {
             const currentWornGift = ownedGifts.find(g => g.instanceId === instanceId && g.isCollectible);
@@ -1733,10 +1691,9 @@
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
             
-            const filteredGifts = ownedGifts.filter(gift => { 
-                // New: Filter out hidden gifts unless showHiddenGifts is true
-                if (gift.isHidden && !showHiddenGifts) return false;
+            const baseGifts = showHiddenGifts ? ownedGifts : ownedGifts.filter(g => !g.isHidden);
 
+            const filteredGifts = baseGifts.filter(gift => { 
                 if (activeFilters.collection && gift.id !== activeFilters.collection) return false;
                 if (gift.isCollectible && gift.collectibleData) {
                     if (activeFilters.model && gift.collectibleData.model?.name !== activeFilters.model) return false;
@@ -1745,16 +1702,28 @@
                 } else if (activeFilters.model || activeFilters.backdrop || activeFilters.pattern) return false;
                 return true;
             });
+
             profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
-            if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) profileGiftCountSubtext.textContent += ` из ${ownedGifts.length}`;
+            if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) {
+                profileGiftCountSubtext.textContent += ` из ${ownedGifts.length}`;
+            }
+            
             const sortedGifts = [...filteredGifts].sort((a, b) => { 
                 const aIsPinned = pinnedGifts.includes(a.instanceId); const bIsPinned = pinnedGifts.includes(b.instanceId);
                 if (aIsPinned && !bIsPinned) return -1; if (!aIsPinned && bIsPinned) return 1;
                 return (new Date(b.acquiredDate || 0)) - (new Date(a.acquiredDate || 0));
             });
+
             if (sortedGifts.length === 0) { 
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
-                giftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">Папка пуста или нет подарков, соответствующих фильтрам.</p>`;
+                let emptyMessage = "У вас пока нет подарков.";
+                if (ownedGifts.length > 0) {
+                    emptyMessage = "Нет подарков, соответствующих фильтрам.";
+                    if (!showHiddenGifts && ownedGifts.some(g => g.isHidden)) {
+                        emptyMessage += " Возможно, они скрыты.";
+                    }
+                }
+                giftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">${emptyMessage}</p>`;
             } else {
                 giftsGrid.style.display = 'grid';
                 sortedGifts.forEach(gift => {
@@ -1775,8 +1744,10 @@
         function createGiftCardDOM(gift) {
             const card = document.createElement('div');
             card.className = 'gift-card';
+            if (gift.isHidden) {
+                card.classList.add('is-hidden');
+            }
             card.dataset.instanceId = gift.instanceId;
-            if (gift.isHidden) card.classList.add('hidden-gift'); // New: Add class for hidden gifts
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
             const lottieContainer = document.createElement('div');
@@ -1820,7 +1791,8 @@
         function renderTopPinnedGiftsPreview() {
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
             profileTopPinnedGifts.innerHTML = '';
-            pinnedGifts.slice(0, 7).forEach(instanceId => {
+            const visiblePinned = pinnedGifts.filter(id => !ownedGifts.find(g => g.instanceId === id)?.isHidden);
+            visiblePinned.slice(0, 7).forEach(instanceId => {
                 const gift = ownedGifts.find(g => g.instanceId === instanceId);
                 if (gift) {
                     const container = document.createElement('div');
@@ -1853,52 +1825,27 @@
             buyMultipleModal.classList.add('active');
             buyMultipleQuantityInput.focus();
         }
-        async function handleConfirmBuyMultiple() {
+        function handleConfirmBuyMultiple() {
             if (!currentGiftToBuyMultiple) return;
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Пожалуйста, введите корректное количество."); return; }
-            await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
+            buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
             closeModal(buyMultipleModal);
             currentGiftToBuyMultiple = null;
         }
-
-        // New: Gift limit check
-        async function checkGiftLimit(numNewCollectibles) {
-            const currentCollectibleCount = ownedGifts.filter(g => g.isCollectible && !g.isHidden).length; // Only count visible collectibles
-            if (currentCollectibleCount + numNewCollectibles > COLLECTIBLE_GIFT_LIMIT) {
-                const giftsToRemove = currentCollectibleCount + numNewCollectibles - COLLECTIBLE_GIFT_LIMIT;
-                const confirmed = await new Promise(resolve => {
-                    tg.showConfirm(`Превышен лимит ${COLLECTIBLE_GIFT_LIMIT} коллекционных подарков. Удалить ${giftsToRemove} старейших подарков, чтобы освободить место?`, resolve);
-                });
-                if (confirmed) {
-                    // Sort by acquiredDate ascending to find oldest gifts
-                    const collectibleGifts = ownedGifts.filter(g => g.isCollectible && !g.isHidden).sort((a, b) => new Date(a.acquiredDate) - new Date(b.acquiredDate));
-                    const oldestCollectibleIdsToRemove = collectibleGifts.slice(0, giftsToRemove).map(g => g.instanceId);
-
-                    ownedGifts = ownedGifts.filter(g => !oldestCollectibleIdsToRemove.includes(g.instanceId));
-                    // Also unpin/unwear any removed gifts
-                    pinnedGifts = pinnedGifts.filter(id => !oldestCollectibleIdsToRemove.includes(id));
-                    if (oldestCollectibleIdsToRemove.includes(wornGiftInstanceId)) wornGiftInstanceId = null;
-                    return true; // Proceed with adding new gifts
-                } else {
-                    return false; // Do not proceed
-                }
-            }
-            return true; // No limit reached or enough space
-        }
-
-        async function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
-            // New: Check limit if this would potentially add collectible gifts
-            // For simplicity, we assume new gifts from shop are NOT collectible until upgraded
-            // If they WERE collectible from shop, you'd call checkGiftLimit here with quantity
-            const canProceed = await checkGiftLimit(0); // For shop bought, usually 0 as they are unupgraded
-            if (!canProceed) {
-                tg.showAlert("Добавление отменено из-за лимита подарков.");
-                return;
-            }
-
+        function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
             for (let i = 0; i < quantity; i++) {
-                ownedGifts.unshift({ id, instanceId: generateUniqueId(), name, originalImage, lottiePath, isCollectible: false, collectibleData: null, acquiredDate: new Date().toISOString(), isHidden: false }); // Added isHidden
+                ownedGifts.unshift({ 
+                    id, 
+                    instanceId: generateUniqueId(), 
+                    name, 
+                    originalImage, 
+                    lottiePath, 
+                    isCollectible: false, 
+                    collectibleData: null, 
+                    acquiredDate: new Date().toISOString(),
+                    isHidden: false
+                });
             }
             saveState(); renderProfileGifts(); populateFilterOptions();
             tg.HapticFeedback.notificationOccurred('success');
@@ -1930,7 +1877,8 @@
                      modalCollectibleModelImgStatic.src = cd.modelImage || gift.originalImage; 
                      modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; }; 
                 }
-                const ownerName = profileName.textContent; const ownerAvatar = profileAvatar.src;
+                const account = accounts.find(acc => acc.id === currentAccountId);
+                const ownerName = account.name; const ownerAvatar = account.avatar;
                 modalCollectibleInfoTable.innerHTML = `
                     <div class="info-row"><span class="info-label">Владелец</span><span class="info-value"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span></div>
                     <div class="info-row"><span class="info-label">Модель</span><span id="collectible-model-value" class="info-value clickable-info">${cd.model?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.model?.rarityPermille || 0)}</span></span></div>
@@ -1938,15 +1886,6 @@
                     <div class="info-row"><span class="info-label">Символ</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
                     <div class="info-row"><span class="info-label">Количество</span><span class="info-value">#${cd.number} (Уникальный)</span></div>`;
                 collectibleActionWear.querySelector('.text').textContent = (wornGiftInstanceId === gift.instanceId) ? 'Снять' : 'Надеть';
-                
-                // Update footer message for hidden gifts
-                const footerMessage = collectibleDetailModal.querySelector('.modal-footer-message');
-                if (gift.isHidden) {
-                    footerMessage.innerHTML = `Этот подарок скрыт. <span class="link" data-action="unhide">Показать ></span>`;
-                } else {
-                    footerMessage.innerHTML = `Этот подарок виден в вашем профиле. <span class="link" data-action="hide">Скрыть ></span>`;
-                }
-
                 collectibleDetailModal.classList.add('active');
                 const modelValueEl = document.getElementById('collectible-model-value');
                 const backdropValueEl = document.getElementById('collectible-backdrop-value');
@@ -1954,13 +1893,6 @@
                 if (modelValueEl) modelValueEl.addEventListener('click', (e) => handleTripleTap(e, 'model', gift.collectibleData.model?.name));
                 if (backdropValueEl) backdropValueEl.addEventListener('click', (e) => handleTripleTap(e, 'backdrop', gift.collectibleData.backdrop?.name));
                 if (patternValueEl) patternValueEl.addEventListener('click', (e) => handleTripleTap(e, 'pattern', gift.collectibleData.pattern?.name));
-
-                // Add event listener for hide/unhide link
-                const hideUnhideLink = footerMessage.querySelector('.link');
-                if (hideUnhideLink) {
-                    hideUnhideLink.onclick = () => handleHideAction(gift.instanceId);
-                }
-
             } else {
                 modalGiftName.textContent = "Сохраненный подарок";
                 destroyLottieAnimation(modalLottieGiftOriginal);
@@ -1991,16 +1923,46 @@
                 }
             }
         }
+        async function checkAndEnforceCollectibleLimit(count = 1) {
+            return new Promise((resolve) => {
+                const collectibleGifts = ownedGifts.filter(g => g.isCollectible);
+                const currentCount = collectibleGifts.length;
+                if (currentCount + count <= COLLECTIBLE_GIFT_LIMIT) {
+                    resolve(true);
+                    return;
+                }
+                
+                const amountToRemove = (currentCount + count) - COLLECTIBLE_GIFT_LIMIT;
+                const giftWord = getGiftCountText(amountToRemove);
+
+                tg.showConfirm(`Лимит коллекционных подарков (${COLLECTIBLE_GIFT_LIMIT}) будет превышен. Чтобы продолжить, ${amountToRemove} ${giftWord} (самые старые) будут удалены. Продолжить?`, (confirmed) => {
+                    if (confirmed) {
+                        const sortedCollectibles = collectibleGifts.sort((a, b) => new Date(a.acquiredDate) - new Date(b.acquiredDate));
+                        const idsToRemove = sortedCollectibles.slice(0, amountToRemove).map(g => g.instanceId);
+                        
+                        ownedGifts = ownedGifts.filter(g => !idsToRemove.includes(g.instanceId));
+                        pinnedGifts = pinnedGifts.filter(id => !idsToRemove.includes(id));
+                        if(idsToRemove.includes(wornGiftInstanceId)) {
+                            wornGiftInstanceId = null;
+                        }
+
+                        tg.HapticFeedback.notificationOccurred('warning');
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                });
+            });
+        }
         async function upgradeSingleGiftLogic(giftToUpgrade) {
             if (giftToUpgrade.isCollectible) return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'skipped' };
-            const giftNameEncoded = encodeURIComponent(giftToUpgrade.name);
-
-            // New: Check collectible gift limit before upgrading
-            const canProceed = await checkGiftLimit(1); // One new collectible will be added
+            
+            const canProceed = await checkAndEnforceCollectibleLimit();
             if (!canProceed) {
-                return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'failed', error: 'Превышен лимит коллекционных подарков.' };
+                return { instanceId: giftToUpgrade.instanceId, name: giftToUpgrade.name, status: 'cancelled', error: 'User cancelled due to limit.' };
             }
 
+            const giftNameEncoded = encodeURIComponent(giftToUpgrade.name);
             try {
                 const [modelsRes, backdropsRes, patternsRes] = await Promise.all([
                     fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`),
@@ -2043,7 +2005,9 @@
                 tg.HapticFeedback.notificationOccurred('success');
                 setTimeout(() => { closeModal(giftDetailModal); openGiftDetailByInstanceId(gift.instanceId); }, 1200);
             } else {
-                tg.showAlert(`Не удалось улучшить "${gift.name}". ${result.error || ''}`);
+                if (result.status !== 'cancelled') {
+                    tg.showAlert(`Не удалось улучшить "${gift.name}". ${result.error || ''}`);
+                }
                 if (uniquenessValueEl) uniquenessValueEl.textContent = 'Ошибка';
                 if (upgradeButton) { upgradeButton.textContent = 'Улучшить'; upgradeButton.disabled = false; }
             }
@@ -2052,21 +2016,10 @@
             const giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible);
             if (giftsToUpgrade.length === 0) { tg.showAlert("Нет подарков для улучшения."); return; }
 
-            // New: Check limit for all upgrades at once
-            const numNewCollectibles = giftsToUpgrade.length;
-            const canProceed = await checkGiftLimit(numNewCollectibles);
+            const canProceed = await checkAndEnforceCollectibleLimit(giftsToUpgrade.length);
             if (!canProceed) {
-                tg.showAlert("Некоторые подарки не были улучшены из-за лимита коллекционных подарков.");
-                // After potentially removing oldest gifts, re-filter giftsToUpgrade to exclude any removed
-                // This is implicit if checkGiftLimit modifies `ownedGifts` directly
-                giftsToUpgrade = ownedGifts.filter(g => !g.isCollectible); // Re-get the list
-                if (giftsToUpgrade.length === 0) {
-                     // All remaining uncollectible gifts removed by limit check
-                    renderProfileGifts();
-                    upgradeAllGiftsButton.textContent = '✨ Улучшить все';
-                    upgradeAllGiftsButton.disabled = false;
-                    return;
-                }
+                tg.showAlert("Улучшение отменено из-за превышения лимита.");
+                return;
             }
 
             const originalButtonText = upgradeAllGiftsButton.textContent;
@@ -2077,7 +2030,7 @@
                 upgradeAllGiftsButton.textContent = `Улучшение (${i + 1}/${giftsToUpgrade.length})...`;
                 const cardElement = giftsGrid.querySelector(`.gift-card[data-instance-id="${gift.instanceId}"]`);
                 if (cardElement) cardElement.classList.add('is-updating');
-                const result = await upgradeSingleGiftLogic(gift); // Call logic that includes limit check again for each individual gift
+                const result = await upgradeSingleGiftLogic(gift);
                 if (cardElement) cardElement.classList.remove('is-updating');
                 if (result.status === 'success') {
                     successCount++;
@@ -2093,7 +2046,7 @@
                 } else if (result.status === 'failed') failureCount++;
                 if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
             }
-            saveState(); populateFilterOptions();
+            saveState(); populateFilterOptions(); renderProfileGifts();
             let summaryMessage = `Улучшение завершено.\nУспешно: ${successCount}`;
             if (failureCount > 0) summaryMessage += `\nНе удалось: ${failureCount}`;
             tg.showAlert(summaryMessage);
@@ -2130,50 +2083,43 @@
         function setupLongPress(element, gift) { 
             element.addEventListener('touchstart', (e) => {
                 clearTimeout(longPressTimer);
-                longPressTimer = setTimeout(() => openLongPressMenu(gift, e.touches[0], false), 500);
+                longPressTimer = setTimeout(() => openLongPressMenu(gift, e.touches[0]), 500);
             }, { passive: false });
             element.addEventListener('touchend', () => clearTimeout(longPressTimer));
             element.addEventListener('touchmove', () => clearTimeout(longPressTimer));
-            element.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(longPressTimer); openLongPressMenu(gift, e, false); });
+            element.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(longPressTimer); openLongPressMenu(gift, e); });
         }
-        // Unified function for opening long press menu or modal menu
-        function openCombinedMenu(gift, eventCoords, isModalMenu) {
+        function openLongPressMenu(gift, eventCoords) {
             currentLongPressGift = gift;
-            const isPinned = pinnedGifts.includes(gift.instanceId);
-            const isHidden = gift.isHidden;
-
-            if (!gift.isCollectible) {
-                menuPinAction.textContent = 'Закрепить (только коллекционные)';
-                menuPinAction.classList.add('disabled');
-            } else {
-                menuPinAction.textContent = isPinned ? 'Открепить' : 'Закрепить';
-                menuPinAction.classList.remove('disabled');
-            }
+            if (!gift.isCollectible) { menuPinAction.textContent = 'Закрепить (только коллекционные)'; menuPinAction.classList.add('disabled'); }
+            else { const isPinned = pinnedGifts.includes(gift.instanceId); menuPinAction.textContent = isPinned ? 'Открепить' : 'Закрепить'; menuPinAction.classList.remove('disabled'); }
             
-            menuHideAction.textContent = isHidden ? 'Показать' : 'Скрыть';
+            menuHideAction.textContent = gift.isHidden ? 'Показать' : 'Скрыть';
+            
             menuShareImageAction.classList.toggle('hidden', !gift.isCollectible);
-
-            // Positioning logic
-            if (isModalMenu) {
-                const menuWidth = longPressMenu.offsetWidth || 220;
-                const menuHeight = longPressMenu.offsetHeight || 100;
-                let x = window.innerWidth - menuWidth - 20;
-                let y = (collectibleModalMenuButton.getBoundingClientRect().top + collectibleModalMenuButton.offsetHeight + 10);
-                longPressMenu.style.top = `${Math.min(y, window.innerHeight - menuHeight - 10)}px`;
-                longPressMenu.style.left = `${Math.min(x, window.innerWidth - menuWidth - 10)}px`;
-            } else {
-                longPressMenu.style.top = `${Math.min(eventCoords.clientY, window.innerHeight - longPressMenu.offsetHeight - 10)}px`;
-                longPressMenu.style.left = `${Math.min(eventCoords.clientX, window.innerWidth - longPressMenu.offsetWidth - 10)}px`;
-            }
-
+            longPressMenu.style.top = `${Math.min(eventCoords.clientY, window.innerHeight - longPressMenu.offsetHeight - 10)}px`;
+            longPressMenu.style.left = `${Math.min(eventCoords.clientX, window.innerWidth - longPressMenu.offsetWidth - 10)}px`;
             longPressMenu.classList.remove('hidden');
             document.addEventListener('click', closeLongPressMenuOnClickOutside, { once: true, capture: true });
         }
-        // Old openLongPressMenu and openCollectibleMenu now point to openCombinedMenu
-        const openLongPressMenu = (gift, eventCoords) => openCombinedMenu(gift, eventCoords, false);
-        const openCollectibleMenu = (gift, eventCoords) => openCombinedMenu(gift, eventCoords, true);
+        function openCollectibleMenu(gift, eventCoords) {
+            currentLongPressGift = gift;
+            const isPinned = pinnedGifts.includes(gift.instanceId);
+            if (!gift.isCollectible) { menuPinAction.textContent = 'Закрепить (только коллекционные)'; menuPinAction.classList.add('disabled'); } 
+            else { menuPinAction.textContent = isPinned ? 'Открепить' : 'Закрепить'; menuPinAction.classList.remove('disabled'); }
 
-
+            menuHideAction.textContent = gift.isHidden ? 'Показать' : 'Скрыть';
+            
+            menuShareImageAction.classList.toggle('hidden', !gift.isCollectible);
+            const menuWidth = longPressMenu.offsetWidth || 220;
+            const menuHeight = longPressMenu.offsetHeight || 150;
+            let x = window.innerWidth - menuWidth - 20;
+            let y = (collectibleMenuButton.getBoundingClientRect().top + collectibleMenuButton.offsetHeight + 10);
+            longPressMenu.style.top = `${Math.min(y, window.innerHeight - menuHeight - 10)}px`;
+            longPressMenu.style.left = `${Math.min(x, window.innerWidth - menuWidth - 10)}px`;
+            longPressMenu.classList.remove('hidden');
+            document.addEventListener('click', closeLongPressMenuOnClickOutside, { once: true, capture: true });
+        }
         function closeLongPressMenuOnClickOutside(event) {
             if (!longPressMenu.contains(event.target) && event.target !== longPressMenu) { longPressMenu.classList.add('hidden'); currentLongPressGift = null; }
         }
@@ -2183,57 +2129,59 @@
                 if (currentLongPressGift && !currentLongPressGift.isCollectible) tg.showAlert("Только коллекционные подарки можно закреплять.");
                 currentLongPressGift = null; return;
             }
-            const giftInstanceId = currentLongPressGift.instanceId; const isPinned = pinnedGifts.includes(giftInstanceId);
+            const giftInstanceId = currentLongPressGift.instanceId;
+            if (currentLongPressGift.isHidden) {
+                tg.showAlert("Нельзя закрепить скрытый подарок.");
+                longPressMenu.classList.add('hidden'); return;
+            }
+            const isPinned = pinnedGifts.includes(giftInstanceId);
             if (isPinned) pinnedGifts = pinnedGifts.filter(id => id !== giftInstanceId);
             else { if (pinnedGifts.length >= MAX_PINS) { showTooManyPinsModal(); longPressMenu.classList.add('hidden'); return; } pinnedGifts.push(giftInstanceId); }
             saveState(); renderProfileGifts(); longPressMenu.classList.add('hidden');
             tg.HapticFeedback.impactOccurred(isPinned ? 'light' : 'medium'); currentLongPressGift = null;
         }
-
-        // New: Handle Hide/Show action
-        function handleHideAction(instanceId) {
-            const giftToHide = ownedGifts.find(g => g.instanceId === instanceId);
-            if (!giftToHide) return;
-
-            giftToHide.isHidden = !giftToHide.isHidden;
-            saveState();
-            renderProfileGifts();
-            closeLongPressMenu();
-            closeModal(collectibleDetailModal); // Close collectible modal if active
-            tg.HapticFeedback.impactOccurred('light');
-            tg.showAlert(`Подарок "${giftToHide.name}" теперь ${giftToHide.isHidden ? 'скрыт' : 'виден'}.`);
+        
+        function handleHideAction() {
+            if (!currentLongPressGift) return;
+            const gift = ownedGifts.find(g => g.instanceId === currentLongPressGift.instanceId);
+            if(gift) {
+                gift.isHidden = !gift.isHidden;
+                if (gift.isHidden) {
+                    // When hiding, unpin and un-wear
+                    pinnedGifts = pinnedGifts.filter(id => id !== gift.instanceId);
+                    if (wornGiftInstanceId === gift.instanceId) {
+                        wornGiftInstanceId = null;
+                        applyWornGiftStyles(null);
+                    }
+                }
+                saveState();
+                renderProfileGifts();
+                tg.HapticFeedback.impactOccurred('light');
+            }
+            longPressMenu.classList.add('hidden');
+            currentLongPressGift = null;
         }
 
-        // New: Handle Delete action
         function handleDeleteAction() {
-            if (!currentLongPressGift) { closeLongPressMenu(); return; }
-
+            if (!currentLongPressGift) return;
+            const giftToDelete = currentLongPressGift;
+            longPressMenu.classList.add('hidden');
+            
             tg.showConfirm("Вы уверены, что хотите удалить этот подарок? Это действие необратимо.", (confirmed) => {
                 if (confirmed) {
-                    const instanceIdToDelete = currentLongPressGift.instanceId;
-                    ownedGifts = ownedGifts.filter(g => g.instanceId !== instanceIdToDelete);
-                    // Also remove from pinned and unworn
-                    pinnedGifts = pinnedGifts.filter(id => id !== instanceIdToDelete);
-                    if (wornGiftInstanceId === instanceIdToDelete) {
+                    ownedGifts = ownedGifts.filter(g => g.instanceId !== giftToDelete.instanceId);
+                    pinnedGifts = pinnedGifts.filter(id => id !== giftToDelete.instanceId);
+                    if (wornGiftInstanceId === giftToDelete.instanceId) {
                         wornGiftInstanceId = null;
-                        applyWornGiftStyles(null); // Update worn gift display
+                        applyWornGiftStyles(null);
                     }
-
                     saveState();
                     renderProfileGifts();
                     tg.HapticFeedback.notificationOccurred('success');
                     tg.showAlert("Подарок удален.");
-                    closeLongPressMenu();
-                    closeModal(collectibleDetailModal); // Close collectible modal if open
-                    closeModal(giftDetailModal); // Close general gift modal if open
-                } else {
-                    tg.HapticFeedback.notificationOccurred('warning');
                 }
+                currentLongPressGift = null;
             });
-        }
-        function closeLongPressMenu() {
-            longPressMenu.classList.add('hidden');
-            currentLongPressGift = null;
         }
 
         function showTooManyPinsModal() {
@@ -2258,6 +2206,11 @@
         }
         function handleWearAction() {
             const currentModalInstanceId = collectibleDetailModal.dataset.instanceId; if (!currentModalInstanceId) return;
+            const gift = ownedGifts.find(g => g.instanceId === currentModalInstanceId);
+            if (gift && gift.isHidden) {
+                tg.showAlert("Нельзя надеть скрытый подарок.");
+                return;
+            }
             if (wornGiftInstanceId === currentModalInstanceId) { wornGiftInstanceId = null; collectibleActionWear.querySelector('.text').textContent = 'Надеть'; }
             else { wornGiftInstanceId = currentModalInstanceId; collectibleActionWear.querySelector('.text').textContent = 'Снять'; }
             applyWornGiftStyles(wornGiftInstanceId); saveState(); tg.HapticFeedback.impactOccurred('light');
@@ -2305,46 +2258,45 @@
                 container.appendChild(optionEl);
             });
         }
-        function handleApplyFilters() { renderProfileGifts(); saveState(); closeModal(filterPopup); displayFilterExitButton(); }
+        function handleApplyFilters() { 
+            animationsEnabled = animationToggle.checked;
+            showHiddenGifts = showHiddenToggle.checked;
+            renderProfileGifts(); 
+            saveState(); 
+            closeModal(filterPopup); 
+            displayFilterExitButton(); 
+        }
         function handleClearFilters() {
             activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
             populateFilterOptions(); renderProfileGifts(); saveState(); displayFilterExitButton();
         }
         function handleClearAllData() {
-            tg.showConfirm("Вы уверены, что хотите удалить все свои подарки и данные? Это действие необратимо.", (confirmed) => {
+            tg.showConfirm("Вы уверены, что хотите удалить все подарки и данные для ТЕКУЩЕГО аккаунта? Это действие необратимо.", (confirmed) => {
                 if (confirmed) {
-                    // New: Clear data only for the current account
                     ownedGifts = []; pinnedGifts = []; wornGiftInstanceId = null;
                     activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-                    animationsEnabled = true; // Reset animations to default
-                    showHiddenGifts = false; // Reset hidden gifts toggle
-
                     Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
                     Array.from(buyGiftsGrid.children).forEach(child => unobserveLottieElement(child));
                     Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
-                    
-                    saveState(); // Saves current account's cleared state
-                    applyWornGiftStyles(null); 
-                    renderProfileGifts(); 
-                    populateFilterOptions();
-                    
-                    tg.HapticFeedback.notificationOccurred('success'); tg.showAlert("Все данные для текущего аккаунта удалены.");
+                    saveState(); applyWornGiftStyles(null); renderProfileGifts(); populateFilterOptions();
+                    tg.HapticFeedback.notificationOccurred('success'); tg.showAlert("Данные аккаунта удалены.");
                     closeModal(filterPopup); displayFilterExitButton();
                 }
             });
         }
+
         function handleAnimationToggle(event) {
             animationsEnabled = event.target.checked;
             saveState();
             tg.HapticFeedback.impactOccurred('light');
             updateAllAnimationsState();
         }
-        // New: Handle Show Hidden Gifts toggle
+        
         function handleShowHiddenToggle(event) {
             showHiddenGifts = event.target.checked;
             saveState();
             tg.HapticFeedback.impactOccurred('light');
-            renderProfileGifts(); // Re-render gifts with new filter state
+            // Change will be applied when user clicks "Apply Filters"
         }
 
         function checkCustomBuyCompleteness() {
@@ -2445,10 +2397,9 @@
         async function handleCustomBuyConfirm() {
             if (customBuyConfirmButton.disabled) return;
 
-            // New: Check collectible gift limit before creating
-            const canProceed = await checkGiftLimit(1);
+            const canProceed = await checkAndEnforceCollectibleLimit();
             if (!canProceed) {
-                tg.showAlert("Создание отменено из-за лимита коллекционных подарков.");
+                tg.showAlert("Создание отменено из-за превышения лимита.");
                 return;
             }
 
@@ -2459,7 +2410,8 @@
                     model: selectedCustomGift.model, backdrop: selectedCustomGift.backdrop, pattern: selectedCustomGift.pattern,
                     number: Math.floor(Math.random() * 200000) + 1, modelImage: selectedCustomGift.modelImage,
                     lottieModelPath: selectedCustomGift.lottieModelPath, patternImage: selectedCustomGift.patternImage, backdropColors: selectedCustomGift.backdropColors,
-                }, acquiredDate: new Date().toISOString(), isHidden: false // Added isHidden
+                }, acquiredDate: new Date().toISOString(),
+                isHidden: false,
             };
             ownedGifts.unshift(newGift); saveState(); renderProfileGifts(); populateFilterOptions();
             tg.HapticFeedback.notificationOccurred('success');
@@ -2651,15 +2603,15 @@
             const selectedParts = [];
 
             if (selectedChances.model) {
-                totalProbability *= (selectedChances.model.rarityPermille / 100000);
+                totalProbability *= ((selectedChances.model.rarityPermille || 1) / 100000);
                 selectedParts.push(`Модель: ${selectedChances.model.name}`);
             }
              if (selectedChances.backdrop) {
-                totalProbability *= (selectedChances.backdrop.rarityPermille / 100000);
+                totalProbability *= ((selectedChances.backdrop.rarityPermille || 1) / 100000);
                 selectedParts.push(`Фон: ${selectedChances.backdrop.name}`);
             }
              if (selectedChances.pattern) {
-                totalProbability *= (selectedChances.pattern.rarityPermille / 100000);
+                totalProbability *= ((selectedChances.pattern.rarityPermille || 1) / 100000);
                 selectedParts.push(`Символ: ${selectedChances.pattern.name}`);
             }
 
@@ -2722,96 +2674,6 @@
             closeModal(sellGiftModal);
         }
 
-        // New: Sidebar open/close functions
-        function openSidebar() {
-            sidebarMenu.classList.add('active');
-            sidebarOverlay.classList.add('active');
-            // Move main content to the right
-            document.querySelectorAll('.page').forEach(page => {
-                page.style.transform = `translateX(${sidebarMenu.offsetWidth}px)`;
-            });
-            tg.HapticFeedback.impactOccurred('light');
-        }
-
-        function closeSidebar() {
-            sidebarMenu.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-            // Move main content back
-            document.querySelectorAll('.page').forEach(page => {
-                page.style.transform = `translateX(0px)`;
-            });
-            tg.HapticFeedback.impactOccurred('light');
-        }
-
-        // New: Sidebar swipe gesture logic
-        function setupSidebarSwipe() {
-            appContainer.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-                currentTranslateX = parseFloat(getComputedStyle(profilePage).transform.split(',')[4] || 0); // Get current transform
-                isSwiping = false;
-            }, { passive: false }); // Use passive: false to allow preventDefault
-
-            appContainer.addEventListener('touchmove', (e) => {
-                const currentX = e.touches[0].clientX;
-                const diffX = currentX - startX;
-
-                if (Math.abs(diffX) > 10 && !isSwiping) { // Start swipe if enough horizontal movement
-                    isSwiping = true;
-                    if (document.activeElement && typeof document.activeElement.blur === 'function') {
-                        document.activeElement.blur(); // Blur any active input fields
-                    }
-                }
-
-                if (isSwiping) {
-                    e.preventDefault(); // Prevent scrolling
-                    let newTranslateX = diffX;
-
-                    if (sidebarMenu.classList.contains('active')) { // If sidebar is already open
-                        newTranslateX = currentTranslateX + diffX;
-                        newTranslateX = Math.max(0, Math.min(sidebarMenu.offsetWidth, newTranslateX)); // Limit movement
-                    } else { // If sidebar is closed
-                        newTranslateX = Math.max(0, Math.min(sidebarMenu.offsetWidth, diffX)); // Only allow opening from left edge
-                        if (startX > 50) { // Only allow swipe from near left edge
-                            newTranslateX = 0;
-                        }
-                    }
-
-                    document.querySelectorAll('.page').forEach(page => {
-                        page.style.transform = `translateX(${newTranslateX}px)`;
-                    });
-                    sidebarMenu.style.transform = `translateX(${newTranslateX - sidebarMenu.offsetWidth}px)`;
-                    sidebarOverlay.style.opacity = newTranslateX / sidebarMenu.offsetWidth;
-                    sidebarOverlay.style.visibility = newTranslateX > 0 ? 'visible' : 'hidden';
-                }
-            }, { passive: false });
-
-            appContainer.addEventListener('touchend', (e) => {
-                if (isSwiping) {
-                    const currentX = e.changedTouches[0].clientX;
-                    const diffX = currentX - startX;
-                    const sidebarThreshold = sidebarMenu.offsetWidth * 0.4; // Open/close threshold
-
-                    if (sidebarMenu.classList.contains('active')) {
-                        if (currentTranslateX + diffX < sidebarThreshold) { // Swipe left to close
-                            closeSidebar();
-                        } else { // Swipe right to keep open
-                            openSidebar();
-                        }
-                    } else {
-                        if (diffX > sidebarThreshold) { // Swipe right to open
-                            openSidebar();
-                        } else { // Swipe left to keep closed
-                            closeSidebar();
-                        }
-                    }
-                }
-                isSwiping = false;
-                currentTranslateX = 0; // Reset
-            });
-
-            sidebarOverlay.addEventListener('click', closeSidebar); // Close sidebar by clicking overlay
-        }
-
         function setupEventListeners() {
             goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
@@ -2824,17 +2686,15 @@
                 const gift = ownedGifts.find(g => g.instanceId === giftInstanceId);
                 openSellModal(gift);
             });
-            collectibleModalMenuButton.addEventListener('click', (e) => { // Renamed
+            collectibleMenuButton.addEventListener('click', (e) => {
                 const currentModalInstanceId = collectibleDetailModal.dataset.instanceId;
                 const gift = ownedGifts.find(g => g.instanceId === currentModalInstanceId);
-                if (gift) { openCombinedMenu(gift, e, true); } // Use combined menu function
+                if (gift) { openCollectibleMenu(gift, e); }
             });
             closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
             menuPinAction.addEventListener('click', handlePinAction);
-            menuHideAction.addEventListener('click', () => { // New: Hide action listener
-                if (currentLongPressGift) handleHideAction(currentLongPressGift.instanceId);
-            });
-            menuDeleteAction.addEventListener('click', handleDeleteAction); // New: Delete action listener
+            menuHideAction.addEventListener('click', handleHideAction);
+            menuDeleteAction.addEventListener('click', handleDeleteAction);
             menuShareImageAction.addEventListener('click', handleShareImageAction);
             
             cancelUnpinModal.addEventListener('click', () => { closeModal(tooManyPinsModal); currentLongPressGift = null; });
@@ -2848,7 +2708,7 @@
             clearFiltersButton.addEventListener('click', handleClearFilters);
             clearAllDataButton.addEventListener('click', handleClearAllData);
             animationToggle.addEventListener('change', handleAnimationToggle);
-            showHiddenToggle.addEventListener('change', handleShowHiddenToggle); // New: Listener for show hidden toggle
+            showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
 
             document.querySelector('#buy-gifts-page .page-header h2').addEventListener('touchstart', (e) => {
                 filterPopupLongPressTimer = setTimeout(openCustomBuyModal, 700);
@@ -2875,9 +2735,25 @@
             confirmSellButton.addEventListener('click', handleConfirmSell);
             cancelSellButton.addEventListener('click', () => closeModal(sellGiftModal));
 
-            // New: Sidebar event listeners
-            accountSidebarButton.addEventListener('click', openSidebar);
-            addAccountButton.addEventListener('click', createNewAccount);
+            // Sidebar events
+            let touchStartX = 0;
+            let touchEndX = 0;
+            const swipeThreshold = 50; // min pixels for swipe
+            const swipeEdge = 50; // pixels from left edge to start swipe
+
+            appContainer.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            appContainer.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                if (touchStartX < swipeEdge && touchEndX - touchStartX > swipeThreshold) {
+                    openSidebar();
+                }
+            }, { passive: true });
+            
+            sidebarOverlay.addEventListener('click', closeSidebar);
+            addAccountButton.addEventListener('click', handleAddAccount);
         }
         
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
@@ -2885,18 +2761,15 @@
         } else {
             console.warn("Telegram WebApp не найден. Используются мок-данные и тема по умолчанию.");
             document.addEventListener('DOMContentLoaded', () => {
-                // For local development, mock Telegram WebApp functions
-                tg = {
-                    initDataUnsafe: { user: generateMockUser() },
-                    themeParams: {},
-                    showAlert: (message) => alert(message),
-                    showConfirm: (message, callback) => callback(confirm(message)),
-                    HapticFeedback: {
-                        impactOccurred: (style) => console.log(`Haptic: ${style}`),
-                        notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
-                    },
-                    ready: () => {}, expand: () => {}, onEvent: () => {},
+                tg.initDataUnsafe = {};
+                tg.themeParams = {};
+                tg.showAlert = (message) => alert(message);
+                tg.showConfirm = (message, callback) => callback(confirm(message));
+                tg.HapticFeedback = {
+                    impactOccurred: (style) => console.log(`Haptic: ${style}`),
+                    notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
                 };
+                tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
                 initApp();
             });
         }
