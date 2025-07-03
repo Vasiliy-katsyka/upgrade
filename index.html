@@ -1394,9 +1394,15 @@
             collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
         
             loadAccounts();
-            if (!currentAccountId) {
+            if (!currentAccountId || accounts.length === 0) {
                 createInitialAccount();
             }
+            // Ensure currentAccountId is valid
+            if (!accounts.some(acc => acc.id === currentAccountId)) {
+                currentAccountId = accounts[0]?.id || null;
+                if (!currentAccountId) createInitialAccount();
+            }
+            
             await switchAccount(currentAccountId);
 
             applyTheme(tg.themeParams);
@@ -1478,7 +1484,8 @@
         }
 
         async function switchAccount(accountId) {
-            if (currentAccountId) {
+            // Only save the outgoing account's state if we are actually switching from a different, loaded account.
+            if (currentAccountId && currentAccountId !== accountId) {
                 saveState(); // Save state of the outgoing account
             }
             currentAccountId = accountId;
@@ -2166,6 +2173,7 @@
             if (!currentLongPressGift) return;
             const giftToDelete = currentLongPressGift;
             longPressMenu.classList.add('hidden');
+            closeModal(collectibleDetailModal); // Close modal if open
             
             tg.showConfirm("Вы уверены, что хотите удалить этот подарок? Это действие необратимо.", (confirmed) => {
                 if (confirmed) {
@@ -2287,16 +2295,15 @@
 
         function handleAnimationToggle(event) {
             animationsEnabled = event.target.checked;
-            saveState();
+            // No need to save here, will be saved on "Apply Filters"
             tg.HapticFeedback.impactOccurred('light');
             updateAllAnimationsState();
         }
         
         function handleShowHiddenToggle(event) {
             showHiddenGifts = event.target.checked;
-            saveState();
+            // No need to save here, will be saved on "Apply Filters"
             tg.HapticFeedback.impactOccurred('light');
-            // Change will be applied when user clicks "Apply Filters"
         }
 
         function checkCustomBuyCompleteness() {
