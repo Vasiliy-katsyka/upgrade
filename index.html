@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -283,18 +282,30 @@
             background-color: var(--tg-theme-bg-color);
             padding: 15px 15px 5px 15px;
         }
-        .profile-details p { margin-bottom: 12px; font-size: 0.95em; white-space: pre-wrap; word-break: break-word; }
-        .profile-details p:last-child { margin-bottom: 0; }
-        .profile-details p strong {
-            display: block; color: var(--tg-theme-hint-color);
-            font-weight: normal; font-size: 0.9em; margin-bottom: 4px;
+        .profile-details .info-block {
+            margin-bottom: 16px;
         }
-        .profile-details p span { color: var(--tg-theme-text-color); }
-        .profile-details p span.collectible-value { color: var(--tg-theme-link-color); }
-        .profile-details span#profile-bio { cursor: pointer; }
+        .profile-details .info-value {
+            font-size: 0.95em;
+            color: var(--tg-theme-text-color);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .profile-details .info-label {
+            font-size: 0.9em;
+            color: var(--tg-theme-hint-color);
+            margin-bottom: 3px;
+            display: block;
+        }
+        .profile-details .info-value.collectible-value {
+            color: var(--tg-theme-link-color);
+        }
+        #profile-bio {
+             cursor: pointer;
+        }
         #collectible-usernames-container {
             margin-top: 4px;
-            font-size: 0.95em;
+            line-height: 1.5;
         }
         #collectible-usernames-container .also-text {
             color: var(--tg-theme-hint-color);
@@ -922,13 +933,19 @@
 
                 <div class="profile-details-section">
                     <div id="profile-details" class="profile-details">
-                        <p><strong>Phone</strong><span id="profile-phone"></span></p>
-                        <p><strong>Bio</strong><span id="profile-bio"></span></p>
-                        <p>
-                            <strong>Username</strong>
-                            <span id="profile-username" class="collectible-value"></span>
-                            <div id="collectible-usernames-container"></div>
-                        </p>
+                         <div class="info-block">
+                            <div class="info-label">Phone</div>
+                            <div class="info-value" id="profile-phone"></div>
+                        </div>
+                         <div class="info-block">
+                            <div class="info-label">Bio</div>
+                            <div class="info-value" id="profile-bio"></div>
+                        </div>
+                         <div class="info-block">
+                            <div class="info-label">Username</div>
+                            <div class="info-value collectible-value" id="profile-username"></div>
+                            <div class="info-value" id="collectible-usernames-container"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="profile-tabs-content">
@@ -1255,7 +1272,7 @@
         </ul>
     </div>
     <script>
-        const APP_VERSION_SUFFIX = '_v10'; // Increment to reset storage on major changes
+        const APP_VERSION_SUFFIX = '_v11'; // Increment to reset storage on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
@@ -1344,6 +1361,7 @@
         const modalGiftDescription2 = document.getElementById('modal-gift-description2');
         const modalGiftInfo = document.getElementById('modal-gift-info');
         const closeGiftDetailModalButton = document.getElementById('close-gift-detail-modal');
+        
         const collectibleDetailModal = document.getElementById('collectible-detail-modal');
         const backFromCollectibleModal = document.getElementById('back-from-collectible-modal');
         const modalCollectibleHeaderTitle = document.getElementById('modal-collectible-header-title');
@@ -1365,12 +1383,14 @@
         const tooManyPinsModal = document.getElementById('too-many-pins-modal');
         const unpinSelectionGrid = document.getElementById('unpin-selection-grid');
         const cancelUnpinModal = document.getElementById('cancel-unpin-modal');
+        
         const buyMultipleModal = document.getElementById('buy-multiple-modal');
         const buyMultipleModalTitle = document.getElementById('buy-multiple-modal-title');
         const buyMultipleGiftName = document.getElementById('buy-multiple-gift-name');
         const buyMultipleQuantityInput = document.getElementById('buy-multiple-quantity');
         const confirmBuyMultipleButton = document.getElementById('confirm-buy-multiple');
         const cancelBuyMultipleButton = document.getElementById('cancel-buy-multiple');
+        
         const longPressMenu = document.getElementById('long-press-menu');
         const menuPinAction = document.getElementById('menu-pin-action');
         const menuHideAction = document.getElementById('menu-hide-action');
@@ -1431,6 +1451,7 @@
         const numbersModal = document.getElementById('numbers-modal');
         const numbersList = document.getElementById('numbers-list');
         const closeNumbersModal = document.getElementById('close-numbers-modal');
+        
         const usernamesModal = document.getElementById('usernames-modal');
         const usernameSearchInput = document.getElementById('username-search-input');
         const usernamesList = document.getElementById('usernames-list');
@@ -1442,8 +1463,8 @@
         exitFilterModeButton.textContent = 'Exit Filter Mode';
         document.querySelector('.profile-gifts-actions').prepend(exitFilterModeButton);
         
-        const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", "+888 7777 7777"];
-        const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous", "market", "bank", "news"];
+        const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", "+888 7777 7777", "+888 0707 6969"];
+        const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous", "market", "bank", "news", "pessi", "penaldo"];
         
         let currentGiftToBuyMultiple = null;
         let lottieIntersectionObserver;
@@ -1453,7 +1474,6 @@
         let tapCount = 0;
         let currentGiftToSell = null;
         let longPressAvatarTimer;
-        let longPressUsernameTimer;
 
         function getRandomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function generateUniqueId() { return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`; }
@@ -1463,7 +1483,7 @@
             const lastName = getRandomElement(["User", "Account"]);
             return {
                 id: generateUniqueId(),
-                name: `${firstName} ${lastName} ${index}`,
+                name: `${firstName} User ${index}`,
                 firstName,
                 lastName,
                 username: `${firstName.toLowerCase()}${index}`,
@@ -1565,7 +1585,7 @@
                 if (!currentAccountId) createInitialAccount();
             }
             
-            await switchAccount(currentAccountId, true); // Pass true for initial load
+            await switchAccount(currentAccountId, true);
 
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
@@ -2280,6 +2300,7 @@
             return items[items.length - 1];
         }
         function closeModal(modalElement) {
+            if (!modalElement) return;
             if (modalElement.id === 'gift-detail-modal') destroyLottieAnimation(modalLottieGiftOriginal);
             if (modalElement.id === 'collectible-detail-modal') destroyLottieAnimation(modalLottieCollectibleModel);
             if (modalElement.id === 'custom-buy-modal') {
@@ -2543,7 +2564,8 @@
         async function selectCustomBaseGift(id, name, originalImage) {
             selectedCustomGift = { model: null, backdrop: null, pattern: null };
             customBuyModelsGrid.innerHTML = ''; customBuyBackdropsGrid.innerHTML = ''; customBuyPatternsGrid.innerHTML = '';
-            customBuyModelsSection.classList.add('hidden'); customBuyBackdropsSection.classList.add('hidden'); customBuyPatternsSection.classList.add('hidden');
+            customBuyModelsSection.classList.add('hidden'); customBuyBackdropsSection.classList.add('hidden');
+            customBuyPatternsSection.classList.add('hidden');
             customBuyConfirmButton.disabled = true;
             Array.from(customBuyBaseGiftsGrid.children).forEach(el => el.classList.remove('selected'));
             document.querySelector(`#custom-buy-base-gifts-grid [data-id="${id}"]`).classList.add('selected');
@@ -2659,11 +2681,13 @@
                 img.onerror = () => { console.warn(`Failed to preload image: ${url}`); resolve(); };
             });
         }
+        
         async function handleShareImageAction() {
             longPressMenu.classList.add('hidden');
             if (!currentLongPressGift || !currentLongPressGift.isCollectible) { tg.showAlert("Cannot share an image for this gift."); return; }
             generatedImageMessage.textContent = 'Generating image...';
             generatedImagePreview.src = ''; 
+            
             const placeholder = document.getElementById('download-generated-image-placeholder');
             if (placeholder) placeholder.disabled = true;
 
@@ -3031,18 +3055,16 @@
                 if (account) {
                     account.avatar = e.target.result;
                     saveAccounts();
-                    loadUserData(); // Re-render profile with new avatar
+                    loadUserData();
                 }
             };
             reader.readAsDataURL(file);
         }
 
         function switchTab(tabName) {
-            // Deactivate all tabs and content
             [giftsTabButton, postsTabButton, archiveTabButton].forEach(btn => btn.classList.remove('active'));
             [giftsContent, postsContent, archiveContent].forEach(content => content.classList.remove('active'));
 
-            // Activate the selected one
             if (tabName === 'gifts') {
                 giftsTabButton.classList.add('active');
                 giftsContent.classList.add('active');
@@ -3056,7 +3078,7 @@
         }
 
         function setupEventListeners() {
-            // --- TABS ---
+            // TABS
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
             postsTabButton.addEventListener('click', () => switchTab('posts'));
             archiveTabButton.addEventListener('click', () => switchTab('archive'));
@@ -3068,10 +3090,12 @@
             
             // Profile Interactions
             profileBio.addEventListener('click', handleEditBio);
-            profileAvatar.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                avatarUploadInput.click();
-            });
+            profileAvatar.addEventListener('touchstart', (e) => {
+                clearTimeout(longPressAvatarTimer);
+                longPressAvatarTimer = setTimeout(() => avatarUploadInput.click(), 500);
+            }, { passive: false });
+            profileAvatar.addEventListener('touchend', () => clearTimeout(longPressAvatarTimer));
+            profileAvatar.addEventListener('touchmove', () => clearTimeout(longPressAvatarTimer));
             
             // Modals Close
             const allModals = document.querySelectorAll('.modal-overlay');
