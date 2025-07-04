@@ -1803,7 +1803,7 @@
 
         async function fetchGiftPrices() {
             try {
-                const response = await fetch(PRICES_JSON_URL);
+                const response = await fetch(PRICES_JSON_URL, { cache: 'no-cache' });
                 if (!response.ok) throw new Error(`HTTP error ${response.status}`);
                 giftPrices = await response.json();
             } catch (error) {
@@ -1816,7 +1816,7 @@
             buyGiftsLoadingSpinner.classList.remove('hidden');
             buyGiftsGrid.innerHTML = '';
             try {
-                const response = await fetch(GIFTS_JSON_URL);
+                const response = await fetch(GIFTS_JSON_URL, { cache: 'no-cache' });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 allAvailableGifts = await response.json();
                 renderAvailableGifts();
@@ -2190,11 +2190,12 @@
             }
 
             const giftNameEncoded = encodeURIComponent(giftToUpgrade.name);
+            const fetchOpts = { cache: 'no-cache' };
             try {
                 const [modelsRes, backdropsRes, patternsRes] = await Promise.all([
-                    fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`),
-                    fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`),
-                    fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`)
+                    fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`, fetchOpts),
+                    fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`, fetchOpts),
+                    fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`, fetchOpts)
                 ]);
                 if (!modelsRes.ok || !backdropsRes.ok || !patternsRes.ok) throw new Error(`Collectible parts for "${giftToUpgrade.name}" not found.`);
                 const [modelsData, backdropsData, patternsData] = await Promise.all([modelsRes.json(), backdropsRes.json(), patternsRes.json()]);
@@ -2572,12 +2573,13 @@
             selectedCustomGift.id = id; selectedCustomGift.name = name; selectedCustomGift.originalImage = originalImage;
             selectedCustomGift.lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`;
             const giftNameEncoded = encodeURIComponent(name);
+            const fetchOpts = { cache: 'no-cache' };
             if (!cachedCollectibleParts[id]) {
                 try {
                     const [modelsRes, backdropsRes, patternsRes] = await Promise.all([
-                        fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`),
-                        fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`),
-                        fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`)
+                        fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`, fetchOpts),
+                        fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`, fetchOpts),
+                        fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`, fetchOpts)
                     ]);
                     cachedCollectibleParts[id] = {
                         models: modelsRes.ok ? await modelsRes.json() : [],
@@ -2786,12 +2788,13 @@
             chancesPatternsSection.classList.add('hidden'); chancesProbabilityDisplay.innerHTML = '';
             chancesModal.classList.add('active'); calculateAndDisplayChances();
             const giftNameEncoded = encodeURIComponent(gift.name);
+            const fetchOpts = { cache: 'no-cache' };
             if (!cachedCollectibleParts[gift.id]) {
                  try {
                     const [modelsRes, backdropsRes, patternsRes] = await Promise.all([
-                        fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`),
-                        fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`),
-                        fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`)
+                        fetch(`${CDN_BASE_URL}models/${giftNameEncoded}/models.json`, fetchOpts),
+                        fetch(`${CDN_BASE_URL}backdrops/${giftNameEncoded}/backdrops.json`, fetchOpts),
+                        fetch(`${CDN_BASE_URL}patterns/${giftNameEncoded}/patterns.json`, fetchOpts)
                     ]);
                     cachedCollectibleParts[gift.id] = {
                         models: modelsRes.ok ? await modelsRes.json() : [],
