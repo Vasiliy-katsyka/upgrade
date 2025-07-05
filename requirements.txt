@@ -1,7 +1,5 @@
-Flask[async]
+Flask
 psycopg2-binary
-python-telegram-bot
+Flask-Cors
 requests
-python-dotenv # For local development to load .env file
-gunicorn # For Render.com deployment
-Flask-CORS
+gunicorn 
