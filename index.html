@@ -610,11 +610,12 @@
             font-size: 0.95em; color: var(--tg-theme-hint-color); margin-bottom: 10px;
         }
         .collectible-display-area p a {
-            color: var(--tg-theme-hint-color);
+            color: var(--tg-theme-link-color); /* Make link more visible */
             text-decoration: none;
+            cursor: pointer;
         }
         .collectible-display-area p a:hover {
-            color: var(--tg-theme-link-color);
+            text-decoration: underline;
         }
         .modal-collectible-visual {
             width: 60%; max-width: 220px;
@@ -1330,6 +1331,7 @@
         <ul>
             <li id="menu-pin-action">Pin</li>
             <li id="menu-hide-action">Hide</li>
+            <li id="menu-copy-link-action" class="hidden">Copy Link</li>
             <li id="menu-share-image-action" class="hidden">Share Image</li>
             <li id="menu-delete-action" class="danger">Delete</li>
         </ul>
@@ -1459,6 +1461,7 @@
         const longPressMenu = document.getElementById('long-press-menu');
         const menuPinAction = document.getElementById('menu-pin-action');
         const menuHideAction = document.getElementById('menu-hide-action');
+        const menuCopyLinkAction = document.getElementById('menu-copy-link-action');
         const menuDeleteAction = document.getElementById('menu-delete-action');
         const menuShareImageAction = document.getElementById('menu-share-image-action');
         
@@ -1678,10 +1681,11 @@
             // Handle deep linking for specific collectible gifts
             const startAppParam = tg.initDataUnsafe?.start_param;
             if (startAppParam && startAppParam.startsWith('gift')) {
-                const parts = startAppParam.substring(4).split('-'); // e.g., 'PlushPepe-1'
-                if (parts.length === 2) {
-                    const giftTypeId = parts[0];
-                    const collectibleNumber = parseInt(parts[1], 10);
+                const giftString = startAppParam.substring(4); // e.g., 'PreciousPeach-1'
+                const lastHyphenIndex = giftString.lastIndexOf('-');
+                if (lastHyphenIndex > -1) {
+                    const giftTypeId = giftString.substring(0, lastHyphenIndex);
+                    const collectibleNumber = parseInt(giftString.substring(lastHyphenIndex + 1), 10);
                     if (!isNaN(collectibleNumber)) {
                         await displayDeepLinkedGift(giftTypeId, collectibleNumber);
                     } else {
@@ -1748,7 +1752,6 @@
 
             } catch (error) {
                 console.error("Failed to initialize Telegram user account:", error);
-                // This is where the 'exceeded the quota' error likely originates
                 tg.showAlert(`Failed to load account: ${error.message}. Please try again.`);
             }
         }
@@ -1757,9 +1760,6 @@
             try {
                 const giftData = await callBackend(`/api/gift/${giftTypeId}/${collectibleNumber}`);
                 if (giftData) {
-                    // Temporarily add this gift to current user's ownedGifts if it's not already there
-                    // This allows the detail modal to display it, but it's not truly 'owned' by them
-                    // unless they switch to the actual owner's account or acquire it.
                     const existingGift = ownedGifts.find(g => g.instance_id === giftData.instance_id);
                     if (!existingGift) {
                         ownedGifts.push(giftData); // Add to local state for display
@@ -2309,6 +2309,14 @@
             currentGiftToBuyMultiple = null;
         }
         
+        function getGiftDeepLink(gift) {
+            const botUsername = "upgradeDemoBot"; // Replace with your bot username
+            const appShortName = "upgrade"; // Replace with your Mini App short name
+            const giftNameForLink = gift.gift_name.replace(/\s+/g, '');
+            const numberForLink = gift.collectible_number;
+            return `https://t.me/${botUsername}/${appShortName}?startapp=gift${giftNameForLink}-${numberForLink}`;
+        }
+        
         function openGiftDetailByInstanceId(instanceId) {
             const gift = ownedGifts.find(g => g.instance_id === instanceId);
             if (!gift) return;
@@ -2321,9 +2329,8 @@
                 modalCollectibleHeaderTitle.textContent = gift.gift_name;
                 modalCollectibleMainName.textContent = cd.model?.name || gift.gift_name;
 
-                const giftNameForLink = gift.gift_name.replace(/\s+/g, '');
                 const numberForLink = gift.collectible_number;
-                modalCollectibleNumberSubtext.innerHTML = `<a href="https://t.me/upgradeDemoBot/upgrade?startapp=gift${giftNameForLink}-${numberForLink}" target="_blank" rel="noopener noreferrer">Collectible #${numberForLink}</a>`;
+                modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">Collectible #${numberForLink.toLocaleString()}</a>`;
 
                 modalCollectibleBg.style.background = `radial-gradient(circle, ${cd.backdropColors?.centerColor || '#555'}, ${cd.backdropColors?.edgeColor || '#333'})`;
                 modalCollectiblePattern.style.backgroundImage = cd.patternImage ? `url('${cd.patternImage}')` : 'none';
@@ -2346,7 +2353,7 @@
                     <div class="info-row"><span class="info-label">Model</span><span id="collectible-model-value" class="info-value clickable-info">${cd.model?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.model?.rarityPermille || 0)}</span></span></div>
                     <div class="info-row"><span class="info-label">Backdrop</span><span id="collectible-backdrop-value" class="info-value clickable-info">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.backdrop?.rarityPermille || 0)}</span></span></div>
                     <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
-                    <div class="info-row"><span class="info-label">Number</span><span class="info-value">#${gift.collectible_number} of ${cd.supply?.toLocaleString('en-US') || 'N/A'}</span></div>`;
+                    <div class="info-row"><span class="info-label">Number</span><span class="info-value">#${gift.collectible_number.toLocaleString()} of ${cd.supply?.toLocaleString() || 'N/A'}</span></div>`;
                 
                 // Check if current user is owner to enable actions
                 const isOwner = (gift.owner_id === currentAccountTgId);
@@ -2358,6 +2365,11 @@
 
                 collectibleActionWear.querySelector('.text').textContent = (gift.is_worn === true) ? 'Take Off' : 'Wear';
                 collectibleDetailModal.classList.add('active');
+
+                document.getElementById('collectible-link-copier').onclick = (e) => {
+                    e.preventDefault();
+                    copyGiftLink(gift);
+                };
 
                 const modelValueEl = document.getElementById('collectible-model-value');
                 const backdropValueEl = document.getElementById('collectible-backdrop-value');
@@ -2534,12 +2546,14 @@
             if (!gift.is_collectible) { 
                 menuPinAction.textContent = 'Pin (Collectibles only)'; 
                 menuPinAction.classList.add('disabled'); 
-                menuShareImageAction.classList.add('hidden'); // Not a collectible, no image to share
+                menuShareImageAction.classList.add('hidden');
+                menuCopyLinkAction.classList.add('hidden');
             } else { 
                 const isPinned = gift.is_pinned; 
                 menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin'; 
-                menuPinAction.classList.toggle('disabled', !isOwner); // Only owner can pin/unpin
-                menuShareImageAction.classList.remove('hidden'); // Is a collectible, allow sharing
+                menuPinAction.classList.toggle('disabled', !isOwner);
+                menuShareImageAction.classList.remove('hidden');
+                menuCopyLinkAction.classList.remove('hidden');
             }
             
             menuHideAction.textContent = gift.is_hidden ? 'Unhide' : 'Hide';
@@ -2566,6 +2580,7 @@
             menuHideAction.classList.toggle('disabled', !isOwner);
             menuDeleteAction.classList.toggle('disabled', !isOwner);
             menuShareImageAction.classList.remove('hidden');
+            menuCopyLinkAction.classList.remove('hidden');
 
             const menuWidth = longPressMenu.offsetWidth || 220;
             const menuHeight = longPressMenu.offsetHeight || 150;
@@ -3275,12 +3290,29 @@
             }
         }
 
-        function handleConfirmSell() {
+        async function handleConfirmSell() {
             if (!currentGiftToSell || confirmSellButton.disabled) return;
             const price = parseInt(sellPriceInput.value, 10);
-            tg.HapticFeedback.notificationOccurred('success');
-            tg.showAlert(`Gift "${currentGiftToSell.gift_name}" listed for sale for ${price} Stars! (simulation)`);
-            closeModal(sellGiftModal);
+            
+            confirmSellButton.disabled = true;
+            confirmSellButton.textContent = "Listing...";
+
+            try {
+                await callBackend('/api/gifts/sell', 'POST', {
+                    instance_id: currentGiftToSell.instance_id,
+                    price: price,
+                    owner_id: currentAccountTgId
+                });
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Gift "${currentGiftToSell.gift_name}" listed for sale. You will be notified by the bot when it's sold!`);
+                closeModal(sellGiftModal);
+            } catch (error) {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert(`Failed to list gift for sale: ${error.message}`);
+            } finally {
+                confirmSellButton.disabled = false;
+                confirmSellButton.textContent = "List for Sale";
+            }
         }
 
         function openTransferModal(gift) {
@@ -3293,7 +3325,7 @@
             closeModal(collectibleDetailModal);
 
             transferGiftImage.src = gift.collectible_data.modelImage || gift.original_image_url;
-            transferGiftName.textContent = `${gift.gift_name} #${gift.collectible_number}`;
+            transferGiftName.textContent = `${gift.gift_name} #${gift.collectible_number.toLocaleString()}`;
             transferUsernameInput.value = '';
             confirmTransferButton.disabled = true;
             transferStatusMessage.innerHTML = '<p>Gift ownership will be transferred to this username.</p>';
@@ -3321,7 +3353,8 @@
             try {
                 await callBackend('/api/gifts/transfer', 'POST', {
                     instance_id: currentGiftToTransfer.instance_id,
-                    receiver_username: receiverUsername
+                    receiver_username: receiverUsername,
+                    sender_id: currentAccountTgId // Pass sender ID for notification
                 });
                 
                 await initializeTelegramUserAccount(); // Re-fetch current user's gifts after transfer
@@ -3377,9 +3410,6 @@
             tg.showConfirm(`Are you sure you want to purchase the number ${number}?`, async (confirmed) => {
                 if(confirmed) {
                     try {
-                        const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-                        if (!currentAccount) { tg.showAlert("Current account not found."); return; }
-
                         await callBackend(`/api/account`, 'PUT', {
                             tg_id: currentAccountTgId,
                             phone_number: number
@@ -3467,11 +3497,7 @@
              tg.showConfirm(`Are you sure you want to delete the username @${username}?`, async (confirmed) => {
                 if(confirmed) {
                     try {
-                        const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-                        if (!currentAccount) { tg.showAlert("Current account not found."); return; }
-
                         await callBackend(`/api/collectible_usernames/${username}`, 'DELETE', { owner_id: currentAccountTgId });
-                        
                         await initializeTelegramUserAccount(); // Re-fetch account data
                         tg.HapticFeedback.notificationOccurred('success');
                         tg.showAlert(`Username @${username} has been deleted.`);
@@ -3535,6 +3561,18 @@
             settingsModal.classList.add('active');
         }
 
+        function copyGiftLink(gift) {
+            const link = getGiftDeepLink(gift);
+            navigator.clipboard.writeText(link).then(() => {
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert('Link copied to clipboard!');
+            }, () => {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert('Failed to copy link.');
+            });
+            longPressMenu.classList.add('hidden');
+        }
+
         function setupEventListeners() {
             // TABS
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
@@ -3588,6 +3626,9 @@
             // Long Press Menu
             menuPinAction.addEventListener('click', handlePinAction);
             menuHideAction.addEventListener('click', handleHideAction);
+            menuCopyLinkAction.addEventListener('click', () => {
+                if(currentLongPressGift) copyGiftLink(currentLongPressGift);
+            });
             menuDeleteAction.addEventListener('click', handleDeleteAction);
             menuShareImageAction.addEventListener('click', handleShareImageAction);
 
