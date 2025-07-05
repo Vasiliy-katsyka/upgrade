@@ -1,396 +1,379 @@
 import os
-import hmac
-import hashlib
+import psycopg2
 import json
-from urllib.parse import unquote, parse_qsl
-from datetime import datetime
-from functools import wraps
-
+import random
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func, and_
+from urllib.parse import urlparse
 
-# --- App Initialization and Configuration ---
+# --- CONFIGURATION ---
+
 app = Flask(__name__)
 
-# Configure CORS to only allow requests from your GitHub Pages domain
+# Configure CORS to only allow requests from your frontend's origin
+# This is crucial for security.
 CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}})
 
-# Get secrets from environment variables
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_BOT_OKEN_HERE") # Replace with your actual bot token for local testing
+# Get the database URL from environment variables for security
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    raise ValueError("No DATABASE_URL set for Flask application")
 
-db = SQLAlchemy(app)
+# --- CONSTANTS ---
+GIFT_LIMIT_PER_USER = 5000
+CDN_BASE_URL = "https://cdn.changes.tg/gifts/"
 
-# --- Constants ---
-MAX_COLLECTIBLE_GIFTS = 5000
-MAX_COLLECTIBLE_USERNAMES = 10
+# --- DATABASE HELPERS ---
 
-# --- Database Models ---
-
-class Account(db.Model):
-    __tablename__ = 'accounts'
-    id = db.Column(db.Integer, primary_key=True)
-    telegram_user_id = db.Column(db.BigInteger, unique=True, nullable=False, index=True)
-    name = db.Column(db.String(255), nullable=False)
-    username = db.Column(db.String(255), nullable=True, index=True)
-    avatar = db.Column(db.Text, nullable=True)
-    bio = db.Column(db.Text, nullable=True)
-    phone = db.Column(db.String(50), nullable=True)
-    worn_gift_instance_id = db.Column(db.Integer, db.ForeignKey('gifts.instance_id', use_alter=True, name='fk_worn_gift'), nullable=True)
-    
-    gifts = db.relationship('Gift', back_populates='owner', lazy='dynamic', cascade="all, delete-orphan", foreign_keys='Gift.owner_telegram_id')
-    usernames = db.relationship('CollectibleUsername', backref='owner', lazy=True, cascade="all, delete-orphan")
-    
-    def to_dict(self):
-        return {
-            "id": self.telegram_user_id,
-            "name": self.name,
-            "username": self.username,
-            "avatar": self.avatar,
-            "bio": self.bio,
-            "phone": self.phone,
-            "wornGiftInstanceId": self.worn_gift_instance_id,
-            "collectibleUsernames": [u.username for u in self.usernames]
-        }
-
-class Gift(db.Model):
-    __tablename__ = 'gifts'
-    instance_id = db.Column(db.Integer, primary_key=True)
-    owner_telegram_id = db.Column(db.BigInteger, db.ForeignKey('accounts.telegram_user_id'), nullable=False, index=True)
-    
-    base_gift_id = db.Column(db.String(100), nullable=False, index=True)
-    base_gift_name = db.Column(db.String(255), nullable=False)
-    
-    is_collectible = db.Column(db.Boolean, default=False, nullable=False)
-    collectible_number = db.Column(db.Integer, nullable=True)
-    collectible_model_name = db.Column(db.String(255), nullable=True)
-    collectible_backdrop_name = db.Column(db.String(255), nullable=True)
-    collectible_pattern_name = db.Column(db.String(255), nullable=True)
-    
-    acquired_date = db.Column(db.DateTime, default=datetime.utcnow)
-    is_hidden = db.Column(db.Boolean, default=False)
-    is_pinned = db.Column(db.Boolean, default=False)
-
-    owner = db.relationship('Account', back_populates='gifts', foreign_keys=[owner_telegram_id])
-
-    __table_args__ = (db.UniqueConstraint('base_gift_id', 'collectible_number', name='_base_gift_uc'),)
-
-    def to_dict(self):
-        # This data structure must match the frontend's expectations
-        return {
-            "instanceId": self.instance_id,
-            "id": self.base_gift_id,
-            "name": self.base_gift_name,
-            "isCollectible": self.is_collectible,
-            "collectibleData": {
-                "number": self.collectible_number,
-                "model": { "name": self.collectible_model_name } if self.collectible_model_name else None,
-                "backdrop": { "name": self.collectible_backdrop_name } if self.collectible_backdrop_name else None,
-                "pattern": { "name": self.collectible_pattern_name } if self.collectible_pattern_name else None,
-            } if self.is_collectible else None,
-            "acquiredDate": self.acquired_date.isoformat(),
-            "isHidden": self.is_hidden,
-            "isPinned": self.is_pinned
-        }
-
-class CollectibleUsername(db.Model):
-    __tablename__ = 'collectible_usernames'
-    id = db.Column(db.Integer, primary_key=True)
-    owner_telegram_id = db.Column(db.BigInteger, db.ForeignKey('accounts.telegram_user_id'), nullable=False)
-    username = db.Column(db.String(255), unique=True, nullable=False)
-
-# --- Authentication Decorator ---
-def validate_telegram_auth(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        auth_data_str = request.headers.get('X-Telegram-Auth')
-        if not auth_data_str:
-            return jsonify({"error": "Not authorized: Missing auth header"}), 401
-
-        try:
-            params = dict(parse_qsl(unquote(auth_data_str)))
-            hash_from_telegram = params.pop('hash', None)
-
-            if not hash_from_telegram:
-                 return jsonify({"error": "Not authorized: Missing hash"}), 401
-
-            data_check_string = "\n".join(sorted([f"{k}={v}" for k, v in params.items()]))
-            
-            secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
-            calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-
-            if calculated_hash != hash_from_telegram:
-                return jsonify({"error": "Not authorized: Invalid hash"}), 403
-            
-            user_data = json.loads(params.get('user', '{}'))
-            if not user_data:
-                return jsonify({"error": "Not authorized: User data not found"}), 401
-
-            # Pass the authenticated user data to the decorated function
-            kwargs['user_data'] = user_data
-        except Exception as e:
-            return jsonify({"error": f"Authorization error: {str(e)}"}), 401
-
-        return f(*args, **kwargs)
-    return decorated_function
-
-# --- API Endpoints ---
-
-@app.route("/api/user/init", methods=['POST'])
-@validate_telegram_auth
-def init_user(user_data):
-    """
-    Initial endpoint called by the frontend.
-    Checks if user exists, creates if not, and returns all user data.
-    """
+def get_db_connection():
+    """Establishes a connection to the PostgreSQL database."""
     try:
-        tg_id = user_data['id']
-        account = Account.query.filter_by(telegram_user_id=tg_id).first()
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    except psycopg2.OperationalError as e:
+        print(f"Could not connect to database: {e}")
+        return None
 
-        if not account:
-            account = Account(
-                telegram_user_id=tg_id,
-                name=f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip(),
-                username=user_data.get('username'),
-                bio="Hello, I'm new here!",
-                avatar=user_data.get('photo_url')
-            )
-            db.session.add(account)
-            db.session.commit()
-
-        gifts = Gift.query.filter_by(owner_telegram_id=tg_id).order_by(Gift.acquired_date.desc()).all()
+def init_db():
+    """Initializes the database by creating necessary tables if they don't exist."""
+    conn = get_db_connection()
+    if not conn:
+        print("Database connection failed, skipping initialization.")
+        return
         
-        # Manually construct the response to match frontend expectations
-        # It's better to be explicit than to rely on a generic serializer
-        response_data = {
-            "account": account.to_dict(),
-            "ownedGifts": [gift.to_dict() for gift in gifts],
-            "pinnedGifts": [g.instance_id for g in gifts if g.is_pinned]
-        }
+    with conn.cursor() as cur:
+        # Accounts table to store user info
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS accounts (
+                tg_id BIGINT PRIMARY KEY,
+                username VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255),
+                avatar_url TEXT,
+                bio TEXT,
+                phone_number VARCHAR(50),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # Gifts table for every single gift instance
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS gifts (
+                instance_id VARCHAR(50) PRIMARY KEY,
+                owner_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                gift_type_id VARCHAR(255) NOT NULL, -- e.g., 'PlushPepe'
+                gift_name VARCHAR(255) NOT NULL,
+                original_image_url TEXT,
+                lottie_path TEXT,
+                is_collectible BOOLEAN DEFAULT FALSE,
+                collectible_data JSONB, -- Stores model, backdrop, pattern, etc.
+                collectible_number INT,
+                acquired_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                is_hidden BOOLEAN DEFAULT FALSE,
+                is_pinned BOOLEAN DEFAULT FALSE,
+                is_worn BOOLEAN DEFAULT FALSE
+            );
+        """)
+        # Index for faster lookups
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_owner_id ON gifts (owner_id);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_type_and_number ON gifts (gift_type_id, collectible_number);")
 
-        return jsonify(response_data), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database initialization error: {str(e)}"}), 500
+        # Collectible Usernames table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS collectible_usernames (
+                id SERIAL PRIMARY KEY,
+                owner_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                username VARCHAR(255) UNIQUE NOT NULL
+            );
+        """)
+    
+    conn.commit()
+    conn.close()
+    print("Database initialized successfully.")
 
-@app.route("/api/gifts/upgrade", methods=['POST'])
-@validate_telegram_auth
-def upgrade_gift(user_data):
+# --- UTILITY FUNCTIONS ---
+
+def select_weighted_random(items):
+    """Selects an item from a list based on 'rarityPermille' weight."""
+    if not items: return None
+    total_weight = sum(item.get('rarityPermille', 1) for item in items)
+    if total_weight == 0: return random.choice(items)
+    
+    random_num = random.uniform(0, total_weight)
+    for item in items:
+        weight = item.get('rarityPermille', 1)
+        if random_num < weight:
+            return item
+        random_num -= weight
+    return items[-1] # Fallback
+
+def fetch_collectible_parts(gift_name):
+    """Fetches collectible parts (models, backdrops, patterns) from the CDN."""
+    gift_name_encoded = requests.utils.quote(gift_name)
+    urls = {
+        "models": f"{CDN_BASE_URL}models/{gift_name_encoded}/models.json",
+        "backdrops": f"{CDN_BASE_URL}backdrops/{gift_name_encoded}/backdrops.json",
+        "patterns": f"{CDN_BASE_URL}patterns/{gift_name_encoded}/patterns.json"
+    }
+    parts = {}
+    for part_type, url in urls.items():
+        try:
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            parts[part_type] = response.json()
+        except (requests.RequestException, json.JSONDecodeError):
+            parts[part_type] = []
+    return parts
+
+
+# --- API ROUTES ---
+
+@app.route('/api/account', methods=['POST'])
+def get_or_create_account():
+    """
+    Handles user login. Creates an account if it doesn't exist,
+    then returns the full account data including gifts.
+    """
+    data = request.get_json()
+    if not data or 'tg_id' not in data:
+        return jsonify({"error": "Missing tg_id"}), 400
+
+    tg_id = data['tg_id']
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        # Check if user exists
+        cur.execute("SELECT * FROM accounts WHERE tg_id = %s;", (tg_id,))
+        account = cur.fetchone()
+
+        # If not, create a new account
+        if not account:
+            cur.execute("""
+                INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio, phone_number)
+                VALUES (%s, %s, %s, %s, %s, %s);
+            """, (
+                tg_id,
+                data.get('username'),
+                data.get('full_name'),
+                data.get('avatar_url'),
+                'My first account!',
+                'Not specified'
+            ))
+            conn.commit()
+
+        # Fetch full account data
+        cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE tg_id = %s;", (tg_id,))
+        account_data = dict(zip([d[0] for d in cur.description], cur.fetchone()))
+
+        # Fetch owned gifts
+        cur.execute("SELECT * FROM gifts WHERE owner_id = %s ORDER BY acquired_date DESC;", (tg_id,))
+        gifts = [dict(zip([d[0] for d in cur.description], row)) for row in cur.fetchall()]
+
+        # Fetch collectible usernames
+        cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (tg_id,))
+        usernames = [row[0] for row in cur.fetchall()]
+        
+        account_data['owned_gifts'] = gifts
+        account_data['collectible_usernames'] = usernames
+
+    conn.close()
+    return jsonify(account_data), 200
+
+
+@app.route('/api/gifts', methods=['POST'])
+def buy_gift():
+    """Buys one or more non-collectible gifts for a user."""
+    data = request.get_json()
+    required_fields = ['owner_id', 'gift_type_id', 'gift_name', 'original_image_url', 'lottie_path', 'instance_id']
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required gift data"}), 400
+
+    owner_id = data['owner_id']
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        # Enforce gift limit
+        cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
+        gift_count = cur.fetchone()[0]
+        if gift_count >= GIFT_LIMIT_PER_USER:
+            conn.close()
+            return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached"}), 403
+
+        # Insert new gift
+        cur.execute("""
+            INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path)
+            VALUES (%s, %s, %s, %s, %s, %s);
+        """, (
+            data['instance_id'], owner_id, data['gift_type_id'], data['gift_name'],
+            data['original_image_url'], data['lottie_path']
+        ))
+        conn.commit()
+    conn.close()
+    return jsonify({"message": "Gift purchased successfully"}), 201
+
+
+@app.route('/api/gifts/upgrade', methods=['POST'])
+def upgrade_gift():
     """Upgrades a non-collectible gift to a collectible one."""
     data = request.get_json()
-    instance_id = data.get('instanceId')
-    collectible_parts = data.get('collectibleParts') # { model, backdrop, pattern }
+    if 'instance_id' not in data:
+        return jsonify({"error": "instance_id is required"}), 400
     
-    if not instance_id or not collectible_parts:
-        return jsonify({"error": "Missing instanceId or collectibleParts"}), 400
-
-    tg_id = user_data['id']
-    gift = Gift.query.filter_by(instance_id=instance_id, owner_telegram_id=tg_id).first()
-
-    if not gift:
-        return jsonify({"error": "Gift not found or not owned by user"}), 404
-    if gift.is_collectible:
-        return jsonify({"error": "Gift is already a collectible"}), 400
-
-    # Check collectible limit
-    collectible_count = Gift.query.filter_by(owner_telegram_id=tg_id, is_collectible=True).count()
-    if collectible_count >= MAX_COLLECTIBLE_GIFTS:
-        return jsonify({"error": f"Collectible gift limit of {MAX_COLLECTIBLE_GIFTS} reached"}), 403
-
-    try:
-        # Find next collectible number for this base gift type
-        max_number_result = db.session.query(func.max(Gift.collectible_number)).filter_by(base_gift_id=gift.base_gift_id).scalar()
-        next_number = (max_number_result or 0) + 1
-        
-        gift.is_collectible = True
-        gift.collectible_number = next_number
-        gift.collectible_model_name = collectible_parts.get('model', {}).get('name')
-        gift.collectible_backdrop_name = collectible_parts.get('backdrop', {}).get('name')
-        gift.collectible_pattern_name = collectible_parts.get('pattern', {}).get('name')
-        
-        # Unpin if it was pinned (should not happen, but as a safeguard)
-        gift.is_pinned = False
-
-        db.session.commit()
-        return jsonify(gift.to_dict()), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database upgrade error: {str(e)}"}), 500
-
-@app.route("/api/gifts/transfer", methods=['POST'])
-@validate_telegram_auth
-def transfer_gift(user_data):
-    """Transfers a gift from the current user to another."""
-    data = request.get_json()
-    instance_id = data.get('instanceId')
-    receiver_username = data.get('receiverUsername')
-
-    if not instance_id or not receiver_username:
-        return jsonify({"error": "Missing instanceId or receiverUsername"}), 400
-
-    tg_id = user_data['id']
-    gift_to_transfer = Gift.query.filter_by(instance_id=instance_id, owner_telegram_id=tg_id).first()
-
-    if not gift_to_transfer:
-        return jsonify({"error": "Gift not found or not owned by user"}), 404
-
-    receiver = Account.query.filter(func.lower(Account.username) == func.lower(receiver_username)).first()
-    if not receiver:
-        return jsonify({"error": f"User @{receiver_username} not found in the app"}), 404
-
-    if receiver.telegram_user_id == tg_id:
-        return jsonify({"error": "You cannot transfer a gift to yourself"}), 400
-
-    # Check receiver's gift limit
-    receiver_collectible_count = Gift.query.filter_by(owner_telegram_id=receiver.telegram_user_id, is_collectible=True).count()
-    if receiver_collectible_count >= MAX_COLLECTIBLE_GIFTS:
-        return jsonify({"error": f"Receiver has reached their collectible gift limit of {MAX_COLLECTIBLE_GIFTS}"}), 403
-    
-    try:
-        # Transfer ownership
-        gift_to_transfer.owner_telegram_id = receiver.telegram_user_id
-        # Reset state for new owner
-        gift_to_transfer.is_pinned = False
-        gift_to_transfer.is_hidden = False
-        # If the gift was worn by the sender, unworn it
-        sender = Account.query.get(tg_id)
-        if sender and sender.worn_gift_instance_id == gift_to_transfer.instance_id:
-            sender.worn_gift_instance_id = None
-
-        db.session.commit()
-        return jsonify({"success": True, "message": f"Gift transferred to @{receiver.username}"}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database transfer error: {str(e)}"}), 500
-
-@app.route("/api/user/update", methods=['POST'])
-@validate_telegram_auth
-def update_user_profile(user_data):
-    """Updates user profile details like bio, avatar, worn gift."""
-    data = request.get_json()
-    tg_id = user_data['id']
-    account = Account.query.filter_by(telegram_user_id=tg_id).first()
-    if not account:
-        return jsonify({"error": "Account not found"}), 404
-        
-    try:
-        if 'bio' in data:
-            account.bio = data['bio']
-        if 'avatar' in data:
-            account.avatar = data['avatar']
-        if 'phone' in data:
-            account.phone = data['phone']
-        if 'wornGiftInstanceId' in data:
-            # Check if user owns the gift they are trying to wear
-            gift_to_wear = Gift.query.filter_by(
-                instance_id=data['wornGiftInstanceId'], 
-                owner_telegram_id=tg_id
-            ).first() if data['wornGiftInstanceId'] is not None else True
-            
-            if not gift_to_wear:
-                return jsonify({"error": "Cannot wear a gift you do not own"}), 403
-            
-            account.worn_gift_instance_id = data['wornGiftInstanceId']
-
-        db.session.commit()
-        return jsonify(account.to_dict()), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database update error: {str(e)}"}), 500
-
-@app.route("/api/gifts/update_state", methods=['POST'])
-@validate_telegram_auth
-def update_gift_state(user_data):
-    """Updates a gift's state (pinned, hidden)."""
-    data = request.get_json()
-    instance_id = data.get('instanceId')
-    tg_id = user_data['id']
-
-    gift = Gift.query.filter_by(instance_id=instance_id, owner_telegram_id=tg_id).first()
-    if not gift:
-        return jsonify({"error": "Gift not found or not owned by user"}), 404
-
-    try:
-        if 'isPinned' in data:
-            gift.is_pinned = data['isPinned']
-        if 'isHidden' in data:
-            gift.is_hidden = data['isHidden']
-            # If hiding a gift, it must also be unpinned and unworn
-            if gift.is_hidden:
-                gift.is_pinned = False
-                account = Account.query.filter_by(telegram_user_id=tg_id).first()
-                if account and account.worn_gift_instance_id == gift.instance_id:
-                    account.worn_gift_instance_id = None
-        
-        db.session.commit()
-        return jsonify(gift.to_dict()), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database update error: {str(e)}"}), 500
-
-
-@app.route("/api/data/view_gift", methods=['GET'])
-def view_gift():
-    """Public endpoint to view a specific gift by its name and number."""
-    base_gift_name_raw = request.args.get('name')
-    collectible_number = request.args.get('number')
-
-    if not base_gift_name_raw or not collectible_number:
-        return jsonify({"error": "Missing gift name or number"}), 400
-        
-    # The frontend might send "PlushPepe", so we need to add spaces back
-    # This is a bit brittle; a better approach would be to use base_gift_id if possible.
-    base_gift_name = ' '.join(re.findall('[A-Z][^A-Z]*', base_gift_name_raw))
-
-    try:
-        gift = Gift.query.filter_by(
-            base_gift_name=base_gift_name,
-            collectible_number=int(collectible_number),
-            is_collectible=True
-        ).first()
-
+    instance_id = data['instance_id']
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        # Fetch the gift to upgrade
+        cur.execute("SELECT owner_id, gift_type_id, gift_name FROM gifts WHERE instance_id = %s AND is_collectible = FALSE;", (instance_id,))
+        gift = cur.fetchone()
         if not gift:
-            return jsonify({"error": "Collectible gift not found"}), 404
-
-        owner = Account.query.filter_by(telegram_user_id=gift.owner_telegram_id).first()
+            conn.close()
+            return jsonify({"error": "Gift not found or already a collectible"}), 404
         
-        return jsonify({
-            "gift": gift.to_dict(),
-            "owner": owner.to_dict() if owner else None
-        }), 200
-    except Exception as e:
-        return jsonify({"error": f"Database query error: {str(e)}"}), 500
+        owner_id, gift_type_id, gift_name = gift
 
-@app.route("/api/data/clear_account", methods=['DELETE'])
-@validate_telegram_auth
-def clear_account_data(user_data):
-    """Deletes all data associated with the current user."""
-    tg_id = user_data['id']
-    account = Account.query.filter_by(telegram_user_id=tg_id).first()
-    if not account:
-        return jsonify({"error": "Account not found"}), 404
+        # Get next collectible number for this gift type
+        cur.execute("SELECT MAX(collectible_number) FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
+        max_number = cur.fetchone()[0]
+        next_number = (max_number or 0) + 1
+
+        # Fetch parts and generate random collectible data
+        parts = fetch_collectible_parts(gift_name)
+        selected_model = select_weighted_random(parts.get('models', []))
+        selected_backdrop = select_weighted_random(parts.get('backdrops', []))
+        selected_pattern = select_weighted_random(parts.get('patterns', []))
+
+        if not all([selected_model, selected_backdrop, selected_pattern]):
+            conn.close()
+            return jsonify({"error": f"Could not fetch all collectible parts for {gift_name}"}), 500
+
+        collectible_data = {
+            "model": selected_model,
+            "backdrop": selected_backdrop,
+            "pattern": selected_pattern,
+            "modelImage": f"{CDN_BASE_URL}models/{requests.utils.quote(gift_name)}/png/{requests.utils.quote(selected_model['name'])}.png",
+            "lottieModelPath": f"{CDN_BASE_URL}models/{requests.utils.quote(gift_name)}/lottie/{requests.utils.quote(selected_model['name'])}.json",
+            "patternImage": f"{CDN_BASE_URL}patterns/{requests.utils.quote(gift_name)}/png/{requests.utils.quote(selected_pattern['name'])}.png",
+            "backdropColors": selected_backdrop.get('hex'),
+        }
+
+        # Update the gift record in the database
+        cur.execute("""
+            UPDATE gifts
+            SET is_collectible = TRUE, collectible_data = %s, collectible_number = %s, lottie_path = NULL
+            WHERE instance_id = %s;
+        """, (json.dumps(collectible_data), next_number, instance_id))
+        conn.commit()
+
+        # Fetch the newly upgraded gift to return to frontend
+        cur.execute("SELECT * FROM gifts WHERE instance_id = %s;", (instance_id,))
+        upgraded_gift = dict(zip([d[0] for d in cur.description], cur.fetchone()))
+        
+    conn.close()
+    return jsonify(upgraded_gift), 200
+
+
+@app.route('/api/gifts/<instance_id>', methods=['PUT'])
+def update_gift_state(instance_id):
+    """Updates a gift's state (pin, hide, wear)."""
+    data = request.get_json()
+    action = data.get('action')
+    value = data.get('value')
+
+    if action not in ['pin', 'hide', 'wear'] or not isinstance(value, bool):
+        return jsonify({"error": "Invalid action or value"}), 400
+
+    column_map = {'pin': 'is_pinned', 'hide': 'is_hidden', 'wear': 'is_worn'}
+    column_to_update = column_map[action]
+
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        # If wearing a gift, un-wear all others for that user first
+        if action == 'wear' and value is True:
+            cur.execute("SELECT owner_id FROM gifts WHERE instance_id = %s;", (instance_id,))
+            owner_id = cur.fetchone()[0]
+            cur.execute("UPDATE gifts SET is_worn = FALSE WHERE owner_id = %s AND is_worn = TRUE;", (owner_id,))
+
+        # Update the target gift
+        cur.execute(f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;", (value, instance_id))
+        conn.commit()
+    conn.close()
+    return jsonify({"message": f"Gift {action} state updated"}), 200
+
+
+@app.route('/api/gifts/transfer', methods=['POST'])
+def transfer_gift():
+    """Transfers a collectible gift from one user to another by username."""
+    data = request.get_json()
+    if not data or 'instance_id' not in data or 'receiver_username' not in data:
+        return jsonify({"error": "Missing instance_id or receiver_username"}), 400
+
+    instance_id = data['instance_id']
+    receiver_username = data['receiver_username'].lstrip('@')
     
-    try:
-        # Cascade should handle deleting gifts and usernames
-        db.session.delete(account)
-        db.session.commit()
-        return jsonify({"success": True, "message": "Account data has been cleared."}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database deletion error: {str(e)}"}), 500
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        # Find the receiver's account
+        cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (receiver_username,))
+        receiver = cur.fetchone()
+        if not receiver:
+            conn.close()
+            return jsonify({"error": "Receiver username not found"}), 404
+        
+        receiver_id = receiver[0]
 
-@app.before_first_request
-def create_tables():
-    """Create all database tables if they don't exist."""
-    db.create_all()
+        # Check receiver's gift limit
+        cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+        gift_count = cur.fetchone()[0]
+        if gift_count >= GIFT_LIMIT_PER_USER:
+            conn.close()
+            return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached"}), 403
+            
+        # Update gift owner and reset its state
+        cur.execute("""
+            UPDATE gifts
+            SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE
+            WHERE instance_id = %s AND is_collectible = TRUE;
+        """, (receiver_id, instance_id))
+        
+        if cur.rowcount == 0:
+            conn.close()
+            return jsonify({"error": "Gift not found, is not a collectible, or could not be transferred"}), 404
+
+        conn.commit()
+    conn.close()
+    return jsonify({"message": "Gift transferred successfully"}), 200
+
+
+@app.route('/api/gift/<gift_type_id>/<int:collectible_number>', methods=['GET'])
+def get_gift_by_details(gift_type_id, collectible_number):
+    """Fetches a specific collectible gift by its type and number for deep linking."""
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT g.*, a.username as owner_username, a.full_name as owner_name
+            FROM gifts g
+            JOIN accounts a ON g.owner_id = a.tg_id
+            WHERE g.gift_type_id = %s AND g.collectible_number = %s AND g.is_collectible = TRUE;
+        """, (gift_type_id, collectible_number))
+        
+        gift_data = cur.fetchone()
+        if not gift_data:
+            conn.close()
+            return jsonify({"error": "Collectible gift not found"}), 404
+        
+        result = dict(zip([d[0] for d in cur.description], gift_data))
+    
+    conn.close()
+    return jsonify(result), 200
+
+# Fallback route for undefined API calls
+@app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def catch_all(path):
+    return jsonify({"error": f"The requested API endpoint '/api/{path}' was not found."}), 404
+
 
 if __name__ == '__main__':
-    # The app.before_first_request is deprecated in newer Flask versions.
-    # For local development, it's fine. For production with Gunicorn,
-    # you'd typically run a separate migration script.
-    with app.app_context():
-        db.create_all()
+    # This block will run when the script is executed directly.
+    # On Render, the web server (like Gunicorn) will import the 'app' object,
+    # so this block won't run. It's useful for local development.
+    print("Starting Flask server for local development...")
+    init_db() # Initialize DB on local startup
     app.run(debug=True, port=5001)
