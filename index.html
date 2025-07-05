@@ -610,7 +610,7 @@
             font-size: 0.95em; color: var(--tg-theme-hint-color); margin-bottom: 10px;
         }
         .collectible-display-area p a {
-            color: var(--tg-theme-link-color); /* Make link more visible */
+            color: var(--tg-theme-link-color);
             text-decoration: none;
             cursor: pointer;
         }
@@ -1234,7 +1234,7 @@
                     <p id="generated-image-message" style="margin-top: 15px; color: var(--tg-theme-hint-color); font-size: 0.9em;"></p>
                 </div>
                 <div class="modal-buttons-footer" id="generated-image-footer">
-                    <button id="download-generated-image-placeholder" class="modal-button" disabled>Download</button>
+                    <button id="send-generated-image-button" class="modal-button">Send to Me</button>
                     <button id="close-generated-image-modal" class="modal-button secondary">Close</button>
                 </div>
             </div>
@@ -1251,10 +1251,10 @@
                         <h4 id="sell-gift-name"></h4>
                     </div>
                     <div class="price-input-container">
-                        <label>Enter price in Stars</label>
+                        <label>Enter price in Stars (125 - 100,000)</label>
                         <div class="price-input-wrapper">
                             <img src="https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png" alt="Star">
-                            <input type="number" id="sell-price-input" placeholder="125" min="1">
+                            <input type="number" id="sell-price-input" placeholder="125" min="125" max="100000">
                         </div>
                     </div>
                     <div class="price-details">
@@ -1348,6 +1348,8 @@
         // Backend now handles limit, but client-side visual reminder
         const GIFT_LIMIT_PER_USER = 5000; 
         const MAX_COLLECTIBLE_USERNAMES = 10; // Backend also enforces this
+        const MIN_SALE_PRICE = 125;
+        const MAX_SALE_PRICE = 100000;
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const BACK_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left-bold</title><path d="M20,9V15H12V19.84L4.16,12L12,4.16V9H20Z" /></svg>`;
@@ -1752,6 +1754,7 @@
 
             } catch (error) {
                 console.error("Failed to initialize Telegram user account:", error);
+                // This is where the 'exceeded the quota' error likely originates
                 tg.showAlert(`Failed to load account: ${error.message}. Please try again.`);
             }
         }
@@ -2345,7 +2348,7 @@
                      modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; }; 
                 }
                 const account = accounts.find(acc => acc.tg_id === gift.owner_id);
-                const ownerName = account?.full_name || 'Unknown'; 
+                const ownerName = account?.full_name || 'Test Account'; 
                 const ownerAvatar = account?.avatar_url || `https://i.pravatar.cc/140?u=${generateUniqueId()}`; // Fallback avatar
 
                 modalCollectibleInfoTable.innerHTML = `
@@ -2510,12 +2513,8 @@
                 selectedCustomGift = {}; customBuyConfirmButton.disabled = true;
             }
             if (modalElement.id === 'generated-image-modal') {
-                const placeholder = document.createElement('button');
-                placeholder.id = 'download-generated-image-placeholder';
-                placeholder.className = 'modal-button';
-                placeholder.disabled = true;
-                placeholder.textContent = 'Download';
-                generatedImageFooter.querySelector('a, button')?.replaceWith(placeholder);
+                const sendButton = document.getElementById('send-generated-image-button');
+                if (sendButton) sendButton.disabled = true;
             }
             if (modalElement.id === 'chances-modal') currentGiftForChances = null;
             if (modalElement.id === 'sell-gift-modal') currentGiftToSell = null;
@@ -3059,11 +3058,11 @@
         async function handleShareImageAction() {
             longPressMenu.classList.add('hidden');
             if (!currentLongPressGift || !currentLongPressGift.is_collectible) { tg.showAlert("Cannot share an image for this gift."); return; }
-            generatedImageMessage.textContent = 'Generating image...';
-            generatedImagePreview.src = ''; 
             
-            const placeholder = document.getElementById('download-generated-image-placeholder');
-            if (placeholder) placeholder.disabled = true;
+            const sendButton = document.getElementById('send-generated-image-button');
+            generatedImageMessage.textContent = 'Generating image...';
+            generatedImagePreview.src = '';
+            if (sendButton) sendButton.disabled = true;
 
             generatedImageModal.classList.add('active');
             
@@ -3071,16 +3070,30 @@
             
             if (imageDataUrl) {
                 generatedImagePreview.src = imageDataUrl;
-                generatedImageMessage.textContent = 'Image is ready. Click "Download" to save.';
-                
-                const downloadLink = document.createElement('a');
-                downloadLink.id = 'download-generated-image';
-                downloadLink.className = 'modal-button';
-                downloadLink.href = imageDataUrl;
-                downloadLink.download = `gift-${currentLongPressGift.gift_name.replace(/\s/g, '_')}-${currentLongPressGift.collectible_number}.png`;
-                downloadLink.textContent = 'Download';
-                
-                generatedImageFooter.querySelector('#download-generated-image-placeholder')?.replaceWith(downloadLink);
+                generatedImageMessage.textContent = 'Image is ready. Click "Send to Me" to receive it via bot.';
+                if (sendButton) {
+                    sendButton.disabled = false;
+                    sendButton.onclick = async () => {
+                        sendButton.disabled = true;
+                        sendButton.textContent = "Sending...";
+                        try {
+                            await callBackend('/api/gifts/send_image', 'POST', {
+                                imageDataUrl: imageDataUrl,
+                                userId: currentAccountTgId,
+                                caption: `Your generated image for ${currentLongPressGift.gift_name} #${currentLongPressGift.collectible_number.toLocaleString()}`
+                            });
+                            tg.HapticFeedback.notificationOccurred('success');
+                            tg.showAlert("Image sent! Check your chat with the bot.");
+                            closeModal(generatedImageModal);
+                        } catch (error) {
+                            tg.HapticFeedback.notificationOccurred('error');
+                            tg.showAlert(`Failed to send image: ${error.message}`);
+                        } finally {
+                            sendButton.disabled = false;
+                            sendButton.textContent = "Send to Me";
+                        }
+                    };
+                }
 
                 tg.HapticFeedback.notificationOccurred('success');
             } else {
@@ -3275,7 +3288,7 @@
 
         function updateSellPriceDetails() {
             const price = parseInt(sellPriceInput.value, 10);
-            if (!isNaN(price) && price > 0) {
+            if (!isNaN(price) && price >= MIN_SALE_PRICE && price <= MAX_SALE_PRICE) {
                 const commission = 0.20;
                 const received = Math.floor(price * (1 - commission));
                 const usdEquivalent = (price * 0.013).toFixed(2);
@@ -3303,8 +3316,12 @@
                     price: price,
                     owner_id: currentAccountTgId
                 });
+                // Optimistically remove from local state
+                ownedGifts = ownedGifts.filter(g => g.instance_id !== currentGiftToSell.instance_id);
+                renderProfileGifts();
+
                 tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`Gift "${currentGiftToSell.gift_name}" listed for sale. You will be notified by the bot when it's sold!`);
+                tg.showAlert(`Gift "${currentGiftToSell.gift_name}" listed for sale. It has been removed from your inventory and you will be notified by the bot when it's sold!`);
                 closeModal(sellGiftModal);
             } catch (error) {
                 tg.HapticFeedback.notificationOccurred('error');
