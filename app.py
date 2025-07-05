@@ -5,7 +5,7 @@ import random
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from urllib.parse import quote_plus # More robust for URL encoding parts
+from urllib.parse import quote # Changed from quote_plus to quote
 
 # --- CONFIGURATION ---
 
@@ -100,7 +100,6 @@ def select_weighted_random(items):
     total_weight = sum(item.get('rarityPermille', 1) for item in items)
     if total_weight == 0: 
         # If all weights are 0, or list is non-empty but all weights 0
-        # This fallback is unlikely for valid rarity data but good to have
         return random.choice(items) if items else None 
     
     random_num = random.uniform(0, total_weight)
@@ -113,7 +112,7 @@ def select_weighted_random(items):
 
 def fetch_collectible_parts(gift_name):
     """Fetches collectible parts (models, backdrops, patterns) from the CDN."""
-    gift_name_encoded = quote_plus(gift_name) # Using quote_plus for better URL encoding of spaces/special chars
+    gift_name_encoded = quote(gift_name) # Changed from quote_plus
     urls = {
         "models": f"{CDN_BASE_URL}models/{gift_name_encoded}/models.json",
         "backdrops": f"{CDN_BASE_URL}backdrops/{gift_name_encoded}/backdrops.json",
@@ -367,9 +366,9 @@ def upgrade_gift():
                 "model": selected_model,
                 "backdrop": selected_backdrop,
                 "pattern": selected_pattern,
-                "modelImage": f"{CDN_BASE_URL}models/{quote_plus(gift_name)}/png/{quote_plus(selected_model['name'])}.png",
-                "lottieModelPath": f"{CDN_BASE_URL}models/{quote_plus(gift_name)}/lottie/{quote_plus(selected_model['name'])}.json",
-                "patternImage": f"{CDN_BASE_URL}patterns/{quote_plus(gift_name)}/png/{quote_plus(selected_pattern['name'])}.png",
+                "modelImage": f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png", # Changed from quote_plus
+                "lottieModelPath": f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json", # Changed from quote_plus
+                "patternImage": f"{CDN_BASE_URL}patterns/{quote(gift_name)}/png/{quote(selected_pattern['name'])}.png", # Changed from quote_plus
                 "backdropColors": selected_backdrop.get('hex'),
                 "supply": supply # Add supply to collectible_data
             }
@@ -392,7 +391,11 @@ def upgrade_gift():
             upgraded_gift = dict(zip([d[0] for d in cur.description], cur.fetchone()))
             # Ensure collectible_data is returned as a JSON object
             if upgraded_gift.get('collectible_data') is not None and isinstance(upgraded_gift.get('collectible_data'), str):
-                upgraded_gift['collectible_data'] = json.loads(upgraded_gift['collectible_data'])
+                try:
+                    upgraded_gift['collectible_data'] = json.loads(upgraded_gift['collectible_data'])
+                except json.JSONDecodeError:
+                    app.logger.error(f"Failed to decode collectible_data for gift {upgraded_gift.get('instance_id')}: {upgraded_gift.get('collectible_data')}", exc_info=True)
+                    upgraded_gift['collectible_data'] = None
             
             return jsonify(upgraded_gift), 200
         except Exception as e:
