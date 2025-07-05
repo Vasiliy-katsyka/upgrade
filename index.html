@@ -797,16 +797,20 @@
             font-size: 0.9em; color: var(--tg-theme-hint-color);
         }
 
-        /* Sell Gift Modal Styles */
-        #sell-gift-modal .modal-gift-preview {
+        /* Sell Gift & Transfer Gift Modal Styles */
+        #sell-gift-modal .modal-gift-preview,
+        #transfer-gift-modal .modal-gift-preview {
             display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;
         }
-        #sell-gift-modal .modal-gift-preview img {
+        #sell-gift-modal .modal-gift-preview img,
+        #transfer-gift-modal .modal-gift-preview img {
             width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px;
         }
-        #sell-gift-modal .modal-gift-preview h4 {
+        #sell-gift-modal .modal-gift-preview h4,
+        #transfer-gift-modal .modal-gift-preview h4 {
             font-size: 1.1em; font-weight: 500;
         }
+        
         .price-input-container {
             position: relative;
             background-color: var(--tg-theme-bg-color);
@@ -1331,8 +1335,7 @@
         </ul>
     </div>
     <script>
-        // !! IMPORTANT: UPDATE THIS URL TO YOUR DEPLOYED FLASK BACKEND !!
-        const BACKEND_BASE_URL = "https://upgrade-a57g.onrender.com"; // e.g., "https://my-telegram-gift-app.onrender.com"
+        const BACKEND_BASE_URL = "https://upgrade-a57g.onrender.com";
 
         const APP_VERSION_SUFFIX = '_v12'; // Increment to reset UI preferences in localStorage on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
@@ -1349,7 +1352,6 @@
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
-        const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
         
         // --- Global State ---
@@ -1360,12 +1362,13 @@
         let accounts = []; 
         let currentAccountTgId = null;
 
-        // --- Per-account UI state preferences (stored client-side in localStorage) ---
+        // --- Per-account state (in-memory, fetched from backend) ---
         let ownedGifts = []; // Gifts for the current active account
+        
+        // Per-account UI state preferences (stored client-side in localStorage)
         let animationsEnabled = true;
         let showHiddenGifts = false;
         let activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-
 
         let tg = window.Telegram.WebApp;
 
@@ -1439,7 +1442,7 @@
         const collectibleActionWear = document.getElementById('collectible-action-wear');
         const collectibleActionSell = document.getElementById('collectible-action-sell');
         const closeCollectibleDetailModalButton = document.getElementById('close-collectible-detail-modal');
-        const collectibleMenuButton = document.getElementById('collectible-menu-button'); // Renamed from modal.querySelector
+        const collectibleMenuButton = document.getElementById('collectible-menu-button'); 
         const hideLinkInModal = document.getElementById('hide-link-in-modal');
 
         const tooManyPinsModal = document.getElementById('too-many-pins-modal');
@@ -2053,7 +2056,13 @@
                     ${priceHTML}
                     <div class="limited-label">Limited</div>
                 `;
-                item.addEventListener('click', () => openBuyMultipleModal(id, name, originalImageUrl, lottiePath)); 
+                item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
+                
+                let buyItemLongPressTimer;
+                item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
+                item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
+                item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
+                item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
                 
                 observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
@@ -2094,7 +2103,6 @@
             applyWornGiftStyles();
         }
 
-        // CRITICAL FIX: This function now uses the global `ownedGifts` variable
         function renderProfileGifts() {
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
@@ -2203,7 +2211,6 @@
             return card;
         }
         
-        // CRITICAL FIX: This function now uses the global `ownedGifts` variable
         function renderTopPinnedGiftsPreview() {
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
             profileTopPinnedGifts.innerHTML = '';
@@ -2240,19 +2247,12 @@
             buyMultipleModal.classList.add('active');
             buyMultipleQuantityInput.focus();
         }
-        async function handleConfirmBuyMultiple() {
-            if (!currentGiftToBuyMultiple) return;
-            const quantity = parseInt(buyMultipleQuantityInput.value, 10);
-            if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
-            
+
+        async function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
             if (ownedGifts.length + quantity > GIFT_LIMIT_PER_USER) {
                 tg.showAlert(`Cannot buy ${quantity} gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
             }
-
-            // Temporarily disable the button
-            confirmBuyMultipleButton.disabled = true;
-            confirmBuyMultipleButton.textContent = 'Buying...';
 
             try {
                 for (let i = 0; i < quantity; i++) {
@@ -2260,25 +2260,53 @@
                     await callBackend('/api/gifts', 'POST', {
                         instance_id: newGiftInstanceId,
                         owner_id: currentAccountTgId,
-                        gift_type_id: currentGiftToBuyMultiple.id,
-                        gift_name: currentGiftToBuyMultiple.name,
-                        original_image_url: currentGiftToBuyMultiple.originalImage,
-                        lottie_path: currentGiftToBuyMultiple.lottiePath
+                        gift_type_id: id,
+                        gift_name: name,
+                        original_image_url: originalImage,
+                        lottie_path: lottiePath
+                    });
+                    
+                    // Add gift to local state for immediate feedback
+                    ownedGifts.unshift({
+                        instance_id: newGiftInstanceId,
+                        owner_id: currentAccountTgId,
+                        gift_type_id: id,
+                        gift_name: name,
+                        original_image_url: originalImage,
+                        lottie_path: lottiePath,
+                        is_collectible: false,
+                        acquired_date: new Date().toISOString()
                     });
                 }
-                await initializeTelegramUserAccount(); // Re-fetch all user data including new gifts
+                
+                // Refresh UI
+                renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('success');
-                const message = quantity > 1 ? `Added ${quantity} "${currentGiftToBuyMultiple.name}" gifts!` : `Added "${currentGiftToBuyMultiple.name}" gift!`;
-                tg.showAlert(message); showPage('profile-page');
+                const message = quantity > 1 ? `Added ${quantity} "${name}" gifts!` : `Added "${name}" gift!`;
+                tg.showAlert(message); 
+                showPage('profile-page');
+                
             } catch (error) {
                 tg.HapticFeedback.notificationOccurred('error');
                 tg.showAlert(`Failed to buy gifts: ${error.message}`);
-            } finally {
-                confirmBuyMultipleButton.disabled = false;
-                confirmBuyMultipleButton.textContent = 'Buy';
-                closeModal(buyMultipleModal);
-                currentGiftToBuyMultiple = null;
             }
+        }
+        
+        async function handleConfirmBuyMultiple() {
+            if (!currentGiftToBuyMultiple) return;
+            const quantity = parseInt(buyMultipleQuantityInput.value, 10);
+            if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
+            
+            // Temporarily disable the button
+            confirmBuyMultipleButton.disabled = true;
+            confirmBuyMultipleButton.textContent = 'Buying...';
+
+            await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
+            
+            confirmBuyMultipleButton.disabled = false;
+            confirmBuyMultipleButton.textContent = 'Buy';
+            closeModal(buyMultipleModal);
+            currentGiftToBuyMultiple = null;
         }
         
         function openGiftDetailByInstanceId(instanceId) {
@@ -2375,7 +2403,14 @@
             try {
                 const upgradedGiftData = await callBackend('/api/gifts/upgrade', 'POST', { instance_id: giftToUpgrade.instance_id });
                 if (upgradedGiftData) {
-                    return { instance_id: upgradedGiftData.instance_id, name: upgradedGiftData.gift_name, status: 'success', collectibleData: upgradedGiftData.collectible_data };
+                    // Update the gift in the main ownedGifts array
+                    const giftIndex = ownedGifts.findIndex(g => g.instance_id === upgradedGiftData.instance_id);
+                    if(giftIndex !== -1) {
+                        ownedGifts[giftIndex] = upgradedGiftData;
+                    } else {
+                        ownedGifts.push(upgradedGiftData); // Should not happen, but a fallback
+                    }
+                    return { ...upgradedGiftData, status: 'success' };
                 } else {
                     throw new Error("Backend did not return upgraded gift data.");
                 }
@@ -2397,8 +2432,9 @@
             try {
                 const result = await upgradeSingleGiftLogic(gift);
                 if (result.status === 'success') {
-                    await initializeTelegramUserAccount(); // Re-fetch all user data including new gifts
-                    if (uniquenessValueEl) uniquenessValueEl.textContent = `Collectible #${ownedGifts.find(g => g.instance_id === instanceId).collectible_number}`;
+                    // Refresh UI immediately
+                    renderProfileGifts();
+                    if (uniquenessValueEl) uniquenessValueEl.textContent = `Collectible #${result.collectible_number}`;
                     tg.HapticFeedback.notificationOccurred('success');
                     setTimeout(() => { closeModal(giftDetailModal); openGiftDetailByInstanceId(gift.instance_id); }, 1200);
                 } else if (result.status === 'failed') {
@@ -2439,10 +2475,11 @@
                 if (cardElement) cardElement.classList.remove('is-updating');
                 if (result.status === 'success') {
                     successCount++;
+                    // LIVE UPGRADE: Immediately re-render the grid to show the change
+                    renderProfileGifts();
                 } else if (result.status === 'failed') failureCount++;
                 if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
             }
-            await initializeTelegramUserAccount(); // Re-fetch all user data including updated gifts
             
             let summaryMessage = `Upgrade complete.\nSucceeded: ${successCount}`;
             if (failureCount > 0) summaryMessage += `\nFailed: ${failureCount}`;
@@ -3272,7 +3309,8 @@
                 transferStatusMessage.innerHTML = '<p style="color:red;">Please enter a username.</p>';
                 return;
             }
-            if (receiverUsername.toLowerCase() === accounts.find(acc => acc.tg_id === currentAccountTgId)?.username.toLowerCase()) {
+            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            if (receiverUsername.toLowerCase() === currentAccount?.username.toLowerCase()) {
                 transferStatusMessage.innerHTML = '<p style="color:red;">Cannot transfer to yourself.</p>';
                 return;
             }
