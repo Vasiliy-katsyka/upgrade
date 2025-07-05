@@ -1115,36 +1115,10 @@
                         <div class="filter-options-grid" id="filter-options-patterns"></div>
                     </div>
                     <hr style="border-color: rgba(255,255,255,0.1); border-style: solid; border-width: 1px 0 0 0; margin: 20px 0;">
-                    <!-- These settings are now in settings-modal -->
-                    <!--
-                    <div class="filter-section" id="filter-settings-section">
-                        <h4>Settings</h4>
-                         <div class="settings-row">
-                            <label>Animations</label>
-                            <label class="switch">
-                                <input type="checkbox" id="animation-toggle" checked>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div class="settings-row">
-                            <label>Show hidden</label>
-                            <label class="switch">
-                                <input type="checkbox" id="show-hidden-toggle">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-                    -->
                 </div>
                 <div class="modal-buttons-footer">
                     <button id="apply-filters-button" class="modal-button">Apply Filters</button>
                     <button id="clear-filters-button" class="modal-button secondary">Reset Filters</button>
-                    <!-- Clear All Data button moved to settings modal -->
-                    <!--
-                    <button id="clear-all-data-button" class="clear-data-button">
-                        <span id="clear-data-icon-placeholder"></span> Clear Account Data
-                    </button>
-                    -->
                 </div>
             </div>
         </div>
@@ -1358,7 +1332,7 @@
     </div>
     <script>
         // !! IMPORTANT: UPDATE THIS URL TO YOUR DEPLOYED FLASK BACKEND !!
-        const BACKEND_BASE_URL = "https://upgrade-a57g.onrender.com"; // e.g., "https://my-telegram-gift-app.onrender.com"
+        const BACKEND_BASE_URL = "https://my-telegram-gift-app.onrender.com"; // e.g., "https://my-telegram-gift-app.onrender.com"
 
         const APP_VERSION_SUFFIX = '_v12'; // Increment to reset UI preferences in localStorage on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
@@ -1375,7 +1349,7 @@
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
-        const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg>`;
+        const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>trash-can-outline</title><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" /></svg`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
         
         // --- Global State ---
@@ -1493,11 +1467,6 @@
         const filterOptionsPatterns = document.getElementById('filter-options-patterns');
         const applyFiltersButton = document.getElementById('apply-filters-button');
         const clearFiltersButton = document.getElementById('clear-filters-button');
-        // Removed from filter-popup
-        // const clearAllDataButton = document.getElementById('clear-all-data-button');
-        // const clearDataIconPlaceholder = document.getElementById('clear-data-icon-placeholder');
-        // const animationToggle = document.getElementById('animation-toggle');
-        // const showHiddenToggle = document.getElementById('show-hidden-toggle');
         
         const settingsModal = document.getElementById('settings-modal');
         const animationToggle = document.getElementById('animation-toggle');
@@ -1595,7 +1564,8 @@
             try {
                 const response = await fetch(url, options);
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                    // Try to parse JSON error message, fallback to status text
+                    const errorData = await response.json().catch(() => ({ message: response.statusText || 'Unknown error' }));
                     throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.error || errorData.message}`);
                 }
                 // Handle 204 No Content for successful deletions/updates without a body
@@ -1687,7 +1657,6 @@
             collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
-            // clearDataIconPlaceholder.innerHTML = TRASH_ICON_SVG; // Removed this, clear buttons are now text only in settings
             collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
         
             loadClientSideState(); // Load UI preferences
@@ -1765,17 +1734,18 @@
                 // Store this account in the client-side 'accounts' array for switching
                 let existingAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
                 if (existingAccount) {
-                    Object.assign(existingAccount, accountData); // Update existing
+                    Object.assign(existingAccount, accountData); // Update existing in-memory account
                 } else {
-                    accounts.push(accountData); // Add new
+                    accounts.push(accountData); // Add new in-memory account
                 }
-                saveClientSideAccounts(); // Save the list of simulated accounts
+                saveClientSideAccounts(); // Save the list of simulated accounts (lightweight version)
 
                 renderAll();
-                console.log("Account data loaded:", accountData);
+                console.log("Account data loaded successfully.");
 
             } catch (error) {
                 console.error("Failed to initialize Telegram user account:", error);
+                // This is where the 'exceeded the quota' error likely originates
                 tg.showAlert(`Failed to load account: ${error.message}. Please try again.`);
             }
         }
@@ -1866,7 +1836,7 @@
             showHiddenGifts = JSON.parse(localStorage.getItem('showHiddenGifts' + APP_VERSION_SUFFIX)) ?? false;
             activeFilters = JSON.parse(localStorage.getItem('activeFilters' + APP_VERSION_SUFFIX)) || { collection: null, model: null, backdrop: null, pattern: null };
             
-            // Load simulated accounts list
+            // Load simulated accounts list (should be lightweight)
             accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
             currentAccountTgId = localStorage.getItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX);
         }
@@ -1878,10 +1848,32 @@
             localStorage.setItem('showHiddenGifts' + APP_VERSION_SUFFIX, JSON.stringify(showHiddenGifts));
         }
 
+        // CRITICAL FIX: Only store a lightweight version of accounts in localStorage
         function saveClientSideAccounts() {
-            localStorage.setItem('giftSimAccounts' + APP_VERSION_SUFFIX, JSON.stringify(accounts));
-            localStorage.setItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX, currentAccountTgId);
+            try {
+                // Create a lightweight version of accounts for storage, stripping out heavy data.
+                const accountsToStore = accounts.map(acc => {
+                    return {
+                        tg_id: acc.tg_id,
+                        username: acc.username,
+                        full_name: acc.full_name,
+                        avatar_url: acc.avatar_url
+                        // DO NOT include owned_gifts or collectible_usernames here
+                    };
+                });
+                localStorage.setItem('giftSimAccounts' + APP_VERSION_SUFFIX, JSON.stringify(accountsToStore));
+                localStorage.setItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX, currentAccountTgId);
+            } catch (e) {
+                // Catch potential quota errors and provide a better message.
+                if (e.name === 'QuotaExceededError') {
+                    console.error("LocalStorage quota exceeded even after trying to save lightweight data. This is unexpected.");
+                    tg.showAlert("A storage error occurred. Please clear your browser cache or app data if the problem persists.");
+                } else {
+                    console.error("Error saving client side accounts:", e);
+                }
+            }
         }
+
 
         async function handleAddAccount() {
             const newTgId = Math.floor(Math.random() * 1e12) + 1; // Simulate a new unique Telegram ID
@@ -1904,20 +1896,22 @@
 
         async function switchAccount(tgId) {
             currentAccountTgId = tgId;
-            saveClientSideAccounts();
+            saveClientSideAccounts(); // Save the new current ID
 
             try {
                 // Fetch the selected account's full data (including gifts) from the backend
                 const accountData = await callBackend('/api/account', 'POST', { tg_id: tgId });
                 
-                // Update the local cached account object in the 'accounts' array
+                // Update the in-memory account object
                 let existingAccount = accounts.find(acc => acc.tg_id === tgId);
                 if (existingAccount) {
                     Object.assign(existingAccount, accountData);
                 } else {
                     accounts.push(accountData); // Should not happen if tgId exists in accounts array
                 }
-                ownedGifts = accountData.owned_gifts || []; // Update current user's gifts
+                
+                // **CRITICAL**: Update the global 'ownedGifts' variable with the new data.
+                ownedGifts = accountData.owned_gifts || []; 
 
                 renderAll();
             } catch (error) {
@@ -1969,7 +1963,7 @@
         }
         
         function applyWornGiftStyles() {
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            // Uses the global `ownedGifts` variable now
             const wornGift = ownedGifts.find(g => g.is_worn === true);
 
             destroyLottieAnimation(wornGiftIconContainer);
@@ -2059,12 +2053,7 @@
                     ${priceHTML}
                     <div class="limited-label">Limited</div>
                 `;
-                item.addEventListener('click', () => openBuyMultipleModal(id, name, originalImageUrl, lottiePath)); // Always open multiple modal
-                let buyItemLongPressTimer; // No separate long press, single click opens multiple modal
-                // item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
-                // item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
-                // item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
-                // item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
+                item.addEventListener('click', () => openBuyMultipleModal(id, name, originalImageUrl, lottiePath)); 
                 
                 observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
@@ -2105,14 +2094,12 @@
             applyWornGiftStyles();
         }
 
+        // CRITICAL FIX: This function now uses the global `ownedGifts` variable
         function renderProfileGifts() {
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
             
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            const accountOwnedGifts = currentAccount ? currentAccount.owned_gifts : [];
-
-            const baseGifts = showHiddenGifts ? accountOwnedGifts : accountOwnedGifts.filter(g => !g.is_hidden);
+            const baseGifts = showHiddenGifts ? ownedGifts : ownedGifts.filter(g => !g.is_hidden);
 
             const filteredGifts = baseGifts.filter(gift => { 
                 if (activeFilters.collection && gift.gift_type_id !== activeFilters.collection) return false;
@@ -2125,8 +2112,8 @@
             });
 
             profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
-            if (accountOwnedGifts.length > 0 && filteredGifts.length !== accountOwnedGifts.length) {
-                profileGiftCountSubtext.textContent += ` of ${accountOwnedGifts.length}`;
+            if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) {
+                profileGiftCountSubtext.textContent += ` of ${ownedGifts.length}`;
             }
             
             const sortedGifts = [...filteredGifts].sort((a, b) => { 
@@ -2140,13 +2127,13 @@
             if (sortedGifts.length === 0) { 
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
                 let emptyMessage = "You don't have any gifts yet.";
-                if (accountOwnedGifts.length > 0) {
+                if (ownedGifts.length > 0) {
                     emptyMessage = "No gifts match the selected filters.";
-                    if (!showHiddenGifts && accountOwnedGifts.some(g => g.is_hidden)) {
+                    if (!showHiddenGifts && ownedGifts.some(g => g.is_hidden)) {
                         emptyMessage += " Some gifts might be hidden.";
                     }
                 }
-                giftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">S${emptyMessage}</p>`;
+                giftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">${emptyMessage}</p>`;
             } else {
                 giftsGrid.style.display = 'grid';
                 sortedGifts.forEach(gift => {
@@ -2156,7 +2143,7 @@
                 });
             }
             renderTopPinnedGiftsPreview();
-            const hasNonCollectible = accountOwnedGifts.some(g => !g.is_collectible);
+            const hasNonCollectible = ownedGifts.some(g => !g.is_collectible);
             if (upgradeAllGiftsButton) { 
                 upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
                 if (!hasNonCollectible) { upgradeAllGiftsButton.textContent = '✨ Upgrade All'; upgradeAllGiftsButton.disabled = false; }
@@ -2216,14 +2203,12 @@
             return card;
         }
         
+        // CRITICAL FIX: This function now uses the global `ownedGifts` variable
         function renderTopPinnedGiftsPreview() {
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
             profileTopPinnedGifts.innerHTML = '';
 
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            const accountOwnedGifts = currentAccount ? currentAccount.owned_gifts : [];
-
-            const pinnedGifts = accountOwnedGifts.filter(g => g.is_pinned && !g.is_hidden);
+            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden);
 
             pinnedGifts.slice(0, 7).forEach(gift => {
                 const container = document.createElement('div');
@@ -2241,7 +2226,7 @@
                     container.classList.add('lottie-animation-container');
                     playLottieAnimation(container, lottiePathForPinned, true);
                 } else {
-                     container.innerHTML = `<img src="${imageForPinned}" alt="${gift.name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
+                     container.innerHTML = `<img src="${imageForPinned}" alt="${gift.gift_name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
                 }
                 profileTopPinnedGifts.appendChild(container);
             });
@@ -2260,12 +2245,8 @@
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
             
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            if (!currentAccount) return;
-
-            const giftCount = currentAccount.owned_gifts.length;
-            if (giftCount + quantity > GIFT_LIMIT_PER_USER) {
-                tg.showAlert(`Cannot buy ${quantity} gifts. You have ${giftCount} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
+            if (ownedGifts.length + quantity > GIFT_LIMIT_PER_USER) {
+                tg.showAlert(`Cannot buy ${quantity} gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
             }
 
@@ -2441,11 +2422,8 @@
             if (giftsToUpgrade.length === 0) { tg.showAlert("No gifts to upgrade."); return; }
 
             // Check limit against backend's limit. Client-side check for user feedback.
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            if (!currentAccount) return;
-            const currentGiftCount = currentAccount.owned_gifts.length;
-            if (currentGiftCount + giftsToUpgrade.length > GIFT_LIMIT_PER_USER) {
-                tg.showAlert(`Cannot upgrade all gifts. You have ${currentGiftCount} gifts and would exceed the limit of ${GIFT_LIMIT_PER_USER}.`);
+            if (ownedGifts.length > GIFT_LIMIT_PER_USER) {
+                tg.showAlert(`Cannot upgrade all gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
             }
 
@@ -2653,8 +2631,8 @@
 
         function showTooManyPinsModal() {
             unpinSelectionGrid.innerHTML = '';
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            const pinnedGifts = currentAccount ? currentAccount.owned_gifts.filter(g => g.is_pinned && !g.is_hidden) : [];
+            
+            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden && g.owner_id === currentAccountTgId);
 
             pinnedGifts.forEach(pinnedGift => {
                 const card = createGiftCardDOM(pinnedGift);
@@ -2717,24 +2695,21 @@
         }
         function openFilterPopup() { populateFilterOptions(); filterPopup.classList.add('active'); }
         function populateFilterOptions() {
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            const accountOwnedGifts = currentAccount ? currentAccount.owned_gifts : [];
-
-            const uniqueCollections = [...new Map(accountOwnedGifts.map(item => [item.gift_type_id, {id: item.gift_type_id, name: item.gift_name, image: item.original_image_url}])).values()];
+            const uniqueCollections = [...new Map(ownedGifts.map(item => [item.gift_type_id, {id: item.gift_type_id, name: item.gift_name, image: item.original_image_url}])).values()];
             renderFilterOptions(filterOptionsCollections, uniqueCollections, 'collection', (item) => `<img src="${item.image}" alt="${item.name}">`);
             
             if (activeFilters.collection) {
-                const giftsInCollection = accountOwnedGifts.filter(g => g.gift_type_id === activeFilters.collection && g.is_collectible && g.collectible_data?.model);
+                const giftsInCollection = ownedGifts.filter(g => g.gift_type_id === activeFilters.collection && g.is_collectible && g.collectible_data?.model);
                 const uniqueModels = [...new Map(giftsInCollection.map(item => [item.collectible_data.model.name, {name: item.collectible_data.model.name, image: item.collectible_data.modelImage}])).values()];
                 renderFilterOptions(filterOptionsModels, uniqueModels, 'model', (item) => `<img src="${item.image}" alt="${item.name}">`);
                 filterModelsSection.classList.remove('hidden');
             } else { filterModelsSection.classList.add('hidden'); filterOptionsModels.innerHTML = ''; }
             
-            const collectibleGifts = accountOwnedGifts.filter(g => g.is_collectible && g.collectible_data?.backdrop);
+            const collectibleGifts = ownedGifts.filter(g => g.is_collectible && g.collectible_data?.backdrop);
             const uniqueBackdrops = [...new Map(collectibleGifts.map(item => [item.collectible_data.backdrop.name, {name: item.collectible_data.backdrop.name, colors: item.collectible_data.backdropColors}])).values()];
             renderFilterOptions(filterOptionsBackdrops, uniqueBackdrops, 'backdrop', (item) => `<div class="gradient-square" style="background: radial-gradient(circle, ${item.colors.centerColor}, ${item.colors.edgeColor});"></div>`);
             
-            const uniquePatterns = [...new Map(collectibleGifts.filter(g => g.collectible_data.pattern).map(item => [item.collectible_data.pattern.name, {name: item.collectible_data.pattern.name, image: item.collectible_data.patternImage}])).values()];
+            const uniquePatterns = [...new Map(ownedGifts.filter(g => g.is_collectible && g.collectible_data && g.collectible_data.pattern).map(item => [item.collectible_data.pattern.name, {name: item.collectible_data.pattern.name, image: item.collectible_data.patternImage}])).values()];
             renderFilterOptions(filterOptionsPatterns, uniquePatterns, 'pattern', (item) => `<img src="${item.image}" alt="${item.name}">`);
         }
         function renderFilterOptions(container, items, filterType, displayFn) {
@@ -2774,35 +2749,30 @@
             tg.showConfirm(`Are you sure you want to delete all gifts and data for the CURRENT account? This cannot be undone.`, async (confirmed) => {
                 if (confirmed) {
                     try {
-                        // Backend delete all gifts for current user
-                        // Note: A more robust API would be a DELETE /api/account/{tg_id} that cascades to gifts, usernames
-                        // For this demo, let's just delete all gifts for the current user and their usernames
-                        // The app.py doesn't have a direct "delete all for user" endpoint,
-                        // so we simulate it by re-fetching and deleting one by one, or just reset client-side and rely on next login.
-                        // For a real app, you'd add: DELETE /api/account_data?tg_id=...
-                        
-                        // Let's implement a simple clear for gifts on the backend by deleting each one
-                        // This assumes ownedGifts is already updated from backend
-                        for(const gift of ownedGifts) {
+                        // Delete all gifts for current user
+                        for(const gift of [...ownedGifts]) { // Use a copy as ownedGifts will be modified by initializeTelegramUserAccount
                             await callBackend(`/api/gifts/${gift.instance_id}`, 'DELETE');
                         }
                         
                         // Clear collectible usernames for this account
                         const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
                         if (currentAccount && currentAccount.collectible_usernames) {
-                            for(const uname of currentAccount.collectible_usernames) {
+                            for(const uname of [...currentAccount.collectible_usernames]) {
                                 await callBackend(`/api/collectible_usernames/${uname}`, 'DELETE', { owner_id: currentAccountTgId });
                             }
                         }
                         
-                        // Reset current account's local data
-                        currentAccount.owned_gifts = [];
-                        currentAccount.is_worn = false; // Reset worn state
-                        currentAccount.collectible_usernames = [];
-                        currentAccount.phone_number = "Not specified";
-                        currentAccount.bio = "My first account!"; // Reset bio if desired
+                        // Reset account's profile data
+                        await callBackend('/api/account', 'PUT', { 
+                            tg_id: currentAccountTgId, 
+                            phone_number: "Not specified",
+                            bio: "My first account!",
+                        });
+
+                        // Re-initialize to get a fresh state from backend, which should now have no gifts/usernames
+                        await initializeTelegramUserAccount();
                         
-                        // Reset UI preferences for this account
+                        // Reset UI preferences for this account (client-side)
                         activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
                         animationsEnabled = true;
                         showHiddenGifts = false;
@@ -2829,10 +2799,10 @@
         async function handleClearAllAccountsData() {
             tg.showConfirm("Are you sure you want to delete ALL accounts and data from this simulator? This cannot be undone.", async (confirmed) => {
                 if (confirmed) {
-                    // This is a client-side function to reset the *simulator's* state.
-                    // For a real app, you might have a backend 'delete_all_data' endpoint.
+                    // This is a client-side function to reset the *simulator's* state (local storage).
+                    // It does NOT delete data from the backend database for all accounts.
                     
-                    // Clear all client-side accounts
+                    // Clear all client-side accounts references
                     accounts = [];
                     currentAccountTgId = null;
                     
@@ -2966,13 +2936,9 @@
         }
         async function handleCustomBuyConfirm() {
             if (customBuyConfirmButton.disabled) return;
-
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            if (!currentAccount) return;
-
-            const giftCount = currentAccount.owned_gifts.length;
-            if (giftCount >= GIFT_LIMIT_PER_USER) {
-                tg.showAlert(`Cannot create gift. You have ${giftCount} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
+            
+            if (ownedGifts.length >= GIFT_LIMIT_PER_USER) {
+                tg.showAlert(`Cannot create gift. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
             }
 
@@ -2981,29 +2947,6 @@
 
             const newGiftInstanceId = generateUniqueId();
             try {
-                const newGiftData = {
-                    instance_id: newGiftInstanceId,
-                    owner_id: currentAccountTgId,
-                    gift_type_id: selectedCustomGift.id,
-                    gift_name: selectedCustomGift.name,
-                    original_image_url: selectedCustomGift.originalImage,
-                    lottie_path: selectedCustomGift.lottiePath, // This will be set to NULL after upgrade on backend
-                    is_collectible: true, // Mark as collectible immediately
-                    // Collectible data will be built by the backend based on type_id and next number
-                    collectible_data: {
-                        model: selectedCustomGift.model, 
-                        backdrop: selectedCustomGift.backdrop, 
-                        pattern: selectedCustomGift.pattern,
-                        modelImage: selectedCustomGift.modelImage,
-                        lottieModelPath: selectedCustomGift.lottieModelPath, 
-                        patternImage: selectedCustomGift.patternImage, 
-                        backdropColors: selectedCustomGift.backdropColors,
-                        // number and supply will be determined by backend based on gift_type_id
-                    },
-                    // We send the collected data, backend will use this to create the gift
-                    // and then internally generate a number and supply based on what's available
-                };
-                
                 // First, create the "base" gift.
                 await callBackend('/api/gifts', 'POST', {
                     instance_id: newGiftInstanceId,
