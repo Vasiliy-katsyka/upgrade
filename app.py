@@ -118,21 +118,35 @@ def send_telegram_message(chat_id, text, reply_markup=None):
         app.logger.error(f"Failed to send message to chat_id {chat_id}: {e}", exc_info=True)
         return None
 
-def send_telegram_photo(chat_id, photo_path, caption=None):
-    """Sends a photo file via the Telegram Bot API."""
+def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
+    """Sends a photo file or URL via the Telegram Bot API."""
     url = f"{TELEGRAM_API_URL}/sendPhoto"
-    with open(photo_path, 'rb') as photo_file:
-        files = {'photo': photo_file}
-        data = {'chat_id': chat_id}
-        if caption:
-            data['caption'] = caption
-        try:
-            response = requests.post(url, files=files, data=data, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            app.logger.error(f"Failed to send photo to chat_id {chat_id}: {e}", exc_info=True)
-            return None
+    data = {'chat_id': chat_id}
+    files = None
+
+    # Check if photo is a URL or a local file path
+    if isinstance(photo, str) and photo.startswith('http'):
+        data['photo'] = photo
+    else:
+        files = {'photo': open(photo, 'rb')}
+
+    if caption:
+        data['caption'] = caption
+        data['parse_mode'] = 'HTML'
+    if reply_markup:
+        data['reply_markup'] = json.dumps(reply_markup)
+
+    try:
+        response = requests.post(url, data=data, files=files, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to send photo to chat_id {chat_id}: {e}", exc_info=True)
+        return None
+    finally:
+        # If we opened a file, close it
+        if files and 'photo' in files:
+            files['photo'].close()
 
 def set_webhook():
     """Sets the bot's webhook to the application's URL."""
@@ -190,11 +204,24 @@ def webhook_handler():
         text = message.get("text")
 
         if text == "/start":
-            reply_markup = {"inline_keyboard": [[{"text": "🎁 Open Gift App", "web_app": {"url": WEBAPP_URL}}]]}
-            send_telegram_message(
+            caption = (
+                "<b>Welcome to the Gift Upgrade Demo!</b>\n\n"
+                "This app is a simulation of Telegram's gift and collectible system. "
+                "You can buy gifts, upgrade them to unique collectibles, and trade them with other users.\n\n"
+                "Tap the button below to get started!"
+            )
+            photo_url = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/IMG_20250706_195911_731.jpg"
+            reply_markup = {
+                "inline_keyboard": [
+                    [{"text": "🎁 Open Gift App", "web_app": {"url": WEBAPP_URL}}],
+                    [{"text": "🐞 Report Bug", "url": "https://t.me/Vasiliy939"}]
+                ]
+            }
+            send_telegram_photo(
                 chat_id, 
-                "Welcome to the Gift Upgrade Demo! Tap the button below to open the app.",
-                reply_markup
+                photo_url,
+                caption=caption,
+                reply_markup=reply_markup
             )
     return jsonify({"status": "ok"}), 200
 
@@ -209,6 +236,7 @@ def send_gift_image():
     if not all([image_data_url, user_id]):
         return jsonify({"error": "imageDataUrl and userId are required"}), 400
 
+    temp_filename = ""
     try:
         # Decode base64 image
         header, encoded = image_data_url.split(',', 1)
@@ -229,7 +257,7 @@ def send_gift_image():
         return jsonify({"error": "Failed to process and send image."}), 500
     finally:
         # Clean up the temporary file
-        if os.path.exists(temp_filename):
+        if temp_filename and os.path.exists(temp_filename):
             os.remove(temp_filename)
 
 # MODIFIED ENDPOINT: Handle selling a gift and transferring ownership
@@ -324,7 +352,8 @@ def transfer_gift():
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
             conn.commit()
 
-            # --- CRITICAL FIX: Use gift_type_id for the link ---
+            # --- CORRECTED LINK GENERATION ---
+            # Uses the numerical gift_type_id for the link
             deep_link = f"https://t.me/upgradeDemoBot/upgrade?startapp=gift{gift_type_id}-{gift_number}"
             link_text = f"{gift_name} #{gift_number:,}"
             
