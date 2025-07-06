@@ -21,7 +21,6 @@ CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}
 # --- ENVIRONMENT VARIABLES & CONSTANTS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-# This should be your Render app's public URL
 WEBHOOK_URL = "https://upgrade-a57g.onrender.com" 
 
 if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
@@ -34,7 +33,6 @@ MAX_SALE_PRICE = 100000
 CDN_BASE_URL = "https://cdn.changes.tg/gifts/"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 WEBAPP_URL = "https://vasiliy-katsyka.github.io/upgrade/"
-# A fixed, special TG ID for the "Test Account" that will own sold gifts
 TEST_ACCOUNT_TG_ID = 9999999999 
 
 # --- DATABASE HELPERS ---
@@ -56,7 +54,7 @@ def init_db():
         return
         
     with conn.cursor() as cur:
-        # Tables creation (same as before)
+        # Tables creation
         cur.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
                 tg_id BIGINT PRIMARY KEY,
@@ -94,9 +92,9 @@ def init_db():
         if not cur.fetchone():
             cur.execute("""
                 INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio)
-                VALUES (%s, %s, %s, %s, %s);
+                VALUES (%s, %s, %s, %s, %s) ON CONFLICT (tg_id) DO NOTHING;
             """, (TEST_ACCOUNT_TG_ID, 'system_test_account', 'Test Account', 'https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png', 'This account holds sold gifts.'))
-            app.logger.info("Created the system 'Test Account'.")
+            app.logger.info("Created or verified the system 'Test Account'.")
     
     conn.commit()
     conn.close()
@@ -124,10 +122,10 @@ def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
     data = {'chat_id': chat_id}
     files = None
 
-    # Check if photo is a URL or a local file path
     if isinstance(photo, str) and photo.startswith('http'):
         data['photo'] = photo
     else:
+        # Assumes photo is a file path
         files = {'photo': open(photo, 'rb')}
 
     if caption:
@@ -144,8 +142,7 @@ def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
         app.logger.error(f"Failed to send photo to chat_id {chat_id}: {e}", exc_info=True)
         return None
     finally:
-        # If we opened a file, close it
-        if files and 'photo' in files:
+        if files and 'photo' in files and not files['photo'].closed:
             files['photo'].close()
 
 def set_webhook():
@@ -160,7 +157,6 @@ def set_webhook():
         app.logger.error(f"Failed to set webhook: {e}", exc_info=True)
 
 # --- UTILITY FUNCTIONS ---
-# (select_weighted_random, fetch_collectible_parts remain the same as previous)
 
 def select_weighted_random(items):
     if not items: return None
@@ -217,167 +213,50 @@ def webhook_handler():
                     [{"text": "🐞 Report Bug", "url": "https://t.me/Vasiliy939"}]
                 ]
             }
-            send_telegram_photo(
-                chat_id, 
-                photo_url,
-                caption=caption,
-                reply_markup=reply_markup
-            )
+            send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
     return jsonify({"status": "ok"}), 200
 
-# NEW ENDPOINT: Handle sending generated image to user
-@app.route('/api/gifts/send_image', methods=['POST'])
-def send_gift_image():
-    data = request.get_json()
-    image_data_url = data.get('imageDataUrl')
-    user_id = data.get('userId')
-    caption = data.get('caption')
-
-    if not all([image_data_url, user_id]):
-        return jsonify({"error": "imageDataUrl and userId are required"}), 400
-
-    temp_filename = ""
-    try:
-        # Decode base64 image
-        header, encoded = image_data_url.split(',', 1)
-        image_data = base64.b64decode(encoded)
-        
-        # Save to a temporary file
-        temp_filename = f"{uuid.uuid4()}.png"
-        with open(temp_filename, 'wb') as f:
-            f.write(image_data)
-
-        # Send the photo via bot
-        send_telegram_photo(user_id, temp_filename, caption)
-
-        return jsonify({"message": "Image sent to user."}), 200
-
-    except Exception as e:
-        app.logger.error(f"Failed to send image to user {user_id}: {e}", exc_info=True)
-        return jsonify({"error": "Failed to process and send image."}), 500
-    finally:
-        # Clean up the temporary file
-        if temp_filename and os.path.exists(temp_filename):
-            os.remove(temp_filename)
-
-# MODIFIED ENDPOINT: Handle selling a gift and transferring ownership
-def _send_sold_notification(chat_id, gift_name, collectible_number, price):
-    """The function that the timer will call to send the message."""
-    received_amount = int(price * 0.80) # 20% commission
-    formatted_number = f"{collectible_number:,}"
-    text = (f"Your Gift {gift_name} #{formatted_number} was sold for {price} ⭐️. "
-            f"{received_amount} ⭐️ successfully credited to your Stars balance.")
-    send_telegram_message(chat_id, text)
-
-@app.route('/api/gifts/sell', methods=['POST'])
-def sell_gift():
-    """Transfers a gift to a system account and schedules a 'sold' notification."""
-    data = request.get_json()
-    instance_id = data.get('instance_id')
-    price = data.get('price')
-    owner_id = data.get('owner_id')
-    
-    if not all([instance_id, price, owner_id]):
-        return jsonify({"error": "instance_id, price, and owner_id are required"}), 400
-
-    if not MIN_SALE_PRICE <= price <= MAX_SALE_PRICE:
-        return jsonify({"error": f"Price must be between {MIN_SALE_PRICE} and {MAX_SALE_PRICE} stars."}), 400
-
+# NEW ENDPOINT: To get public profile data for a user
+@app.route('/api/profile/<string:username>', methods=['GET'])
+def get_user_profile(username):
+    """Fetches a user's public profile data and their non-hidden gifts."""
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
+    
     with conn.cursor() as cur:
         try:
-            # Get gift details for notification
-            cur.execute("SELECT gift_name, collectible_number FROM gifts WHERE instance_id = %s AND owner_id = %s;", (instance_id, owner_id))
-            gift_info = cur.fetchone()
-            if not gift_info:
-                return jsonify({"error": "Gift to sell not found or not owned by user."}), 404
-            gift_name, collectible_number = gift_info
-
-            # Transfer ownership to the Test Account
-            cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE WHERE instance_id = %s;""", (TEST_ACCOUNT_TG_ID, instance_id))
-            if cur.rowcount == 0:
-                conn.rollback()
-                return jsonify({"error": "Failed to transfer gift ownership."}), 500
+            # Fetch user profile data
+            cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
+            user_profile = cur.fetchone()
+            if not user_profile:
+                return jsonify({"error": "User profile not found."}), 404
             
-            conn.commit()
+            profile_data = dict(zip([d[0] for d in cur.description], user_profile))
+            user_id = profile_data['tg_id']
 
-            # Schedule the notification
-            delay_seconds = random.randint(10, 60)
-            timer = threading.Timer(delay_seconds, _send_sold_notification, args=[owner_id, gift_name, collectible_number, price])
-            timer.start()
+            # Fetch user's non-hidden gifts
+            cur.execute("SELECT * FROM gifts WHERE owner_id = %s AND is_hidden = FALSE ORDER BY acquired_date DESC;", (user_id,))
+            gifts = []
+            for row in cur.fetchall():
+                gift_dict = dict(zip([d[0] for d in cur.description], row))
+                if gift_dict.get('collectible_data') and isinstance(gift_dict.get('collectible_data'), str):
+                    gift_dict['collectible_data'] = json.loads(gift_dict['collectible_data'])
+                gifts.append(gift_dict)
+            profile_data['owned_gifts'] = gifts
 
-            return jsonify({"message": f"Gift listed for sale. It has been removed from your inventory."}), 202
+            # Fetch user's collectible usernames
+            cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (user_id,))
+            usernames = [row[0] for row in cur.fetchall()]
+            profile_data['collectible_usernames'] = usernames
+
+            return jsonify(profile_data), 200
         except Exception as e:
-            conn.rollback()
-            app.logger.error(f"Error selling gift {instance_id} for owner {owner_id}: {e}", exc_info=True)
+            app.logger.error(f"Error fetching profile for {username}: {e}", exc_info=True)
             return jsonify({"error": "An internal server error occurred."}), 500
         finally:
             conn.close()
 
-# MODIFIED ENDPOINT: Handle gift transfer with notifications
-@app.route('/api/gifts/transfer', methods=['POST'])
-def transfer_gift():
-    """Transfers a collectible gift and notifies both users."""
-    data = request.get_json()
-    instance_id = data.get('instance_id')
-    receiver_username = data.get('receiver_username', '').lstrip('@')
-    sender_id = data.get('sender_id')
-
-    if not all([instance_id, receiver_username, sender_id]):
-        return jsonify({"error": "instance_id, receiver_username, and sender_id are required"}), 400
-
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database connection failed."}), 500
-    with conn.cursor() as cur:
-        try:
-            # Find the receiver's account
-            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (receiver_username,))
-            receiver = cur.fetchone()
-            if not receiver: return jsonify({"error": "Receiver username not found."}), 404
-            receiver_id = receiver[0]
-
-            # Get sender username and gift details
-            cur.execute("SELECT a.username, g.gift_name, g.collectible_number, g.gift_type_id FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE g.instance_id = %s;", (instance_id,))
-            sender_info = cur.fetchone()
-            if not sender_info: return jsonify({"error": "Sender or gift not found."}), 404
-            sender_username, gift_name, gift_number, gift_type_id = sender_info
-
-            # Check receiver's gift limit
-            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
-            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
-            
-            # Perform transfer
-            cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE WHERE instance_id = %s AND is_collectible = TRUE;""", (receiver_id, instance_id))
-            if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
-            conn.commit()
-
-            # --- CORRECTED LINK GENERATION ---
-            # Uses the numerical gift_type_id for the link
-            deep_link = f"https://t.me/upgradeDemoBot/upgrade?startapp=gift{gift_type_id}-{gift_number}"
-            link_text = f"{gift_name} #{gift_number:,}"
-            
-            # Notify sender
-            sender_text = f'You successfully transferred Gift <a href="{deep_link}">{link_text}</a> to @{receiver_username}'
-            send_telegram_message(sender_id, sender_text)
-
-            # Notify receiver
-            receiver_text = f'You have received Gift <a href="{deep_link}">{link_text}</a> from @{sender_username}'
-            receiver_markup = {
-                "inline_keyboard": [[
-                    {"text": "Check out", "url": deep_link}
-                ]]
-            }
-            send_telegram_message(receiver_id, receiver_text, receiver_markup)
-            
-            return jsonify({"message": "Gift transferred successfully"}), 200
-        except Exception as e:
-            conn.rollback()
-            app.logger.error(f"Error during gift transfer of {instance_id}: {e}", exc_info=True)
-            return jsonify({"error": f"An internal server error occurred."}), 500
-        finally: conn.close()
-
-# The rest of the endpoints are included for completeness
+# The rest of the endpoints are included for completeness...
 @app.route('/api/account', methods=['POST'])
 def get_or_create_account():
     data = request.get_json()
@@ -390,20 +269,18 @@ def get_or_create_account():
             cur.execute("SELECT * FROM accounts WHERE tg_id = %s;", (tg_id,))
             account = cur.fetchone()
             if not account:
-                cur.execute("""INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio, phone_number) VALUES (%s, %s, %s, %s, %s, %s);""", (tg_id, data.get('username'), data.get('full_name'), data.get('avatar_url'), 'My first account!', 'Not specified'))
+                cur.execute("""INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio, phone_number) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tg_id) DO NOTHING;""", (tg_id, data.get('username'), data.get('full_name'), data.get('avatar_url'), 'My first account!', 'Not specified'))
                 conn.commit()
             cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE tg_id = %s;", (tg_id,))
             account_data = dict(zip([d[0] for d in cur.description], cur.fetchone()))
             cur.execute("SELECT * FROM gifts WHERE owner_id = %s ORDER BY acquired_date DESC;", (tg_id,))
-            gifts = []
-            for row in cur.fetchall():
-                gift_dict = dict(zip([d[0] for d in cur.description], row))
-                if gift_dict.get('collectible_data') and isinstance(gift_dict.get('collectible_data'), str): gift_dict['collectible_data'] = json.loads(gift_dict['collectible_data'])
-                gifts.append(gift_dict)
+            gifts = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
+            for gift in gifts:
+                if gift.get('collectible_data') and isinstance(gift.get('collectible_data'), str):
+                    gift['collectible_data'] = json.loads(gift['collectible_data'])
             account_data['owned_gifts'] = gifts
             cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (tg_id,))
-            usernames = [row[0] for row in cur.fetchall()]
-            account_data['collectible_usernames'] = usernames
+            account_data['collectible_usernames'] = [row[0] for row in cur.fetchall()]
             return jsonify(account_data), 200
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error in get_or_create_account for {tg_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
@@ -411,11 +288,11 @@ def get_or_create_account():
 
 @app.route('/api/account', methods=['PUT'])
 def update_account():
-    data = request.get_json()
+    data = request.get_json();
     if not data or 'tg_id' not in data: return jsonify({"error": "Missing tg_id"}), 400
     tg_id = data['tg_id']
     conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    if not conn: return jsonify({"error": "Database failed"}), 500
     with conn.cursor() as cur:
         update_fields, update_values = [], []
         if 'username' in data: update_fields.append("username = %s"); update_values.append(data['username'])
