@@ -21,6 +21,7 @@ CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}
 # --- ENVIRONMENT VARIABLES & CONSTANTS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+# This should be your Render app's public URL
 WEBHOOK_URL = "https://upgrade-a57g.onrender.com" 
 
 if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
@@ -157,6 +158,7 @@ def set_webhook():
         app.logger.error(f"Failed to set webhook: {e}", exc_info=True)
 
 # --- UTILITY FUNCTIONS ---
+# (select_weighted_random, fetch_collectible_parts remain the same)
 
 def select_weighted_random(items):
     if not items: return None
@@ -423,6 +425,61 @@ def delete_gift(instance_id):
         except Exception as e:
             conn.rollback(); app.logger.error(f"DB error deleting gift {instance_id}: {e}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
+        finally: conn.close()
+
+# MODIFIED ENDPOINT: Handle gift transfer with comments and notifications
+@app.route('/api/gifts/transfer', methods=['POST'])
+def transfer_gift():
+    data = request.get_json()
+    instance_id = data.get('instance_id')
+    receiver_username = data.get('receiver_username', '').lstrip('@')
+    sender_id = data.get('sender_id')
+    comment = data.get('comment') # Optional comment
+
+    if not all([instance_id, receiver_username, sender_id]):
+        return jsonify({"error": "instance_id, receiver_username, and sender_id are required"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    with conn.cursor() as cur:
+        try:
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (receiver_username,))
+            receiver = cur.fetchone()
+            if not receiver: return jsonify({"error": "Receiver username not found."}), 404
+            receiver_id = receiver[0]
+
+            cur.execute("SELECT a.username, g.gift_name, g.collectible_number, g.gift_type_id FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE g.instance_id = %s;", (instance_id,))
+            sender_info = cur.fetchone()
+            if not sender_info: return jsonify({"error": "Sender or gift not found."}), 404
+            sender_username, gift_name, gift_number, gift_type_id = sender_info
+
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+            
+            cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE WHERE instance_id = %s AND is_collectible = TRUE;""", (receiver_id, instance_id))
+            if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
+            conn.commit()
+
+            deep_link = f"https://t.me/upgradeDemoBot/upgrade?startapp=gift{gift_type_id}-{gift_number}"
+            link_text = f"{gift_name} #{gift_number:,}"
+            
+            # Prepare sender notification
+            sender_text = f'You successfully transferred Gift <a href="{deep_link}">{link_text}</a> to @{receiver_username}'
+            if comment:
+                sender_text += f'\n\n<i>With comment: "{comment}"</i>'
+            send_telegram_message(sender_id, sender_text)
+
+            # Prepare receiver notification
+            receiver_text = f'You have received Gift <a href="{deep_link}">{link_text}</a> from @{sender_username}'
+            if comment:
+                receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
+            receiver_markup = {"inline_keyboard": [[{"text": "Check out", "url": deep_link}]]}
+            send_telegram_message(receiver_id, receiver_text, receiver_markup)
+            
+            return jsonify({"message": "Gift transferred successfully"}), 200
+        except Exception as e:
+            conn.rollback(); app.logger.error(f"Error during gift transfer of {instance_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
         finally: conn.close()
 
 @app.route('/api/collectible_usernames', methods=['POST'])
