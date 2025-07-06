@@ -7,6 +7,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- ADDED: SortableJS for drag-and-drop reordering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-F3KPE0SD07"></script>
     <script>
@@ -375,7 +377,7 @@
         }
         #upgrade-all-gifts-button { background-color: var(--tg-theme-accent-blue); margin-right: 10px; }
 
-        #exit-filter-mode-button {
+        #exit-filter-mode-button, #hide-selected-gifts-button, #exit-selection-mode-button {
             background-color: var(--tg-theme-accent-blue);
             color: var(--tg-theme-button-text-color);
             border: none;
@@ -417,6 +419,11 @@
         }
         .buy-gift-item { aspect-ratio: 1/1.1; }
         .gift-card.is-updating { transform: scale(0.95); opacity: 0.7; }
+        .gift-card.reordering {
+            cursor: grabbing;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: scale(1.05);
+        }
         .gift-card-bg-pattern, .buy-gift-item-bg-pattern {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-size: cover; pointer-events: none; z-index: 0;
@@ -467,6 +474,27 @@
             z-index: 3; display: flex; align-items: center; justify-content: center;
         }
         .gift-card .pin-indicator svg { width: 18px; height: 18px; fill: var(--tg-theme-link-color); opacity: 0.8; }
+        
+        /* Selection Mode Checkbox */
+        .gift-card .selection-checkbox {
+            position: absolute; top: 5px; left: 5px;
+            width: 22px; height: 22px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            z-index: 4;
+            display: flex; align-items: center; justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .gift-card.selected .selection-checkbox {
+            background-color: var(--tg-theme-button-color);
+        }
+        .gift-card.selected .selection-checkbox::after {
+            content: '✓';
+            color: var(--tg-theme-button-text-color);
+            font-size: 14px;
+            font-weight: bold;
+        }
 
         .buy-gift-item .gift-name {
             font-size: 0.8em; text-align: center;
@@ -837,6 +865,18 @@
         .price-input-wrapper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .price-input-wrapper input[type=number] { -moz-appearance: textfield; }
         .price-details { text-align: center; font-size: 0.85em; color: var(--tg-theme-hint-color); margin-top: 10px; }
+        
+        #transfer-comment-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-bg-color);
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-size: 1em;
+            margin-top: 15px;
+            resize: vertical;
+        }
 
 
         .spinner {
@@ -987,7 +1027,7 @@
                         <div class="profile-gifts-actions-wrapper">
                             <div id="filter-long-press-target"></div>
                             <div class="profile-gifts-actions">
-                                <!-- Exit Filter Mode button will be prepended here by JS -->
+                                <!-- Dynamic buttons will be prepended here by JS -->
                                 <button id="upgrade-all-gifts-button" class="action-button" style="display: none;">✨ Upgrade All</button>
                                 <button id="go-to-buy-gifts" class="action-button">🎁 Buy Gifts</button>
                             </div>
@@ -1150,6 +1190,9 @@
                         </label>
                     </div>
                     <div class="settings-row">
+                        <button id="hide-multiple-button" class="full-width">Hide Multiple</button>
+                    </div>
+                    <div class="settings-row">
                         <button id="clear-current-account-data-button" class="full-width">Clear Current Account Data</button>
                     </div>
                     <div class="settings-row danger">
@@ -1287,6 +1330,7 @@
                             <input type="text" id="transfer-username-input" placeholder="username">
                         </div>
                     </div>
+                    <textarea id="transfer-comment-input" rows="2" placeholder="Add a comment... (optional)"></textarea>
                     <div class="price-details" id="transfer-status-message">
                         <p>Gift ownership will be transferred to this username.</p>
                     </div>
@@ -1330,6 +1374,7 @@
 
     <div id="long-press-menu" class="hidden">
         <ul>
+            <li id="menu-reorder-action" class="hidden">Reorder</li>
             <li id="menu-pin-action">Pin</li>
             <li id="menu-hide-action">Hide</li>
             <li id="menu-copy-link-action" class="hidden">Copy Link</li>
@@ -1370,6 +1415,9 @@
 
         // --- Per-account state (in-memory, fetched from backend) ---
         let ownedGifts = []; // Gifts for the current active account
+        let viewingOwnProfile = true; // Flag to check if we are viewing our own profile or someone else's
+        let selectionModeActive = false; // Flag for "Hide Multiple" mode
+        let selectedGiftIds = new Set(); // Stores instance_ids of gifts selected for hiding
         
         // Per-account UI state preferences (stored client-side in localStorage)
         let animationsEnabled = true;
@@ -1413,6 +1461,7 @@
         const postsContent = document.getElementById('posts-content');
         const archiveContent = document.getElementById('archive-content');
         
+        const profileGiftsActions = document.querySelector('.profile-gifts-actions');
         const goToBuyGiftsButton = document.getElementById('go-to-buy-gifts');
         const upgradeAllGiftsButton = document.getElementById('upgrade-all-gifts-button');
         const filterLongPressTarget = document.getElementById('filter-long-press-target');
@@ -1464,6 +1513,7 @@
         const cancelBuyMultipleButton = document.getElementById('cancel-buy-multiple');
         
         const longPressMenu = document.getElementById('long-press-menu');
+        const menuReorderAction = document.getElementById('menu-reorder-action');
         const menuPinAction = document.getElementById('menu-pin-action');
         const menuHideAction = document.getElementById('menu-hide-action');
         const menuCopyLinkAction = document.getElementById('menu-copy-link-action');
@@ -1482,6 +1532,7 @@
         const settingsModal = document.getElementById('settings-modal');
         const animationToggle = document.getElementById('animation-toggle');
         const showHiddenToggle = document.getElementById('show-hidden-toggle');
+        const hideMultipleButton = document.getElementById('hide-multiple-button');
         const clearCurrentAccountDataButton = document.getElementById('clear-current-account-data-button');
         const clearAllAccountsDataButton = document.getElementById('clear-all-accounts-data-button');
         const closeSettingsModal = document.getElementById('close-settings-modal');
@@ -1529,6 +1580,7 @@
         const transferGiftImage = document.getElementById('transfer-gift-image');
         const transferGiftName = document.getElementById('transfer-gift-name');
         const transferUsernameInput = document.getElementById('transfer-username-input');
+        const transferCommentInput = document.getElementById('transfer-comment-input');
         const transferStatusMessage = document.getElementById('transfer-status-message');
         const confirmTransferButton = document.getElementById('confirm-transfer-button');
         const cancelTransferButton = document.getElementById('cancel-transfer-button');
@@ -1546,7 +1598,7 @@
         exitFilterModeButton.id = 'exit-filter-mode-button';
         exitFilterModeButton.className = 'action-button hidden';
         exitFilterModeButton.textContent = 'Exit Filter Mode';
-        document.querySelector('.profile-gifts-actions').prepend(exitFilterModeButton);
+        profileGiftsActions.prepend(exitFilterModeButton);
         
         const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", "+888 7777 7777", "+888 0707 6969"];
         const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous", "market", "bank", "news", "pessi", "penaldo"];
@@ -1560,6 +1612,7 @@
         let currentGiftToSell = null;
         let currentGiftToTransfer = null;
         let longPressAvatarTimer;
+        let sortableInstance = null;
 
         // --- API Utility Function ---
         async function callBackend(endpoint, method = 'GET', data = null) {
@@ -1714,6 +1767,7 @@
         }
 
         async function initializeTelegramUserAccount() {
+            viewingOwnProfile = true; // Set flag that we are loading our own profile
             const user = tg.initDataUnsafe?.user;
             let tg_id = user?.id;
 
@@ -1776,6 +1830,7 @@
         }
         
         async function displayUserProfile(username) {
+             viewingOwnProfile = false; // Set flag that we are viewing someone else's profile
              try {
                 const profileData = await callBackend(`/api/profile/${username}`);
                 ownedGifts = profileData.owned_gifts || [];
@@ -1809,7 +1864,7 @@
                 profileBio.onclick = null;
                 profileAvatar.style.cursor = 'default';
 
-                renderProfileGifts();
+                renderAll(); // Re-render everything with the new user's data
             } catch (error) {
                 console.error("Error fetching user profile:", error);
                 tg.showAlert(`Could not load profile for @${username}: ${error.message}`);
@@ -1973,7 +2028,9 @@
         }
 
         function renderAll() {
-            loadUserData();
+            if (viewingOwnProfile) {
+                loadUserData();
+            }
             renderAccountsList();
             animationToggle.checked = animationsEnabled;
             showHiddenToggle.checked = showHiddenGifts;
@@ -2200,9 +2257,10 @@
             renderTopPinnedGiftsPreview();
             const hasNonCollectible = ownedGifts.some(g => !g.is_collectible);
             if (upgradeAllGiftsButton) { 
-                upgradeAllGiftsButton.style.display = hasNonCollectible ? 'inline-block' : 'none';
+                upgradeAllGiftsButton.style.display = (hasNonCollectible && viewingOwnProfile) ? 'inline-block' : 'none';
                 if (!hasNonCollectible) { upgradeAllGiftsButton.textContent = '✨ Upgrade All'; upgradeAllGiftsButton.disabled = false; }
             }
+            if(goToBuyGiftsButton) goToBuyGiftsButton.style.display = viewingOwnProfile ? 'inline-block' : 'none';
             displayFilterExitButton();
         }
         
@@ -2253,8 +2311,20 @@
                 pinDiv.innerHTML = PIN_ICON_SVG; pinDiv.querySelector('svg').style.fill = 'var(--tg-theme-link-color)';
                 card.appendChild(pinDiv);
             }
-            card.addEventListener('click', () => openGiftDetailByInstanceId(gift.instance_id));
-            setupLongPress(card, gift);
+
+            if (selectionModeActive) {
+                const checkbox = document.createElement('div');
+                checkbox.className = 'selection-checkbox';
+                card.appendChild(checkbox);
+                if (selectedGiftIds.has(gift.instance_id)) {
+                    card.classList.add('selected');
+                }
+                card.onclick = () => toggleGiftSelection(gift.instance_id);
+            } else {
+                card.onclick = () => openGiftDetailByInstanceId(gift.instance_id);
+                setupLongPress(card, gift);
+            }
+
             return card;
         }
         
@@ -2357,7 +2427,7 @@
         }
         
         function getGiftDeepLink(gift) {
-            const botUsername = "upgradeDemoBot"; // Replace with your bot username if different
+            const botUsername = "upgradeDemoBot"; // Replace with your bot username
             const appShortName = "upgrade"; // Replace with your Mini App short name
             
             // CRITICAL FIX: Always use the gift_type_id (the number string)
@@ -2447,16 +2517,24 @@
                     <div class="info-row"><span class="info-label">Price</span><span class="info-value">Free</span></div>
                     <div class="info-row"><span class="info-label">Availability</span><span class="info-value">Limited</span></div>
                     <div class="info-row" id="uniqueness-row-${gift.instance_id}"><span class="info-label">Uniqueness</span><div class="info-value-with-action"><span id="modal-uniqueness-value-${gift.instance_id}">Standard</span><button id="modal-action-upgrade-gift-${gift.instance_id}" class="button-link-styled" data-instance-id="${gift.instance_id}">Upgrade</button></div></div>`;
-                giftDetailModal.classList.add('active');
-                const upgradeButton = document.getElementById(`modal-action-upgrade-gift-${gift.instance_id}`);
+                
+                const upgradeButton = modalGiftInfo.querySelector(`#modal-action-upgrade-gift-${gift.instance_id}`);
                 if (upgradeButton) {
-                    upgradeButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
-                    let upgradeLongPressTimer;
-                    upgradeButton.addEventListener('touchstart', (e) => { upgradeLongPressTimer = setTimeout(() => openChancesModal(gift), 700); }, { passive: true });
-                    upgradeButton.addEventListener('touchend', () => clearTimeout(upgradeLongPressTimer));
-                    upgradeButton.addEventListener('touchmove', () => clearTimeout(upgradeLongPressTimer));
-                    upgradeButton.addEventListener('contextmenu', (e) => { e.preventDefault(); openChancesModal(gift); });
+                    if (viewingOwnProfile) {
+                        upgradeButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
+                        let upgradeLongPressTimer;
+                        upgradeButton.addEventListener('touchstart', (e) => { upgradeLongPressTimer = setTimeout(() => openChancesModal(gift), 700); }, { passive: true });
+                        upgradeButton.addEventListener('touchend', () => clearTimeout(upgradeLongPressTimer));
+                        upgradeButton.addEventListener('touchmove', () => clearTimeout(upgradeLongPressTimer));
+                        upgradeButton.addEventListener('contextmenu', (e) => { e.preventDefault(); openChancesModal(gift); });
+                    } else {
+                        upgradeButton.disabled = true;
+                        upgradeButton.textContent = "Cannot Upgrade";
+                        upgradeButton.style.cursor = 'not-allowed';
+                    }
                 }
+
+                giftDetailModal.classList.add('active');
             }
         }
 
@@ -2569,6 +2647,7 @@
             if (modalElement.id === 'transfer-gift-modal') {
                 currentGiftToTransfer = null;
                 transferUsernameInput.value = '';
+                transferCommentInput.value = '';
                 confirmTransferButton.disabled = true;
                 transferStatusMessage.innerHTML = '<p>Gift ownership will be transferred to this username.</p>';
             }
@@ -2595,12 +2674,14 @@
                 menuPinAction.classList.add('disabled'); 
                 menuShareImageAction.classList.add('hidden');
                 menuCopyLinkAction.classList.add('hidden');
+                menuReorderAction.classList.add('hidden');
             } else { 
                 const isPinned = gift.is_pinned; 
                 menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin'; 
                 menuPinAction.classList.toggle('disabled', !isOwner);
                 menuShareImageAction.classList.remove('hidden');
                 menuCopyLinkAction.classList.remove('hidden');
+                menuReorderAction.classList.toggle('hidden', !isPinned); // Only show reorder for pinned gifts
             }
             
             menuHideAction.textContent = gift.is_hidden ? 'Unhide' : 'Hide';
@@ -2628,6 +2709,7 @@
             menuDeleteAction.classList.toggle('disabled', !isOwner);
             menuShareImageAction.classList.remove('hidden');
             menuCopyLinkAction.classList.remove('hidden');
+            menuReorderAction.classList.toggle('hidden', !isPinned);
 
             const menuWidth = longPressMenu.offsetWidth || 220;
             const menuHeight = longPressMenu.offsetHeight || 150;
@@ -3392,6 +3474,7 @@
             transferGiftImage.src = gift.collectible_data.modelImage || gift.original_image_url;
             transferGiftName.textContent = `${gift.gift_name} #${gift.collectible_number.toLocaleString()}`;
             transferUsernameInput.value = '';
+            transferCommentInput.value = '';
             confirmTransferButton.disabled = true;
             transferStatusMessage.innerHTML = '<p>Gift ownership will be transferred to this username.</p>';
 
@@ -3402,6 +3485,8 @@
         async function handleConfirmTransfer() {
             if (!currentGiftToTransfer || confirmTransferButton.disabled) return;
             const receiverUsername = transferUsernameInput.value.trim();
+            const comment = transferCommentInput.value.trim();
+
             if (!receiverUsername) {
                 transferStatusMessage.innerHTML = '<p style="color:red;">Please enter a username.</p>';
                 return;
@@ -3419,7 +3504,8 @@
                 await callBackend('/api/gifts/transfer', 'POST', {
                     instance_id: currentGiftToTransfer.instance_id,
                     receiver_username: receiverUsername,
-                    sender_id: currentAccountTgId // Pass sender ID for notification
+                    sender_id: currentAccountTgId, // Pass sender ID for notification
+                    comment: comment // Pass optional comment
                 });
                 
                 await initializeTelegramUserAccount(); // Re-fetch current user's gifts after transfer
@@ -3715,6 +3801,7 @@
             closeSettingsModal.addEventListener('click', () => closeModal(settingsModal));
             animationToggle.addEventListener('change', handleAnimationToggle);
             showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
+            hideMultipleButton.addEventListener('click', () => { /* Logic to be added */ });
             clearCurrentAccountDataButton.addEventListener('click', handleClearCurrentAccountData);
             clearAllAccountsDataButton.addEventListener('click', handleClearAllAccountsData);
 
