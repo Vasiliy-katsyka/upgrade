@@ -1051,9 +1051,10 @@
                     </div>
 
                     <div id="modal-collectible-actions" class="modal-action-buttons-row">
-                        <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Transfer</span></button>
+                        <button id="collectible-action-copy-link"><span class="icon"></span><span class="text">Copy Link</span></button>
                         <button id="collectible-action-wear"><span class="icon"></span><span class="text">Wear</span></button>
                         <button id="collectible-action-sell"><span class="icon"></span><span class="text">Sell</span></button>
+                        <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Transfer</span></button>
                     </div>
                     <div class="collectible-info-section">
                         <div id="modal-collectible-info-table" class="modal-info-table"></div>
@@ -1356,6 +1357,7 @@
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
+        const LINK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>link-variant</title><path d="M10.59,13.41C11,13.8 11,14.44 10.59,14.83C10.2,15.22 9.56,15.22 9.17,14.83L5.64,11.3C4.86,10.52 4.86,9.27 5.64,8.48L9.17,5.03C9.56,4.64 10.2,4.64 10.59,5.03C11,5.42 11,6.06 10.59,6.45L7.05,9.9C6.66,10.29 6.66,10.93 7.05,11.32L10.59,14.86M13.41,9.17C13,8.78 13,8.14 13.41,7.75L16.95,4.32C17.73,3.54 18.98,3.54 19.77,4.32L23.3,7.85C24.08,8.63 24.08,9.88 23.3,10.67L19.77,14.19C19.38,14.58 18.74,14.58 18.35,14.19C17.96,13.8 17.96,13.16 18.35,12.77L21.88,9.24C22.27,8.85 22.27,8.21 21.88,7.82L18.35,4.29C17.96,3.9 17.32,3.9 16.93,4.29L13.41,7.72C13,8.11 13,8.75 13.41,9.14" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
         
         // --- Global State ---
@@ -1442,6 +1444,7 @@
         const modalCollectibleMainName = document.getElementById('modal-collectible-main-name');
         const modalCollectibleNumberSubtext = document.getElementById('modal-collectible-number-subtext');
         const modalCollectibleInfoTable = document.getElementById('modal-collectible-info-table');
+        const collectibleActionCopyLink = document.getElementById('collectible-action-copy-link');
         const collectibleActionTransfer = document.getElementById('collectible-action-transfer');
         const collectibleActionWear = document.getElementById('collectible-action-wear');
         const collectibleActionSell = document.getElementById('collectible-action-sell');
@@ -1498,6 +1501,7 @@
         const generatedImageFooter = document.getElementById('generated-image-footer');
         const generatedImagePreview = document.getElementById('generated-image-preview');
         const generatedImageMessage = document.getElementById('generated-image-message');
+        const sendGeneratedImageButton = document.getElementById('send-generated-image-button');
         const closeGeneratedImageModalButton = document.getElementById('close-generated-image-modal');
         
         const chancesModal = document.getElementById('chances-modal');
@@ -1662,6 +1666,7 @@
             profileBackButton.innerHTML = BACK_ARROW_SVG;
             backToProfileBuyButton.innerHTML = BACK_ARROW_SVG;
             backFromCollectibleModal.innerHTML = BACK_ARROW_SVG;
+            collectibleActionCopyLink.querySelector('.icon').innerHTML = LINK_SVG;
             collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
@@ -1683,15 +1688,17 @@
             // Handle deep linking for specific collectible gifts
             const startAppParam = tg.initDataUnsafe?.start_param;
             if (startAppParam && startAppParam.startsWith('gift')) {
-                const giftString = startAppParam.substring(4); // e.g., 'PreciousPeach-1'
+                const giftString = startAppParam.substring(4); // e.g., '5983471780763796287-1'
                 const lastHyphenIndex = giftString.lastIndexOf('-');
+                
                 if (lastHyphenIndex > -1) {
                     const giftTypeId = giftString.substring(0, lastHyphenIndex);
                     const collectibleNumber = parseInt(giftString.substring(lastHyphenIndex + 1), 10);
-                    if (!isNaN(collectibleNumber)) {
+                    
+                    if (giftTypeId && !isNaN(collectibleNumber)) {
                         await displayDeepLinkedGift(giftTypeId, collectibleNumber);
                     } else {
-                        tg.showAlert("Invalid gift number in deep link.");
+                        tg.showAlert("Invalid gift format in deep link.");
                     }
                 } else {
                     tg.showAlert("Invalid gift format in deep link.");
@@ -1769,7 +1776,7 @@
                     }
                     openGiftDetailByInstanceId(giftData.instance_id);
                 } else {
-                    tg.showAlert(`Gift ${giftTypeId} #${collectibleNumber} not found.`);
+                    tg.showAlert(`Gift with ID ${giftTypeId} #${collectibleNumber} not found.`);
                 }
             } catch (error) {
                 console.error("Error fetching deep-linked gift:", error);
@@ -2315,9 +2322,12 @@
         function getGiftDeepLink(gift) {
             const botUsername = "upgradeDemoBot"; // Replace with your bot username
             const appShortName = "upgrade"; // Replace with your Mini App short name
-            const giftNameForLink = gift.gift_name.replace(/\s+/g, '');
+            
+            // CRITICAL FIX: Always use the gift_type_id (the number string)
+            const giftTypeIdForLink = gift.gift_type_id; 
             const numberForLink = gift.collectible_number;
-            return `https://t.me/${botUsername}/${appShortName}?startapp=gift${giftNameForLink}-${numberForLink}`;
+            
+            return `https://t.me/${botUsername}/${appShortName}?startapp=gift${giftTypeIdForLink}-${numberForLink}`;
         }
         
         function openGiftDetailByInstanceId(instanceId) {
@@ -2360,6 +2370,7 @@
                 
                 // Check if current user is owner to enable actions
                 const isOwner = (gift.owner_id === currentAccountTgId);
+                collectibleActionCopyLink.style.display = 'flex'; // Always show copy link
                 collectibleActionTransfer.style.display = isOwner ? 'flex' : 'none';
                 collectibleActionWear.style.display = isOwner ? 'flex' : 'none';
                 collectibleActionSell.style.display = isOwner ? 'flex' : 'none';
@@ -3622,6 +3633,11 @@
 
             // Collectible Detail Modal
             backFromCollectibleModal.addEventListener('click', () => closeModal(collectibleDetailModal));
+            collectibleActionCopyLink.addEventListener('click', () => {
+                const giftInstanceId = collectibleDetailModal.dataset.instanceId;
+                const gift = ownedGifts.find(g => g.instance_id === giftInstanceId);
+                if (gift) copyGiftLink(gift);
+            });
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
                 const giftInstanceId = collectibleDetailModal.dataset.instanceId;
