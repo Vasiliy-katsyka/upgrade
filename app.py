@@ -34,12 +34,8 @@ MAX_SALE_PRICE = 100000
 CDN_BASE_URL = "https://cdn.changes.tg/gifts/"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 WEBAPP_URL = "https://vasiliy-katsyka.github.io/upgrade/"
-WEBAPP_SHORT_NAME = "upgrade" # The short name of your app from BotFather
 # A fixed, special TG ID for the "Test Account" that will own sold gifts
 TEST_ACCOUNT_TG_ID = 9999999999 
-
-# Global variable to store the bot's username, fetched on startup
-BOT_USERNAME = None
 
 # --- DATABASE HELPERS ---
 
@@ -98,7 +94,7 @@ def init_db():
         if not cur.fetchone():
             cur.execute("""
                 INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio)
-                VALUES (%s, %s, %s, %s, %s) ON CONFLICT (tg_id) DO NOTHING;
+                VALUES (%s, %s, %s, %s, %s);
             """, (TEST_ACCOUNT_TG_ID, 'system_test_account', 'Test Account', 'https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png', 'This account holds sold gifts.'))
             app.logger.info("Created the system 'Test Account'.")
     
@@ -107,23 +103,6 @@ def init_db():
     app.logger.info("Database initialized successfully.")
 
 # --- TELEGRAM BOT HELPERS ---
-
-def get_bot_username():
-    """Fetches the bot's username using getMe method."""
-    global BOT_USERNAME
-    url = f"{TELEGRAM_API_URL}/getMe"
-    try:
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        bot_info = response.json()
-        if bot_info.get("ok"):
-            BOT_USERNAME = bot_info["result"]["username"]
-            app.logger.info(f"Successfully fetched bot username: @{BOT_USERNAME}")
-        else:
-            app.logger.error(f"Failed to get bot info: {bot_info.get('description')}")
-    except requests.RequestException as e:
-        app.logger.error(f"Failed to call /getMe: {e}", exc_info=True)
-
 
 def send_telegram_message(chat_id, text, reply_markup=None):
     """Sends a message via the Telegram Bot API."""
@@ -230,7 +209,6 @@ def send_gift_image():
     if not all([image_data_url, user_id]):
         return jsonify({"error": "imageDataUrl and userId are required"}), 400
 
-    temp_filename = "" # Define here to be accessible in finally
     try:
         # Decode base64 image
         header, encoded = image_data_url.split(',', 1)
@@ -251,7 +229,7 @@ def send_gift_image():
         return jsonify({"error": "Failed to process and send image."}), 500
     finally:
         # Clean up the temporary file
-        if temp_filename and os.path.exists(temp_filename):
+        if os.path.exists(temp_filename):
             os.remove(temp_filename)
 
 # MODIFIED ENDPOINT: Handle selling a gift and transferring ownership
@@ -320,11 +298,6 @@ def transfer_gift():
 
     if not all([instance_id, receiver_username, sender_id]):
         return jsonify({"error": "instance_id, receiver_username, and sender_id are required"}), 400
-    
-    if not BOT_USERNAME: # Fallback if getMe failed on startup
-        get_bot_username()
-        if not BOT_USERNAME:
-            return jsonify({"error": "Bot details not available. Cannot generate link."}), 503
 
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
@@ -351,17 +324,21 @@ def transfer_gift():
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
             conn.commit()
 
-            # Create the deep link for notifications
-            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{gift_number}"
+            # --- CRITICAL FIX: Use gift_type_id for the link ---
+            deep_link = f"https://t.me/upgradeDemoBot/upgrade?startapp=gift{gift_type_id}-{gift_number}"
             link_text = f"{gift_name} #{gift_number:,}"
             
             # Notify sender
             sender_text = f'You successfully transferred Gift <a href="{deep_link}">{link_text}</a> to @{receiver_username}'
             send_telegram_message(sender_id, sender_text)
 
-            # Notify receiver with "Check out" button
+            # Notify receiver
             receiver_text = f'You have received Gift <a href="{deep_link}">{link_text}</a> from @{sender_username}'
-            receiver_markup = {"inline_keyboard": [[{"text": "Check out", "web_app": {"url": deep_link}}]]}
+            receiver_markup = {
+                "inline_keyboard": [[
+                    {"text": "Check out", "url": deep_link}
+                ]]
+            }
             send_telegram_message(receiver_id, receiver_text, receiver_markup)
             
             return jsonify({"message": "Gift transferred successfully"}), 200
@@ -371,9 +348,7 @@ def transfer_gift():
             return jsonify({"error": f"An internal server error occurred."}), 500
         finally: conn.close()
 
-# --- ALL OTHER ENDPOINTS ---
-# These are included from the previous version for completeness, no changes needed.
-
+# The rest of the endpoints are included for completeness
 @app.route('/api/account', methods=['POST'])
 def get_or_create_account():
     data = request.get_json()
@@ -589,10 +564,8 @@ def catch_all(path):
     app.logger.warning(f"Unhandled API call: {request.method} /api/{path}")
     return jsonify({"error": f"The requested API endpoint '/api/{path}' was not found or the method is not allowed."}), 404
 
-
 # Set webhook on startup when run by Gunicorn
 if __name__ != '__main__':
-    get_bot_username()
     set_webhook()
     init_db()
 
@@ -600,7 +573,6 @@ if __name__ != '__main__':
 if __name__ == '__main__':
     print("Starting Flask server for local development...")
     init_db()
-    get_bot_username()
     # Webhook won't work with localhost unless you use a tunneling service like ngrok.
     # set_webhook() # You can enable this if you are using a tunnel.
     app.run(debug=True, port=5001)
