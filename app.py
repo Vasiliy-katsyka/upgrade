@@ -158,6 +158,7 @@ def set_webhook():
         app.logger.error(f"Failed to set webhook: {e}", exc_info=True)
 
 # --- UTILITY FUNCTIONS ---
+# (select_weighted_random, fetch_collectible_parts remain the same)
 
 def select_weighted_random(items):
     if not items: return None
@@ -217,6 +218,7 @@ def webhook_handler():
             send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
     return jsonify({"status": "ok"}), 200
 
+# NEW ENDPOINT: To get public profile data for a user
 @app.route('/api/profile/<string:username>', methods=['GET'])
 def get_user_profile(username):
     """Fetches a user's public profile data and their non-hidden gifts."""
@@ -225,14 +227,17 @@ def get_user_profile(username):
     
     with conn.cursor() as cur:
         try:
+            # Fetch user profile data
             cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
             user_profile = cur.fetchone()
-            if not user_profile: return jsonify({"error": "User profile not found."}), 404
+            if not user_profile:
+                return jsonify({"error": "User profile not found."}), 404
             
             profile_data = dict(zip([d[0] for d in cur.description], user_profile))
             user_id = profile_data['tg_id']
 
-            cur.execute("SELECT * FROM gifts WHERE owner_id = %s AND is_hidden = FALSE ORDER BY is_pinned DESC, acquired_date DESC;", (user_id,))
+            # Fetch user's non-hidden gifts
+            cur.execute("SELECT * FROM gifts WHERE owner_id = %s AND is_hidden = FALSE ORDER BY acquired_date DESC;", (user_id,))
             gifts = []
             for row in cur.fetchall():
                 gift_dict = dict(zip([d[0] for d in cur.description], row))
@@ -241,15 +246,19 @@ def get_user_profile(username):
                 gifts.append(gift_dict)
             profile_data['owned_gifts'] = gifts
 
+            # Fetch user's collectible usernames
             cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (user_id,))
-            profile_data['collectible_usernames'] = [row[0] for row in cur.fetchall()]
+            usernames = [row[0] for row in cur.fetchall()]
+            profile_data['collectible_usernames'] = usernames
 
             return jsonify(profile_data), 200
         except Exception as e:
             app.logger.error(f"Error fetching profile for {username}: {e}", exc_info=True)
             return jsonify({"error": "An internal server error occurred."}), 500
-        finally: conn.close()
+        finally:
+            conn.close()
 
+# The rest of the endpoints are included for completeness...
 @app.route('/api/account', methods=['POST'])
 def get_or_create_account():
     data = request.get_json()
@@ -266,7 +275,7 @@ def get_or_create_account():
                 conn.commit()
             cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE tg_id = %s;", (tg_id,))
             account_data = dict(zip([d[0] for d in cur.description], cur.fetchone()))
-            cur.execute("SELECT * FROM gifts WHERE owner_id = %s ORDER BY is_pinned DESC, acquired_date DESC;", (tg_id,))
+            cur.execute("SELECT * FROM gifts WHERE owner_id = %s ORDER BY acquired_date DESC;", (tg_id,))
             gifts = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
             for gift in gifts:
                 if gift.get('collectible_data') and isinstance(gift.get('collectible_data'), str):
@@ -418,13 +427,14 @@ def delete_gift(instance_id):
             return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
 
+# MODIFIED ENDPOINT: Handle gift transfer with comments and notifications
 @app.route('/api/gifts/transfer', methods=['POST'])
 def transfer_gift():
     data = request.get_json()
     instance_id = data.get('instance_id')
     receiver_username = data.get('receiver_username', '').lstrip('@')
     sender_id = data.get('sender_id')
-    comment = data.get('comment')
+    comment = data.get('comment') # Optional comment
 
     if not all([instance_id, receiver_username, sender_id]):
         return jsonify({"error": "instance_id, receiver_username, and sender_id are required"}), 400
@@ -453,12 +463,16 @@ def transfer_gift():
             deep_link = f"https://t.me/upgradeDemoBot/upgrade?startapp=gift{gift_type_id}-{gift_number}"
             link_text = f"{gift_name} #{gift_number:,}"
             
+            # Prepare sender notification
             sender_text = f'You successfully transferred Gift <a href="{deep_link}">{link_text}</a> to @{receiver_username}'
-            if comment: sender_text += f'\n\n<i>With comment: "{comment}"</i>'
+            if comment:
+                sender_text += f'\n\n<i>With comment: "{comment}"</i>'
             send_telegram_message(sender_id, sender_text)
 
+            # Prepare receiver notification
             receiver_text = f'You have received Gift <a href="{deep_link}">{link_text}</a> from @{sender_username}'
-            if comment: receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
+            if comment:
+                receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
             receiver_markup = {"inline_keyboard": [[{"text": "Check out", "url": deep_link}]]}
             send_telegram_message(receiver_id, receiver_text, receiver_markup)
             
