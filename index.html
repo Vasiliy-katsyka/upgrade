@@ -2238,14 +2238,11 @@
 
             if (sortedGifts.length === 0) { 
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
-                let emptyMessage = "This user doesn't have any gifts yet.";
-                if(viewingOwnProfile) {
-                    emptyMessage = "You don't have any gifts yet.";
-                    if (ownedGifts.length > 0) {
-                        emptyMessage = "No gifts match the selected filters.";
-                        if (!showHiddenGifts && ownedGifts.some(g => g.is_hidden)) {
-                            emptyMessage += " Some gifts might be hidden.";
-                        }
+                let emptyMessage = "You don't have any gifts yet.";
+                if (ownedGifts.length > 0) {
+                    emptyMessage = "No gifts match the selected filters.";
+                    if (!showHiddenGifts && ownedGifts.some(g => g.is_hidden)) {
+                        emptyMessage += " Some gifts might be hidden.";
                     }
                 }
                 giftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">${emptyMessage}</p>`;
@@ -2325,9 +2322,7 @@
                 card.onclick = () => toggleGiftSelection(gift.instance_id);
             } else {
                 card.onclick = () => openGiftDetailByInstanceId(gift.instance_id);
-                if (viewingOwnProfile) {
-                    setupLongPress(card, gift);
-                }
+                setupLongPress(card, gift);
             }
 
             return card;
@@ -2376,27 +2371,33 @@
                 return;
             }
 
-            confirmBuyMultipleButton.disabled = true;
-            confirmBuyMultipleButton.textContent = 'Buying...';
-
             try {
-                const giftsToCreate = [];
                 for (let i = 0; i < quantity; i++) {
-                    giftsToCreate.push({
-                        instance_id: generateUniqueId(),
+                    const newGiftInstanceId = generateUniqueId();
+                    await callBackend('/api/gifts', 'POST', {
+                        instance_id: newGiftInstanceId,
+                        owner_id: currentAccountTgId,
                         gift_type_id: id,
                         gift_name: name,
                         original_image_url: originalImage,
                         lottie_path: lottiePath
                     });
+                    
+                    // Add gift to local state for immediate feedback
+                    ownedGifts.unshift({
+                        instance_id: newGiftInstanceId,
+                        owner_id: currentAccountTgId,
+                        gift_type_id: id,
+                        gift_name: name,
+                        original_image_url: originalImage,
+                        lottie_path: lottiePath,
+                        is_collectible: false,
+                        acquired_date: new Date().toISOString()
+                    });
                 }
-
-                await callBackend('/api/gifts/bulk_add', 'POST', {
-                    owner_id: currentAccountTgId,
-                    gifts: giftsToCreate
-                });
                 
-                await initializeTelegramUserAccount(); // Re-fetch all data after bulk operation
+                // Refresh UI
+                renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('success');
                 const message = quantity > 1 ? `Added ${quantity} "${name}" gifts!` : `Added "${name}" gift!`;
                 tg.showAlert(message); 
@@ -2405,9 +2406,6 @@
             } catch (error) {
                 tg.HapticFeedback.notificationOccurred('error');
                 tg.showAlert(`Failed to buy gifts: ${error.message}`);
-            } finally {
-                 confirmBuyMultipleButton.disabled = false;
-                 confirmBuyMultipleButton.textContent = 'Buy';
             }
         }
         
@@ -2416,8 +2414,14 @@
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
             
+            // Temporarily disable the button
+            confirmBuyMultipleButton.disabled = true;
+            confirmBuyMultipleButton.textContent = 'Buying...';
+
             await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
             
+            confirmBuyMultipleButton.disabled = false;
+            confirmBuyMultipleButton.textContent = 'Buy';
             closeModal(buyMultipleModal);
             currentGiftToBuyMultiple = null;
         }
@@ -2513,7 +2517,6 @@
                     <div class="info-row"><span class="info-label">Price</span><span class="info-value">Free</span></div>
                     <div class="info-row"><span class="info-label">Availability</span><span class="info-value">Limited</span></div>
                     <div class="info-row" id="uniqueness-row-${gift.instance_id}"><span class="info-label">Uniqueness</span><div class="info-value-with-action"><span id="modal-uniqueness-value-${gift.instance_id}">Standard</span><button id="modal-action-upgrade-gift-${gift.instance_id}" class="button-link-styled" data-instance-id="${gift.instance_id}">Upgrade</button></div></div>`;
-                giftDetailModal.classList.add('active');
                 
                 const upgradeButton = modalGiftInfo.querySelector(`#modal-action-upgrade-gift-${gift.instance_id}`);
                 if (upgradeButton) {
@@ -2530,6 +2533,8 @@
                         upgradeButton.style.cursor = 'not-allowed';
                     }
                 }
+
+                giftDetailModal.classList.add('active');
             }
         }
 
@@ -2593,6 +2598,7 @@
             const giftsToUpgrade = ownedGifts.filter(g => !g.is_collectible);
             if (giftsToUpgrade.length === 0) { tg.showAlert("No gifts to upgrade."); return; }
 
+            // Check limit against backend's limit. Client-side check for user feedback.
             if (ownedGifts.length > GIFT_LIMIT_PER_USER) {
                 tg.showAlert(`Cannot upgrade all gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
@@ -2600,32 +2606,29 @@
 
             const originalButtonText = upgradeAllGiftsButton.textContent;
             upgradeAllGiftsButton.disabled = true;
-            upgradeAllGiftsButton.textContent = `Upgrading (0/${giftsToUpgrade.length})...`;
-            
-            try {
-                const idsToUpgrade = giftsToUpgrade.map(g => g.instance_id);
-                const upgradedGifts = await callBackend('/api/gifts/bulk_upgrade', 'POST', { instance_ids: idsToUpgrade });
-                
-                // Update local state with the results from the backend
-                upgradedGifts.forEach(upgradedGift => {
-                    const index = ownedGifts.findIndex(g => g.instance_id === upgradedGift.instance_id);
-                    if (index !== -1) {
-                        ownedGifts[index] = upgradedGift;
-                    }
-                });
-
-                renderProfileGifts();
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`Upgrade complete. ${upgradedGifts.length} gifts upgraded.`);
-            } catch (error) {
-                 tg.HapticFeedback.notificationOccurred('error');
-                 tg.showAlert(`Bulk upgrade failed: ${error.message}`);
-                 // Optionally, re-fetch all data to ensure consistency after a failed bulk operation
-                 await initializeTelegramUserAccount();
-            } finally {
-                upgradeAllGiftsButton.disabled = false;
-                upgradeAllGiftsButton.textContent = originalButtonText;
+            let successCount = 0, failureCount = 0;
+            for (let i = 0; i < giftsToUpgrade.length; i++) {
+                const gift = giftsToUpgrade[i];
+                upgradeAllGiftsButton.textContent = `Upgrading (${i + 1}/${giftsToUpgrade.length})...`;
+                const cardElement = giftsGrid.querySelector(`.gift-card[data-instance-id="${gift.instance_id}"]`);
+                if (cardElement) cardElement.classList.add('is-updating');
+                const result = await upgradeSingleGiftLogic(gift);
+                if (cardElement) cardElement.classList.remove('is-updating');
+                if (result.status === 'success') {
+                    successCount++;
+                    // LIVE UPGRADE: Immediately re-render the grid to show the change
+                    renderProfileGifts();
+                } else if (result.status === 'failed') failureCount++;
+                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
             }
+            
+            let summaryMessage = `Upgrade complete.\nSucceeded: ${successCount}`;
+            if (failureCount > 0) summaryMessage += `\nFailed: ${failureCount}`;
+            tg.showAlert(summaryMessage);
+            tg.HapticFeedback.notificationOccurred(successCount > 0 ? 'success' : (failureCount > 0 ? 'error' : 'warning'));
+            const stillHasNonCollectible = ownedGifts.some(g => !g.is_collectible);
+            upgradeAllGiftsButton.style.display = stillHasNonCollectible ? 'inline-block' : 'none';
+            if (stillHasNonCollectible) { upgradeAllGiftsButton.textContent = originalButtonText; upgradeAllGiftsButton.disabled = false; }
         }
 
         function closeModal(modalElement) {
@@ -2663,6 +2666,7 @@
         function openLongPressMenu(gift, eventCoords) {
             currentLongPressGift = gift;
             
+            // Determine if the current user is the owner
             const isOwner = (gift.owner_id === currentAccountTgId);
 
             if (!gift.is_collectible) { 
@@ -2677,12 +2681,12 @@
                 menuPinAction.classList.toggle('disabled', !isOwner);
                 menuShareImageAction.classList.remove('hidden');
                 menuCopyLinkAction.classList.remove('hidden');
-                menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner); // Only show reorder for OWNED pinned gifts
+                menuReorderAction.classList.toggle('hidden', !isPinned); // Only show reorder for pinned gifts
             }
             
             menuHideAction.textContent = gift.is_hidden ? 'Unhide' : 'Hide';
-            menuHideAction.classList.toggle('disabled', !isOwner);
-            menuDeleteAction.classList.toggle('disabled', !isOwner);
+            menuHideAction.classList.toggle('disabled', !isOwner); // Only owner can hide/unhide
+            menuDeleteAction.classList.toggle('disabled', !isOwner); // Only owner can delete
 
             longPressMenu.style.top = `${Math.min(eventCoords.clientY, window.innerHeight - longPressMenu.offsetHeight - 10)}px`;
             longPressMenu.style.left = `${Math.min(eventCoords.clientX, window.innerWidth - longPressMenu.offsetWidth - 10)}px`;
@@ -2705,7 +2709,7 @@
             menuDeleteAction.classList.toggle('disabled', !isOwner);
             menuShareImageAction.classList.remove('hidden');
             menuCopyLinkAction.classList.remove('hidden');
-            menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
+            menuReorderAction.classList.toggle('hidden', !isPinned);
 
             const menuWidth = longPressMenu.offsetWidth || 220;
             const menuHeight = longPressMenu.offsetHeight || 150;
