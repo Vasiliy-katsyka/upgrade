@@ -118,16 +118,26 @@ def send_telegram_message(chat_id, text, reply_markup=None):
         return None
 
 def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
-    """Sends a photo file or URL via the Telegram Bot API."""
+    """Sends a photo file, URL, or binary data via the Telegram Bot API."""
     url = f"{TELEGRAM_API_URL}/sendPhoto"
     data = {'chat_id': chat_id}
     files = None
+    file_to_close = None  # To handle file paths safely
 
     if isinstance(photo, str) and photo.startswith('http'):
         data['photo'] = photo
+    elif isinstance(photo, str):
+        try:
+            file_to_close = open(photo, 'rb')
+            files = {'photo': file_to_close}
+        except IOError as e:
+            app.logger.error(f"Could not open file {photo} to send to chat_id {chat_id}: {e}", exc_info=True)
+            return None
+    elif isinstance(photo, bytes):
+        files = {'photo': ('generated_gift.png', photo, 'image/png')}
     else:
-        # Assumes photo is a file path
-        files = {'photo': open(photo, 'rb')}
+        app.logger.error(f"Unsupported photo type for chat_id {chat_id}: {type(photo)}")
+        return None
 
     if caption:
         data['caption'] = caption
@@ -143,8 +153,8 @@ def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
         app.logger.error(f"Failed to send photo to chat_id {chat_id}: {e}", exc_info=True)
         return None
     finally:
-        if files and 'photo' in files and not files['photo'].closed:
-            files['photo'].close()
+        if file_to_close and not file_to_close.closed:
+            file_to_close.close()
 
 def set_webhook():
     """Sets the bot's webhook to the application's URL."""
@@ -158,8 +168,6 @@ def set_webhook():
         app.logger.error(f"Failed to set webhook: {e}", exc_info=True)
 
 # --- UTILITY FUNCTIONS ---
-# (select_weighted_random, fetch_collectible_parts remain the same)
-
 def select_weighted_random(items):
     if not items: return None
     total_weight = sum(item.get('rarityPermille', 1) for item in items)
@@ -218,7 +226,6 @@ def webhook_handler():
             send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
     return jsonify({"status": "ok"}), 200
 
-# NEW ENDPOINT: To get public profile data for a user
 @app.route('/api/profile/<string:username>', methods=['GET'])
 def get_user_profile(username):
     """Fetches a user's public profile data and their non-hidden gifts."""
@@ -258,7 +265,6 @@ def get_user_profile(username):
         finally:
             conn.close()
 
-# The rest of the endpoints are included for completeness...
 @app.route('/api/account', methods=['POST'])
 def get_or_create_account():
     data = request.get_json()
@@ -427,7 +433,51 @@ def delete_gift(instance_id):
             return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
 
-# MODIFIED ENDPOINT: Handle gift transfer with comments and notifications
+@app.route('/api/gifts/sell', methods=['POST'])
+def sell_gift():
+    data = request.get_json()
+    instance_id = data.get('instance_id')
+    price = data.get('price')
+    owner_id = data.get('owner_id')
+
+    if not all([instance_id, price, owner_id]):
+        return jsonify({"error": "instance_id, price, and owner_id are required"}), 400
+    
+    try:
+        price_int = int(price)
+        if not (MIN_SALE_PRICE <= price_int <= MAX_SALE_PRICE):
+            return jsonify({"error": f"Price must be between {MIN_SALE_PRICE} and {MAX_SALE_PRICE}."}), 400
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid price format."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute("SELECT 1 FROM gifts WHERE instance_id = %s AND owner_id = %s;", (instance_id, owner_id))
+            if not cur.fetchone():
+                return jsonify({"error": "Gift not found or you are not the owner."}), 404
+            
+            # Transfer ownership to the test account to signify it's "for sale"
+            cur.execute("""
+                UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE
+                WHERE instance_id = %s;
+            """, (TEST_ACCOUNT_TG_ID, instance_id))
+
+            if cur.rowcount == 0:
+                conn.rollback()
+                return jsonify({"error": "Failed to list gift for sale."}), 500
+
+            conn.commit()
+            return jsonify({"message": "Gift listed for sale successfully."}), 200
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error selling gift {instance_id} for user {owner_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
 @app.route('/api/gifts/transfer', methods=['POST'])
 def transfer_gift():
     data = request.get_json()
@@ -481,6 +531,41 @@ def transfer_gift():
             conn.rollback(); app.logger.error(f"Error during gift transfer of {instance_id}: {e}", exc_info=True)
             return jsonify({"error": "An internal server error occurred."}), 500
         finally: conn.close()
+
+@app.route('/api/gifts/send_image', methods=['POST'])
+def send_generated_image():
+    """Receives a base64 image and sends it to a user via the bot."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON payload"}), 400
+        
+    image_data_url = data.get('imageDataUrl')
+    user_id = data.get('userId')
+    caption = data.get('caption', None)
+
+    if not image_data_url or not user_id:
+        return jsonify({"error": "imageDataUrl and userId are required"}), 400
+
+    try:
+        # Split data URL: "data:image/png;base64,iVBORw0KGgo..."
+        header, encoded_data = image_data_url.split(',', 1)
+        image_bytes = base64.b64decode(encoded_data)
+        
+        result = send_telegram_photo(user_id, image_bytes, caption=caption)
+        
+        if result and result.get('ok'):
+            return jsonify({"message": "Image sent successfully"}), 200
+        else:
+            error_message = result.get('description') if result else "Unknown Telegram API error"
+            app.logger.error(f"Telegram API failed to send image to {user_id}: {error_message}")
+            return jsonify({"error": "Failed to send image via Telegram API", "details": error_message}), 502
+            
+    except (ValueError, TypeError, IndexError) as e:
+        app.logger.error(f"Error decoding base64 image for user {user_id}: {e}", exc_info=True)
+        return jsonify({"error": "Invalid base64 image data format"}), 400
+    except Exception as e:
+        app.logger.error(f"Unexpected error sending generated image to {user_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred"}), 500
 
 @app.route('/api/collectible_usernames', methods=['POST'])
 def add_collectible_username():
