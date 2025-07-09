@@ -75,11 +75,27 @@ def init_db():
                 original_image_url TEXT, lottie_path TEXT, is_collectible BOOLEAN DEFAULT FALSE,
                 collectible_data JSONB, collectible_number INT,
                 acquired_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                is_hidden BOOLEAN DEFAULT FALSE, is_pinned BOOLEAN DEFAULT FALSE, is_worn BOOLEAN DEFAULT FALSE
+                is_hidden BOOLEAN DEFAULT FALSE, is_pinned BOOLEAN DEFAULT FALSE, is_worn BOOLEAN DEFAULT FALSE,
+                pin_order INT 
             );
         """)
+        # Add pin_order column if it doesn't exist (for migration)
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='gifts' AND column_name='pin_order'
+                ) THEN
+                    ALTER TABLE gifts ADD COLUMN pin_order INT;
+                END IF;
+            END$$;
+        """)
+
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_owner_id ON gifts (owner_id);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_type_and_number ON gifts (gift_type_id, collectible_number);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_pin_order ON gifts (owner_id, pin_order);")
+        
         cur.execute("""
             CREATE TABLE IF NOT EXISTS collectible_usernames (
                 id SERIAL PRIMARY KEY,
@@ -243,8 +259,11 @@ def get_user_profile(username):
             profile_data = dict(zip([d[0] for d in cur.description], user_profile))
             user_id = profile_data['tg_id']
 
-            # Fetch user's non-hidden gifts
-            cur.execute("SELECT * FROM gifts WHERE owner_id = %s AND is_hidden = FALSE ORDER BY acquired_date DESC;", (user_id,))
+            # Fetch user's non-hidden gifts with new sorting order
+            cur.execute("""
+                SELECT * FROM gifts WHERE owner_id = %s AND is_hidden = FALSE 
+                ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
+            """, (user_id,))
             gifts = []
             for row in cur.fetchall():
                 gift_dict = dict(zip([d[0] for d in cur.description], row))
@@ -281,12 +300,18 @@ def get_or_create_account():
                 conn.commit()
             cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE tg_id = %s;", (tg_id,))
             account_data = dict(zip([d[0] for d in cur.description], cur.fetchone()))
-            cur.execute("SELECT * FROM gifts WHERE owner_id = %s ORDER BY acquired_date DESC;", (tg_id,))
+            
+            # Fetch gifts with new sorting order
+            cur.execute("""
+                SELECT * FROM gifts WHERE owner_id = %s 
+                ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
+            """, (tg_id,))
             gifts = [dict(zip([c[0] for c in cur.description], row)) for row in cur.fetchall()]
             for gift in gifts:
                 if gift.get('collectible_data') and isinstance(gift.get('collectible_data'), str):
                     gift['collectible_data'] = json.loads(gift['collectible_data'])
             account_data['owned_gifts'] = gifts
+            
             cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (tg_id,))
             account_data['collectible_usernames'] = [row[0] for row in cur.fetchall()]
             return jsonify(account_data), 200
@@ -373,7 +398,7 @@ def upgrade_gift():
             conn.commit()
             cur.execute("SELECT * FROM gifts WHERE instance_id = %s;", (instance_id,))
             upgraded_gift = dict(zip([d[0] for d in cur.description], cur.fetchone()))
-            if isinstance(upgraded_gift.get('collectible_data'), str): upgraded_gift['collectible_data'] = json.loads(upgraded_gift['collectible_data'])
+            if isinstance(upgraded_gift.get('collectible_data'), str): upgraded_gift['collectible_data'] = json.loads(upgraded_gift.get('collectible_data'))
             return jsonify(upgraded_gift), 200
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error upgrading gift {instance_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
@@ -409,7 +434,16 @@ def update_gift_state(instance_id):
                 owner_id_result = cur.fetchone()
                 if not owner_id_result: return jsonify({"error": "Gift not found for wear action."}), 404
                 cur.execute("UPDATE gifts SET is_worn = FALSE WHERE owner_id = %s AND is_worn = TRUE;", (owner_id_result[0],))
-            cur.execute(f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;", (value, instance_id))
+            
+            update_query = f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;"
+            # If hiding a gift, also unpin and un-wear it. If unpinning, clear its pin_order.
+            if action == 'hide' and value is True:
+                update_query = "UPDATE gifts SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;"
+            elif action == 'pin' and value is False:
+                 update_query = "UPDATE gifts SET is_pinned = FALSE, pin_order = NULL WHERE instance_id = %s;"
+
+            cur.execute(update_query, (value, instance_id) if (action != 'hide' and (action != 'pin' or value is not False)) else (instance_id,))
+
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or state not changed."}), 404
             conn.commit()
             return jsonify({"message": f"Gift {action} state updated"}), 200
@@ -461,7 +495,7 @@ def sell_gift():
             
             # Transfer ownership to the test account to signify it's "for sale"
             cur.execute("""
-                UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE
+                UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
                 WHERE instance_id = %s;
             """, (TEST_ACCOUNT_TG_ID, instance_id))
 
@@ -477,6 +511,116 @@ def sell_gift():
             return jsonify({"error": "An internal server error occurred."}), 500
         finally:
             conn.close()
+
+@app.route('/api/gifts/reorder', methods=['POST'])
+def reorder_pinned_gifts():
+    data = request.get_json()
+    owner_id = data.get('owner_id')
+    ordered_ids = data.get('ordered_instance_ids')
+
+    if not owner_id or not isinstance(ordered_ids, list):
+        return jsonify({"error": "owner_id and ordered_instance_ids list are required"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+
+    with conn.cursor() as cur:
+        try:
+            # First, clear the pin_order for all of the user's pinned gifts
+            cur.execute("UPDATE gifts SET pin_order = NULL WHERE owner_id = %s AND is_pinned = TRUE;", (owner_id,))
+            
+            # Then, set the new order
+            for index, instance_id in enumerate(ordered_ids):
+                cur.execute("UPDATE gifts SET pin_order = %s WHERE instance_id = %s AND owner_id = %s;", (index, instance_id, owner_id))
+            
+            conn.commit()
+            return jsonify({"message": "Pinned gifts reordered successfully."}), 200
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error reordering pinned gifts for user {owner_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/gifts/batch_action', methods=['POST'])
+def batch_gift_action():
+    data = request.get_json()
+    action = data.get('action')
+    instance_ids = data.get('instance_ids')
+    owner_id = data.get('owner_id') # or sender_id
+
+    if not all([action, instance_ids, owner_id]) or not isinstance(instance_ids, list):
+        return jsonify({"error": "action, instance_ids list, and owner_id are required"}), 400
+    
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+
+    with conn.cursor() as cur:
+        try:
+            if action == 'hide':
+                cur.execute("""
+                    UPDATE gifts 
+                    SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
+                    WHERE instance_id = ANY(%s) AND owner_id = %s;
+                """, (instance_ids, owner_id))
+                conn.commit()
+                return jsonify({"message": f"{cur.rowcount} gifts hidden."}), 200
+
+            elif action == 'transfer':
+                receiver_username = data.get('receiver_username', '').lstrip('@')
+                comment = data.get('comment')
+                if not receiver_username:
+                    return jsonify({"error": "receiver_username is required for transfer"}), 400
+
+                cur.execute("SELECT tg_id, username FROM accounts WHERE username = %s;", (receiver_username,))
+                receiver = cur.fetchone()
+                if not receiver: return jsonify({"error": "Receiver username not found."}), 404
+                receiver_id, receiver_username = receiver
+
+                cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (owner_id,))
+                sender_username = cur.fetchone()[0]
+
+                cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+                receiver_gift_count = cur.fetchone()[0]
+                if receiver_gift_count + len(instance_ids) > GIFT_LIMIT_PER_USER:
+                    return jsonify({"error": f"Receiver's gift limit would be exceeded."}), 403
+
+                cur.execute("""
+                    UPDATE gifts 
+                    SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
+                    WHERE instance_id = ANY(%s) AND owner_id = %s;
+                """, (receiver_id, instance_ids, owner_id))
+                
+                if cur.rowcount == 0:
+                    conn.rollback()
+                    return jsonify({"error": "No gifts were transferred. Check ownership."}), 404
+                
+                conn.commit()
+                
+                # Notifications
+                num_transferred = len(instance_ids)
+                gift_text = f"{num_transferred} gift" if num_transferred == 1 else f"{num_transferred} gifts"
+                
+                sender_text = f'You successfully transferred {gift_text} to @{receiver_username}'
+                if comment: sender_text += f'\n\n<i>With comment: "{comment}"</i>'
+                send_telegram_message(owner_id, sender_text)
+
+                receiver_text = f'You have received {gift_text} from @{sender_username}'
+                if comment: receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
+                send_telegram_message(receiver_id, receiver_text)
+                
+                return jsonify({"message": f"{num_transferred} gifts transferred."}), 200
+
+            else:
+                return jsonify({"error": "Invalid action specified."}), 400
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error during batch action '{action}' for user {owner_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
 
 @app.route('/api/gifts/transfer', methods=['POST'])
 def transfer_gift():
@@ -506,7 +650,7 @@ def transfer_gift():
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
             
-            cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE WHERE instance_id = %s AND is_collectible = TRUE;""", (receiver_id, instance_id))
+            cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s AND is_collectible = TRUE;""", (receiver_id, instance_id))
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
             conn.commit()
 
