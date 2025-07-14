@@ -1,3 +1,5 @@
+# --- app.py ---
+
 import os
 import psycopg2
 import json
@@ -7,13 +9,18 @@ import threading
 import time
 import base64
 import uuid
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
+from bs4 import BeautifulSoup
+from datetime import datetime
+import pytz # For timezone handling in giveaways
 
 # --- CONFIGURATION ---
 
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO)
 
 # Configure CORS to only allow requests from the specified origin
 CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}})
@@ -34,6 +41,7 @@ MAX_SALE_PRICE = 100000
 CDN_BASE_URL = "https://cdn.changes.tg/gifts/"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 WEBAPP_URL = "https://vasiliy-katsyka.github.io/upgrade/"
+BOT_USERNAME = "upgradeDemoBot" # Replace with your bot's username
 TEST_ACCOUNT_TG_ID = 9999999999 
 
 # --- DATABASE HELPERS ---
@@ -48,7 +56,7 @@ def get_db_connection():
         return None
 
 def init_db():
-    """Initializes the database and ensures the Test Account exists."""
+    """Initializes the database and ensures all tables exist."""
     conn = get_db_connection()
     if not conn:
         app.logger.warning("Database connection failed during initialization.")
@@ -103,7 +111,41 @@ def init_db():
                 username VARCHAR(255) UNIQUE NOT NULL
             );
         """)
-        
+
+        # --- GIVEAWAY TABLES ---
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS giveaways (
+                id SERIAL PRIMARY KEY,
+                creator_id BIGINT REFERENCES accounts(tg_id) ON DELETE SET NULL,
+                channel_id BIGINT,
+                channel_username VARCHAR(255),
+                end_date TIMESTAMP WITH TIME ZONE,
+                is_paid BOOLEAN DEFAULT FALSE,
+                ticket_price INT,
+                winner_rule VARCHAR(20) NOT NULL, -- 'single' or 'multiple'
+                status VARCHAR(20) NOT NULL DEFAULT 'pending_setup', -- pending_setup, active, finished, cancelled
+                message_id BIGINT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS giveaway_gifts (
+                id SERIAL PRIMARY KEY,
+                giveaway_id INT REFERENCES giveaways(id) ON DELETE CASCADE,
+                gift_instance_id VARCHAR(50) REFERENCES gifts(instance_id) ON DELETE CASCADE
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS giveaway_participants (
+                id SERIAL PRIMARY KEY,
+                giveaway_id INT REFERENCES giveaways(id) ON DELETE CASCADE,
+                user_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                ticket_count INT DEFAULT 1,
+                join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(giveaway_id, user_id)
+            );
+        """)
+
         # Ensure the 'Test Account' for sold gifts exists
         cur.execute("SELECT 1 FROM accounts WHERE tg_id = %s;", (TEST_ACCOUNT_TG_ID,))
         if not cur.fetchone():
@@ -171,6 +213,25 @@ def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
     finally:
         if file_to_close and not file_to_close.closed:
             file_to_close.close()
+            
+def get_chat_member(chat_id, user_id):
+    """Checks the status of a user in a chat."""
+    url = f"{TELEGRAM_API_URL}/getChatMember"
+    payload = {'chat_id': chat_id, 'user_id': user_id}
+    try:
+        response = requests.post(url, json=payload, timeout=5)
+        response.raise_for_status()
+        return response.json().get('result')
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to get chat member for chat {chat_id}, user {user_id}: {e}")
+        return None
+
+def check_admin_rights(chat_id, bot_id):
+    """Checks if the bot is an administrator in the given chat."""
+    member_info = get_chat_member(chat_id, bot_id)
+    if member_info and member_info['status'] in ['administrator', 'creator']:
+        return True
+    return False
 
 def set_webhook():
     """Sets the bot's webhook to the application's URL."""
@@ -213,7 +274,6 @@ def fetch_collectible_parts(gift_name):
             parts[part_type] = []
     return parts
 
-
 # --- API & BOT ROUTES ---
 
 @app.route('/webhook', methods=['POST'])
@@ -223,8 +283,39 @@ def webhook_handler():
     if "message" in update:
         message = update["message"]
         chat_id = message["chat"]["id"]
-        text = message.get("text")
+        text = message.get("text", "")
 
+        # --- GIVEAWAY JOIN LOGIC ---
+        if text.startswith("/start giveaway"):
+            try:
+                giveaway_id = int(text.split('giveaway')[1])
+                conn = get_db_connection()
+                with conn.cursor() as cur:
+                    # Check if giveaway exists and is active
+                    cur.execute("SELECT creator_id FROM giveaways WHERE id = %s AND status = 'active'", (giveaway_id,))
+                    giveaway = cur.fetchone()
+                    if not giveaway:
+                        send_telegram_message(chat_id, "This giveaway is no longer active or does not exist.")
+                        return jsonify({"status": "ok"}), 200
+                    
+                    # Add participant
+                    cur.execute("""
+                        INSERT INTO giveaway_participants (giveaway_id, user_id, ticket_count)
+                        VALUES (%s, %s, 1) ON CONFLICT (giveaway_id, user_id) DO NOTHING;
+                    """, (giveaway_id, chat_id))
+                    conn.commit()
+                    
+                    if cur.rowcount > 0:
+                        send_telegram_message(chat_id, "🎉 You have successfully joined the giveaway! Good luck!")
+                    else:
+                        send_telegram_message(chat_id, "You have already joined this giveaway. Good luck!")
+
+                conn.close()
+            except (IndexError, ValueError):
+                send_telegram_message(chat_id, "Invalid giveaway link.")
+            return jsonify({"status": "ok"}), 200
+
+        # --- DEFAULT START MESSAGE ---
         if text == "/start":
             caption = (
                 "<b>Welcome to the Gift Upgrade Demo!</b>\n\n"
@@ -240,6 +331,7 @@ def webhook_handler():
                 ]
             }
             send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
+            
     return jsonify({"status": "ok"}), 200
 
 @app.route('/api/profile/<string:username>', methods=['GET'])
@@ -259,10 +351,14 @@ def get_user_profile(username):
             profile_data = dict(zip([d[0] for d in cur.description], user_profile))
             user_id = profile_data['tg_id']
 
-            # Fetch user's non-hidden gifts with new sorting order
+            # --- MODIFIED QUERY ---
+            # Fetch user's non-hidden gifts, now including owner details for consistency
             cur.execute("""
-                SELECT * FROM gifts WHERE owner_id = %s AND is_hidden = FALSE 
-                ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
+                SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar
+                FROM gifts g
+                JOIN accounts a ON g.owner_id = a.tg_id
+                WHERE g.owner_id = %s AND g.is_hidden = FALSE 
+                ORDER BY g.is_pinned DESC, g.pin_order ASC NULLS LAST, g.acquired_date DESC;
             """, (user_id,))
             gifts = []
             for row in cur.fetchall():
@@ -301,7 +397,8 @@ def get_or_create_account():
             cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE tg_id = %s;", (tg_id,))
             account_data = dict(zip([d[0] for d in cur.description], cur.fetchone()))
             
-            # Fetch gifts with new sorting order
+            # --- MODIFIED QUERY ---
+            # Fetch gifts with consistent sorting order
             cur.execute("""
                 SELECT * FROM gifts WHERE owner_id = %s 
                 ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
@@ -403,6 +500,125 @@ def upgrade_gift():
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error upgrading gift {instance_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
+
+# --- NEW CLONE GIFT ENDPOINT ---
+@app.route('/api/gifts/clone', methods=['POST'])
+def clone_gift():
+    """Clones a gift by scraping its public URL."""
+    data = request.get_json()
+    url = data.get('url')
+    owner_id = data.get('owner_id')
+
+    if not url or not owner_id:
+        return jsonify({"error": "url and owner_id are required"}), 400
+
+    parsed_url = urlparse(url)
+    if not (parsed_url.scheme in ['http', 'https'] and parsed_url.netloc in ['t.me', 'telegram.me']):
+         return jsonify({"error": "Invalid Telegram URL provided."}), 400
+         
+    try:
+        # Step 1: Scrape the URL to get gift part names
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        gift_name_el = soup.select_one('.tgme_page_title')
+        gift_name = gift_name_el.get_text(strip=True) if gift_name_el else None
+        if not gift_name:
+            return jsonify({"error": "Could not determine gift name from URL."}), 404
+
+        scraped_parts = {}
+        table = soup.find('table', class_='tgme_gift_table')
+        if table:
+            rows = table.find_all('tr')
+            for row in rows:
+                header = row.find('th')
+                value = row.find('td')
+                if header and value:
+                    header_text = header.text.strip().lower()
+                    value_text = ' '.join(value.text.split()[:-1]) # Remove rarity part like "(3%)"
+                    scraped_parts[header_text] = value_text
+
+        model_name = scraped_parts.get('model')
+        backdrop_name = scraped_parts.get('backdrop')
+        pattern_name = scraped_parts.get('symbol')
+
+        if not all([model_name, backdrop_name, pattern_name]):
+            return jsonify({"error": "Could not scrape all required gift parts (Model, Backdrop, Symbol)."}), 400
+
+        # Step 2: Fetch the full collectible data from CDN
+        all_parts_data = fetch_collectible_parts(gift_name)
+
+        # Step 3: Find the specific data objects for the scraped names
+        custom_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
+        custom_backdrop = next((b for b in all_parts_data.get('backdrops', []) if b['name'] == backdrop_name), None)
+        custom_pattern = next((p for p in all_parts_data.get('patterns', []) if p['name'] == pattern_name), None)
+
+        if not all([custom_model, custom_backdrop, custom_pattern]):
+            return jsonify({"error": "Could not match scraped part names to available collectible data."}), 500
+        
+        # Step 4: Create a base gift and upgrade it
+        new_instance_id = str(uuid.uuid4())
+        
+        # We can use a dummy base gift since we will immediately upgrade it
+        base_gift_id = "1"
+        base_gift_name = "Logo"
+        base_original_image = f"{CDN_BASE_URL}originals/{base_gift_id}/Original.png"
+        base_lottie_path = f"{CDN_BASE_URL}originals/{base_gift_id}/Original.json"
+
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            # Add a temporary base gift
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: 
+                return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+            
+            cur.execute("""
+                INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) 
+                VALUES (%s, %s, %s, %s, %s, %s);
+            """, (new_instance_id, owner_id, base_gift_id, base_gift_name, base_original_image, base_lottie_path))
+            
+            # Now upgrade it with the cloned data
+            cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (base_gift_id,))
+            next_number = cur.fetchone()[0]
+            supply = random.randint(2000, 10000)
+
+            collectible_data = {
+                "model": custom_model, "backdrop": custom_backdrop, "pattern": custom_pattern,
+                "modelImage": f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(custom_model['name'])}.png",
+                "lottieModelPath": f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(custom_model['name'])}.json",
+                "patternImage": f"{CDN_BASE_URL}patterns/{quote(gift_name)}/png/{quote(custom_pattern['name'])}.png",
+                "backdropColors": custom_backdrop.get('hex'), "supply": supply
+            }
+
+            # Update the temporary gift to be the cloned gift
+            cur.execute("""
+                UPDATE gifts SET is_collectible = TRUE, gift_name=%s, collectible_data = %s, collectible_number = %s, lottie_path = NULL 
+                WHERE instance_id = %s;
+            """, (gift_name, json.dumps(collectible_data), next_number, new_instance_id))
+            
+            if cur.rowcount == 0:
+                conn.rollback()
+                return jsonify({"error": "Failed to upgrade cloned gift."}), 500
+
+            conn.commit()
+
+            # Return the newly created gift
+            cur.execute("SELECT * FROM gifts WHERE instance_id = %s;", (new_instance_id,))
+            cloned_gift = dict(zip([d[0] for d in cur.description], cur.fetchone()))
+            if isinstance(cloned_gift.get('collectible_data'), str):
+                cloned_gift['collectible_data'] = json.loads(cloned_gift.get('collectible_data'))
+        
+        conn.close()
+        return jsonify(cloned_gift), 201
+
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to scrape URL {url}: {e}", exc_info=True)
+        return jsonify({"error": "Could not fetch the provided URL."}), 502
+    except Exception as e:
+        app.logger.error(f"Error cloning gift from {url}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred during cloning."}), 500
+
 
 @app.route('/api/gift/<string:gift_type_id>/<int:collectible_number>', methods=['GET'])
 def get_gift_by_details(gift_type_id, collectible_number):
@@ -654,7 +870,7 @@ def transfer_gift():
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
             conn.commit()
 
-            deep_link = f"https://t.me/upgradeDemoBot/upgrade?startapp=gift{gift_type_id}-{gift_number}"
+            deep_link = f"https://t.me/{BOT_USERNAME}/upgrade?startapp=gift{gift_type_id}-{gift_number}"
             link_text = f"{gift_name} #{gift_number:,}"
             
             # Prepare sender notification
@@ -751,20 +967,186 @@ def delete_collectible_username(username):
             return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
 
+# --- GIVEAWAY API ---
+@app.route('/api/giveaways/create', methods=['POST'])
+def create_giveaway():
+    """Starts the giveaway creation process."""
+    data = request.get_json()
+    creator_id = data.get('creator_id')
+    gift_instance_ids = data.get('gift_instance_ids')
+    winner_rule = data.get('winner_rule') # 'single' or 'multiple'
+
+    if not all([creator_id, gift_instance_ids, winner_rule]):
+        return jsonify({"error": "creator_id, gift_instance_ids, and winner_rule are required"}), 400
+    if not isinstance(gift_instance_ids, list) or len(gift_instance_ids) == 0:
+        return jsonify({"error": "gift_instance_ids must be a non-empty list"}), 400
+    if winner_rule not in ['single', 'multiple']:
+        return jsonify({"error": "winner_rule must be 'single' or 'multiple'"}), 400
+    if winner_rule == 'multiple' and len(gift_instance_ids) < 2:
+        return jsonify({"error": "Multiple winners rule requires at least 2 gifts."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed"}), 500
+    with conn.cursor() as cur:
+        try:
+            # Create the main giveaway record
+            cur.execute("""
+                INSERT INTO giveaways (creator_id, winner_rule, status) VALUES (%s, %s, 'pending_setup')
+                RETURNING id;
+            """, (creator_id, winner_rule))
+            giveaway_id = cur.fetchone()[0]
+
+            # Associate the gifts with this giveaway
+            for gift_id in gift_instance_ids:
+                cur.execute("""
+                    INSERT INTO giveaway_gifts (giveaway_id, gift_instance_id) VALUES (%s, %s);
+                """, (giveaway_id, gift_id))
+            
+            conn.commit()
+            return jsonify({"message": "Giveaway initiated.", "giveaway_id": giveaway_id}), 201
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error creating giveaway for user {creator_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
+
 @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def catch_all(path):
     app.logger.warning(f"Unhandled API call: {request.method} /api/{path}")
     return jsonify({"error": f"The requested API endpoint '/api/{path}' was not found or the method is not allowed."}), 404
 
-# Set webhook on startup when run by Gunicorn
+
+# --- GIVEAWAY BACKGROUND WORKER ---
+
+def process_giveaway_winners(giveaway_id):
+    """Handles logic for selecting winners and distributing prizes."""
+    app.logger.info(f"Processing winners for giveaway ID: {giveaway_id}")
+    conn = get_db_connection()
+    if not conn: return
+
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+        try:
+            # Fetch giveaway details
+            cur.execute("SELECT * FROM giveaways WHERE id = %s;", (giveaway_id,))
+            giveaway = cur.fetchone()
+            if not giveaway:
+                app.logger.warning(f"Could not find giveaway {giveaway_id} to process.")
+                return
+
+            # Fetch participants and gifts
+            cur.execute("SELECT * FROM giveaway_participants WHERE giveaway_id = %s;", (giveaway_id,))
+            participants = cur.fetchall()
+            cur.execute("""
+                SELECT g.* FROM gifts g 
+                JOIN giveaway_gifts gg ON g.instance_id = gg.gift_instance_id 
+                WHERE gg.giveaway_id = %s;
+            """, (giveaway_id,))
+            gifts = cur.fetchall()
+
+            if not participants:
+                send_telegram_message(giveaway['creator_id'], f"😔 Your giveaway in {giveaway['channel_username']} has ended, but there were no participants.")
+                cur.execute("UPDATE giveaways SET status = 'finished' WHERE id = %s;", (giveaway_id,))
+                conn.commit()
+                return
+
+            # Select winner(s)
+            winners = []
+            if giveaway['winner_rule'] == 'single':
+                # For single winner, all gifts go to one person
+                winner_id = random.choice([p['user_id'] for p in participants])
+                winners.append({'user_id': winner_id, 'gifts': gifts})
+            else: # 'multiple'
+                participant_ids = [p['user_id'] for p in participants]
+                # Ensure we don't try to select more winners than there are participants
+                num_winners = min(len(gifts), len(participant_ids))
+                selected_winner_ids = random.sample(participant_ids, k=num_winners)
+                for i, winner_id in enumerate(selected_winner_ids):
+                    winners.append({'user_id': winner_id, 'gifts': [gifts[i]]})
+
+            # Transfer gifts and build results message
+            results_text = "🏆 **Giveaway Results** 🏆\n\nCongratulations to our winners:\n\n"
+            for win_info in winners:
+                winner_id = win_info['user_id']
+                cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (winner_id,))
+                winner_username = cur.fetchone()['username']
+                
+                for gift in win_info['gifts']:
+                    cur.execute("UPDATE gifts SET owner_id = %s WHERE instance_id = %s;", (winner_id, gift['instance_id']))
+                    deep_link = f"https://t.me/{BOT_USERNAME}/upgrade?startapp=gift{gift['gift_type_id']}-{gift['collectible_number']}"
+                    link_text = f"{gift['gift_name']} #{gift['collectible_number']:,}"
+                    results_text += f'🎁 <a href="{deep_link}">{link_text}</a>  ➔  @{winner_username}\n'
+                    # Notify winner
+                    send_telegram_message(winner_id, f"🎉 Congratulations! You won <a href='{deep_link}'>{link_text}</a> in a giveaway!")
+
+            # Post results to channel
+            send_telegram_message(giveaway['channel_id'], results_text)
+
+            # Mark giveaway as finished
+            cur.execute("UPDATE giveaways SET status = 'finished' WHERE id = %s;", (giveaway_id,))
+            conn.commit()
+            app.logger.info(f"Successfully processed giveaway {giveaway_id}.")
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error processing giveaway {giveaway_id}: {e}", exc_info=True)
+            if giveaway:
+                send_telegram_message(giveaway['creator_id'], f"An error occurred while processing your giveaway in {giveaway.get('channel_username', 'channel')}. Please contact support.")
+        finally:
+            conn.close()
+
+
+def check_finished_giveaways():
+    """Periodically checks for giveaways that have ended."""
+    while True:
+        app.logger.info("Giveaway worker checking for finished giveaways...")
+        conn = get_db_connection()
+        if conn:
+            with conn.cursor() as cur:
+                try:
+                    # Get IDs of giveaways that have ended and are still active
+                    cur.execute("""
+                        SELECT id FROM giveaways 
+                        WHERE status = 'active' AND end_date <= CURRENT_TIMESTAMP;
+                    """)
+                    giveaway_ids = [row[0] for row in cur.fetchall()]
+                    
+                    # Mark them as 'processing' to prevent double-processing
+                    if giveaway_ids:
+                        cur.execute("UPDATE giveaways SET status = 'processing' WHERE id = ANY(%s);", (giveaway_ids,))
+                        conn.commit()
+
+                except Exception as e:
+                    giveaway_ids = []
+                    app.logger.error(f"Error fetching finished giveaways: {e}", exc_info=True)
+                finally:
+                    conn.close()
+
+            if giveaway_ids:
+                app.logger.info(f"Found {len(giveaway_ids)} finished giveaways to process.")
+                for gid in giveaway_ids:
+                    # Each giveaway is processed in its own thread to avoid blocking
+                    processing_thread = threading.Thread(target=process_giveaway_winners, args=(gid,))
+                    processing_thread.start()
+        
+        # Sleep for 60 seconds before the next check
+        time.sleep(60)
+
+# Set webhook and start background threads on startup when run by Gunicorn
 if __name__ != '__main__':
     set_webhook()
     init_db()
+    # Start the giveaway checker in a background thread
+    giveaway_thread = threading.Thread(target=check_finished_giveaways, daemon=True)
+    giveaway_thread.start()
 
 # Run for local development
 if __name__ == '__main__':
     print("Starting Flask server for local development...")
     init_db()
-    # Webhook won't work with localhost unless you use a tunneling service like ngrok.
-    # set_webhook() # You can enable this if you are using a tunnel.
+    # Start the giveaway checker in a background thread
+    giveaway_thread = threading.Thread(target=check_finished_giveaways, daemon=True)
+    giveaway_thread.start()
     app.run(debug=True, port=5001)
