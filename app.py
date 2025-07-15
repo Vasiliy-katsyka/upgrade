@@ -125,7 +125,7 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 creator_id BIGINT REFERENCES accounts(tg_id) ON DELETE SET NULL,
                 channel_id BIGINT,
-                channel_username VARCHAR(255), -- Will store the ID now, or a placeholder
+                channel_username VARCHAR(255),
                 end_date TIMESTAMP WITH TIME ZONE,
                 winner_rule VARCHAR(20) NOT NULL,
                 status VARCHAR(20) NOT NULL DEFAULT 'pending_setup',
@@ -186,7 +186,7 @@ def answer_callback_query(callback_query_id, text=None, show_alert=False):
     except requests.RequestException as e:
         app.logger.error(f"Failed to answer callback query {callback_query_id}: {e}")
 
-# --- UTILITY AND OTHER FUNCTIONS (AS THEY WERE) ---
+# --- UTILITY AND OTHER FUNCTIONS ---
 def select_weighted_random(items):
     if not items: return None
     total_weight = sum(item.get('rarityPermille', 1) for item in items)
@@ -230,9 +230,10 @@ def set_webhook():
 
 def handle_giveaway_setup(conn, cur, user_id, user_state, text):
     """Manages the conversation for setting up a giveaway using Channel ID."""
+    # --- CORRECTED STATE PARSING ---
     state_parts = user_state.split('_')
-    state_name = state_parts[0] + "_" + state_parts[1] + "_" + state_parts[2]
-    giveaway_id = int(state_parts[3])
+    giveaway_id = int(state_parts[-1])       # Robustly get the ID from the end
+    state_name = "_".join(state_parts[:-1]) # Re-join the rest to get the state name
 
     if text.lower() == '/cancel':
         cur.execute("UPDATE accounts SET bot_state = NULL WHERE tg_id = %s;", (user_id,))
@@ -243,13 +244,10 @@ def handle_giveaway_setup(conn, cur, user_id, user_state, text):
 
     if state_name == 'awaiting_giveaway_channel':
         try:
-            # Expecting a numerical channel ID
             channel_id = int(text.strip())
-            # Basic validation for a public channel ID
             if not (text.startswith('-100') and len(text) > 5):
                 send_telegram_message(user_id, "That doesn't look like a valid public channel ID. It should start with `-100`.")
                 return
-
         except ValueError:
             send_telegram_message(user_id, "Invalid format. Please provide the numerical Channel ID.")
             return
@@ -359,7 +357,6 @@ def webhook_handler():
                             send_telegram_message(chat_id, "Invalid giveaway link.")
                     else:
                         caption = "<b>Welcome to the Gift Upgrade Demo!</b>\n\nThis app is a simulation of Telegram's gift and collectible system. You can buy gifts, upgrade them, and even host giveaways!\n\nTap the button below to get started!"
-                        photo_url = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/IMG_20250706_195911_731.jpg"
                         reply_markup = {"inline_keyboard": [[{"text": "🎁 Open Gift App", "web_app": {"url": WEBAPP_URL}}]]}
                         send_telegram_message(chat_id, caption, reply_markup)
 
@@ -440,9 +437,6 @@ def get_or_create_account():
             conn.rollback(); app.logger.error(f"Error in get_or_create_account for {tg_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
 
-# All other endpoints like /api/account PUT, /api/gifts/*, etc., remain the same as the previous full version.
-# For brevity, I am showing the new giveaway endpoint and the clone endpoint.
-
 @app.route('/api/giveaways/create', methods=['POST'])
 def create_giveaway():
     data = request.get_json()
@@ -452,13 +446,7 @@ def create_giveaway():
 
     if not all([creator_id, gift_instance_ids, winner_rule]):
         return jsonify({"error": "creator_id, gift_instance_ids, and winner_rule are required"}), 400
-    if not isinstance(gift_instance_ids, list) or len(gift_instance_ids) == 0:
-        return jsonify({"error": "gift_instance_ids must be a non-empty list"}), 400
-    if winner_rule not in ['single', 'multiple']:
-        return jsonify({"error": "winner_rule must be 'single' or 'multiple'"}), 400
-    if winner_rule == 'multiple' and len(gift_instance_ids) < 1:
-        return jsonify({"error": "Multiple winners rule requires at least 1 gift."}), 400
-
+    
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed"}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -475,9 +463,8 @@ def create_giveaway():
             send_telegram_message(
                 creator_id,
                 ("🏆 **Giveaway Setup: Step 1 of 2**\n\n"
-                 "You've selected your gifts. Now, please send the **numerical ID** of the public channel for the giveaway.\n\n"
-                 "To get the ID, forward any message from your channel to a bot like @userinfobot.\n\n"
-                 "*The bot must be able to post in this channel (i.e., it must be public).*\n\n"
+                 "Please send the **numerical ID** of the public channel for the giveaway.\n\n"
+                 "To get the ID, you can forward a message from your channel to a bot like @userinfobot.\n\n"
                  "To cancel, send /cancel.")
             )
             
