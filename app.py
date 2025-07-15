@@ -181,7 +181,6 @@ def send_telegram_message(chat_id, text, reply_markup=None, disable_web_page_pre
         return None
 
 def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
-    """Sends a photo file, URL, or binary data via the Telegram Bot API."""
     url = f"{TELEGRAM_API_URL}/sendPhoto"
     data = {'chat_id': chat_id}
     files = None
@@ -285,7 +284,6 @@ def fetch_collectible_parts(gift_name):
 # --- WEBHOOK & GIVEAWAY BOT LOGIC ---
 
 def update_giveaway_message(giveaway_id):
-    """Fetches latest data and edits the giveaway message in the channel."""
     conn = get_db_connection()
     if not conn: return
     with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -442,9 +440,18 @@ def webhook_handler():
                         except (IndexError, ValueError):
                             send_telegram_message(chat_id, "Invalid giveaway link.")
                     else:
-                        caption = "<b>Welcome to the Gift Upgrade Demo!</b>\n\nThis app is a simulation of Telegram's gift and collectible system. You can buy gifts, upgrade them, and even host giveaways!\n\nTap the button below to get started!"
-                        reply_markup = {"inline_keyboard": [[{"text": "🎁 Open Gift App", "web_app": {"url": WEBAPP_URL}}]]}
-                        send_telegram_message(chat_id, caption, reply_markup=reply_markup, disable_web_page_preview=True)
+                        caption = ("<b>Welcome to the Gift Upgrade Demo!</b>\n\n"
+                                   "This app is a simulation of Telegram's gift and collectible system. "
+                                   "You can buy gifts, upgrade them, and trade them with other users.\n\n"
+                                   "Tap the button below to get started!")
+                        photo_url = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/IMG_20250706_195911_731.jpg"
+                        reply_markup = {
+                            "inline_keyboard": [
+                                [{"text": "🎁 Open Gift App", "web_app": {"url": WEBAPP_URL}}],
+                                [{"text": "🐞 Report Bug", "url": "https://t.me/Vasiliy939"}]
+                            ]
+                        }
+                        send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
     finally:
         if conn:
             conn.close()
@@ -1009,6 +1016,47 @@ def delete_collectible_username(username):
             conn.rollback(); app.logger.error(f"DB error deleting username {username}: {e}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
+
+@app.route('/api/giveaways/create', methods=['POST'])
+def create_giveaway():
+    data = request.get_json()
+    creator_id = data.get('creator_id')
+    gift_instance_ids = data.get('gift_instance_ids')
+    winner_rule = data.get('winner_rule')
+
+    if not all([creator_id, gift_instance_ids, winner_rule]):
+        return jsonify({"error": "creator_id, gift_instance_ids, and winner_rule are required"}), 400
+    
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed"}), 500
+    with conn.cursor(cursor_factory=DictCursor) as cur:
+        try:
+            cur.execute("INSERT INTO giveaways (creator_id, winner_rule) VALUES (%s, %s) RETURNING id;", (creator_id, winner_rule))
+            giveaway_id = cur.fetchone()['id']
+            for gift_id in gift_instance_ids:
+                cur.execute("INSERT INTO giveaway_gifts (giveaway_id, gift_instance_id) VALUES (%s, %s);", (giveaway_id, gift_id))
+            
+            new_state = f"awaiting_giveaway_channel_{giveaway_id}"
+            cur.execute("UPDATE accounts SET bot_state = %s WHERE tg_id = %s;", (new_state, creator_id))
+            conn.commit()
+
+            send_telegram_message(
+                creator_id,
+                ("🏆 <b>Giveaway Setup: Step 1 of 2</b>\n\n"
+                 "Please send the <b>numerical ID</b> of the public channel for the giveaway.\n\n"
+                 "To get the ID, you can forward a message from your channel to a bot like @userinfobot.\n\n"
+                 "<i>The bot must be able to post in this channel (i.e., it must be public).</i>\n\n"
+                 "To cancel, send /cancel.")
+            )
+            
+            return jsonify({"message": "Giveaway initiated.", "giveaway_id": giveaway_id}), 201
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error creating giveaway for user {creator_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
         
 @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def catch_all(path):
@@ -1046,7 +1094,7 @@ def process_giveaway_winners(giveaway_id):
                 cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (winner_id,))
                 winner_username = cur.fetchone()['username']
                 results_text += f"All prizes go to: @{winner_username}!\n"
-            else: # multiple winners
+            else:
                 participant_ids = [p['user_id'] for p in participants]
                 num_winners = min(len(gifts), len(participant_ids))
                 selected_winner_ids = random.sample(participant_ids, k=num_winners)
