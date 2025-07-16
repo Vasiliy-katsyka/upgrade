@@ -8,13 +8,16 @@ import time
 import base64
 import uuid
 import logging
+import math
+import io
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from urllib.parse import quote, urlparse
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import pytz 
+import pytz
 from psycopg2.extras import DictCursor
+from PIL import Image, ImageDraw, ImageFont
 
 # --- CONFIGURATION ---
 
@@ -25,7 +28,7 @@ CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}
 # --- ENVIRONMENT VARIABLES & CONSTANTS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-WEBHOOK_URL = "https://upgrade-a57g.onrender.com" 
+WEBHOOK_URL = "https://upgrade-a57g.onrender.com"
 
 if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
     raise ValueError("Missing required environment variables: DATABASE_URL and/or TELEGRAM_BOT_TOKEN")
@@ -37,11 +40,51 @@ MAX_SALE_PRICE = 100000
 CDN_BASE_URL = "https://cdn.changes.tg/gifts/"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 WEBAPP_URL = "https://vasiliy-katsyka.github.io/upgrade/"
-WEBAPP_SHORT_NAME = "upgrade" 
-BOT_USERNAME = "upgradeDemoBot" 
-TEST_ACCOUNT_TG_ID = 9999999999 
+WEBAPP_SHORT_NAME = "upgrade"
+BOT_USERNAME = "upgradeDemoBot"
+TEST_ACCOUNT_TG_ID = 9999999999
 MOSCOW_TZ = pytz.timezone('Europe/Moscow')
-GIVEAWAY_UPDATE_THROTTLE_SECONDS = 30 
+GIVEAWAY_UPDATE_THROTTLE_SECONDS = 30
+
+# --- CUSTOM GIFT DATA ---
+CUSTOM_GIFTS_DATA = {
+    "Dildo": {
+        "models": [
+            {"name": "She Wants", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011319484.png"},
+            {"name": "Anal Games", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004252351.png"},
+            {"name": "Romance", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011244151.png"},
+            {"name": "Ma Boi", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012725065.png"},
+            {"name": "Twins 18", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004029718.png"},
+            {"name": "Golden Sex", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004223973.png"},
+            {"name": "Pixels", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012914349.png"},
+            {"name": "Penis Sword", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014719027.png"},
+            {"name": "Water One", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004351728.png"},
+            {"name": "Woman Place", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004416012.png"},
+            {"name": "Volcano", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011343633.png"},
+            {"name": "Telegram", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012648445.png"},
+            {"name": "Pinkie Twinkie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004004128.png"},
+            {"name": "Silver Glass", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004200179.png"},
+            {"name": "Plush", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011552827.png"},
+            {"name": "Plush Cuttie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011623951.png"},
+            {"name": "Spider Fun", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012003197.png"},
+            {"name": "Horse", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012355663.png"},
+            {"name": "Hand", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013039090.png"},
+            {"name": "Ancient", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014521352.png"},
+            {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014626463.png"},
+            {"name": "Skinny Boi", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004055652.png"},
+            {"name": "Rainbow", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004125778.png"},
+            {"name": "Russian Wood", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011527878.png"},
+            {"name": "Afterparty", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011822289.png"},
+            {"name": "Neon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012439323.png"},
+            {"name": "Black Jack", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013144671.png"},
+            {"name": "Galaxy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014555528.png"},
+            {"name": "Hell Red", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014650858.png"}
+        ],
+        "backdrops_source": "Astral Shard",
+        "patterns_source": "Astral Shard"
+    }
+}
+
 
 # --- DATABASE HELPERS ---
 
@@ -58,7 +101,7 @@ def init_db():
     if not conn:
         app.logger.warning("Database connection failed during initialization.")
         return
-        
+
     with conn.cursor() as cur:
         cur.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
@@ -89,7 +132,7 @@ def init_db():
                 collectible_data JSONB, collectible_number INT,
                 acquired_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 is_hidden BOOLEAN DEFAULT FALSE, is_pinned BOOLEAN DEFAULT FALSE, is_worn BOOLEAN DEFAULT FALSE,
-                pin_order INT 
+                pin_order INT
             );
         """)
         cur.execute("""
@@ -103,7 +146,7 @@ def init_db():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_owner_id ON gifts (owner_id);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_type_and_number ON gifts (gift_type_id, collectible_number);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_pin_order ON gifts (owner_id, pin_order);")
-        
+
         cur.execute("""
             CREATE TABLE IF NOT EXISTS collectible_usernames (
                 id SERIAL PRIMARY KEY,
@@ -158,10 +201,86 @@ def init_db():
                 INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio)
                 VALUES (%s, %s, %s, %s, %s) ON CONFLICT (tg_id) DO NOTHING;
             """, (TEST_ACCOUNT_TG_ID, 'system_test_account', 'Test Account', 'https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png', 'This account holds sold gifts.'))
-    
+
     conn.commit()
     conn.close()
     app.logger.info("Database initialized successfully.")
+
+# --- IMAGE GENERATION HELPER ---
+def create_skins_grid_image(skins, gift_name):
+    if not skins:
+        return None
+
+    try:
+        # Configuration
+        cols = 4
+        img_width, img_height = 200, 200
+        text_height = 60
+        padding = 10
+        cell_width = img_width + 2 * padding
+        cell_height = img_height + text_height + 2 * padding
+        rows = math.ceil(len(skins) / cols)
+        total_width = cols * cell_width
+        total_height = rows * cell_height
+
+        # Create canvas
+        grid_image = Image.new('RGB', (total_width, total_height), color='#17212b')
+        draw = ImageDraw.Draw(grid_image)
+        try:
+            # Using a default font which should be available on most systems
+            font_name = ImageFont.load_default()
+            font_rarity = ImageFont.load_default()
+        except IOError:
+            app.logger.warning("Default font not found. Text will not be rendered on skins image.")
+            font_name = None
+            font_rarity = None
+
+        for i, skin in enumerate(skins):
+            try:
+                # Download and open image
+                response = requests.get(skin['image'], stream=True, timeout=10)
+                response.raise_for_status()
+                skin_img = Image.open(io.BytesIO(response.content)).convert("RGBA")
+
+                # Calculate position
+                row = i // cols
+                col = i % cols
+                x_offset = col * cell_width
+                y_offset = row * cell_height
+
+                # Paste image
+                skin_img.thumbnail((img_width, img_height), Image.Resampling.LANCZOS)
+                paste_x = x_offset + padding + (img_width - skin_img.width) // 2
+                paste_y = y_offset + padding + (img_height - skin_img.height) // 2
+                grid_image.paste(skin_img, (paste_x, paste_y), skin_img)
+
+                # Draw text
+                if font_name and font_rarity:
+                    text_y_start = y_offset + padding + img_height + 5
+                    # Skin Name
+                    draw.text((x_offset + padding, text_y_start), skin['name'], font=font_name, fill='#FFFFFF')
+                    # Rarity
+                    rarity_permille = skin.get('rarityPermille', 0)
+                    rarity_percent = rarity_permille / 10
+                    rarity_text = f"Rarity: {rarity_percent}%"
+                    draw.text((x_offset + padding, text_y_start + 20), rarity_text, font=font_rarity, fill='#708499')
+
+            except requests.RequestException as e:
+                app.logger.error(f"Failed to download skin image {skin.get('image')}: {e}")
+                continue
+            except Exception as e:
+                app.logger.error(f"Error processing skin {skin.get('name')}: {e}", exc_info=True)
+                continue
+
+        # Save to buffer
+        buf = io.BytesIO()
+        grid_image.save(buf, format='PNG')
+        buf.seek(0)
+        return buf
+
+    except Exception as e:
+        app.logger.error(f"Failed to create skins grid image for {gift_name}: {e}", exc_info=True)
+        return None
 
 # --- TELEGRAM BOT HELPERS ---
 
@@ -193,7 +312,7 @@ def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
         except IOError as e:
             app.logger.error(f"Could not open file {photo} to send to chat_id {chat_id}: {e}", exc_info=True)
             return None
-    elif isinstance(photo, bytes):
+    elif isinstance(photo, (bytes, io.BytesIO)):
         files = {'photo': ('generated_gift.png', photo, 'image/png')}
     else:
         app.logger.error(f"Unsupported photo type for chat_id {chat_id}: {type(photo)}")
@@ -206,7 +325,7 @@ def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
         data['reply_markup'] = json.dumps(reply_markup)
 
     try:
-        response = requests.post(url, data=data, files=files, timeout=10)
+        response = requests.post(url, data=data, files=files, timeout=20) # Increased timeout for image uploads
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -238,7 +357,7 @@ def answer_callback_query(callback_query_id, text=None, show_alert=False):
         requests.post(url, json=payload, timeout=5)
     except requests.RequestException as e:
         app.logger.error(f"Failed to answer callback query {callback_query_id}: {e}")
-    
+
 def set_webhook():
     webhook_endpoint = f"{WEBHOOK_URL}/webhook"
     url = f"{TELEGRAM_API_URL}/setWebhook?url={webhook_endpoint}"
@@ -253,7 +372,7 @@ def set_webhook():
 def select_weighted_random(items):
     if not items: return None
     total_weight = sum(item.get('rarityPermille', 1) for item in items)
-    if total_weight == 0: return random.choice(items) if items else None 
+    if total_weight == 0: return random.choice(items) if items else None
     random_num = random.uniform(0, total_weight)
     for item in items:
         weight = item.get('rarityPermille', 1)
@@ -262,6 +381,18 @@ def select_weighted_random(items):
     return items[-1]
 
 def fetch_collectible_parts(gift_name):
+    # Handle custom gift "Dildo"
+    if gift_name.lower() == "dildo":
+        dildo_data = CUSTOM_GIFTS_DATA.get("Dildo", {})
+        parts = {
+            "models": dildo_data.get("models", []),
+            # Fetch backdrops and patterns from the specified source
+            "backdrops": fetch_collectible_parts(dildo_data.get("backdrops_source", "")).get("backdrops", []),
+            "patterns": fetch_collectible_parts(dildo_data.get("patterns_source", "")).get("patterns", [])
+        }
+        return parts
+
+    # Original logic for CDN gifts
     gift_name_encoded = quote(gift_name)
     urls = {
         "models": f"{CDN_BASE_URL}models/{gift_name_encoded}/models.json",
@@ -298,14 +429,14 @@ def update_giveaway_message(giveaway_id):
 
         prizes_text = "\n".join([f'🎁 <a href="https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{g["gift_type_id"]}-{g["collectible_number"]}">{g["gift_name"]} #{g["collectible_number"]:,}</a>' for g in gifts])
         end_date_str = giveaway['end_date'].astimezone(MOSCOW_TZ).strftime('%d.%m.%Y at %H:%M')
-        
+
         giveaway_text = (
             f"🎉 <b>Giveaway by @{giveaway['creator_username']}</b> 🎉\n\n"
             f"<b>Prizes:</b>\n{prizes_text}\n\n"
             f"<b>Ends:</b> {end_date_str} (MSK)\n\n"
             "Good luck to everyone!"
         )
-        
+
         join_url = f"https://t.me/{BOT_USERNAME}?start=giveaway{giveaway_id}"
         reply_markup = {"inline_keyboard": [[{"text": f"➡️ Join ({participant_count} Participants)", "url": join_url}]]}
 
@@ -384,14 +515,14 @@ def webhook_handler():
 
                     prizes_text = "\n".join([f'🎁 <a href="https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{g["gift_type_id"]}-{g["collectible_number"]}">{g["gift_name"]} #{g["collectible_number"]:,}</a>' for g in gifts])
                     end_date_str = giveaway['end_date'].astimezone(MOSCOW_TZ).strftime('%d.%m.%Y at %H:%M')
-                    
+
                     giveaway_text = (
                         f"🎉 <b>Giveaway by @{giveaway['creator_username']}</b> 🎉\n\n"
                         f"<b>Prizes:</b>\n{prizes_text}\n\n"
                         f"<b>Ends:</b> {end_date_str} (MSK)\n\n"
                         "Good luck to everyone!"
                     )
-                    
+
                     join_url = f"https://t.me/{BOT_USERNAME}?start=giveaway{giveaway_id}"
                     reply_markup = {"inline_keyboard": [[{"text": f"➡️ Join (0 Participants)", "url": join_url}]]}
                     post_result = send_telegram_message(giveaway['channel_id'], giveaway_text, reply_markup=reply_markup, disable_web_page_preview=True)
@@ -412,10 +543,39 @@ def webhook_handler():
                 cur.execute("SELECT bot_state FROM accounts WHERE tg_id = %s;", (chat_id,))
                 user_row = cur.fetchone()
                 user_state = user_row['bot_state'] if user_row else None
-                
+
                 if user_state and user_state.startswith("awaiting_giveaway"):
                     handle_giveaway_setup(conn, cur, chat_id, user_state, text)
-                
+
+                elif text.startswith("/skins"):
+                    try:
+                        parts = text.split(None, 1)
+                        if len(parts) < 2 or not parts[1]:
+                            send_telegram_message(chat_id, "Please provide a gift name. Usage: /skins GiftName (no spaces).")
+                            return jsonify({"status": "ok"}), 200
+                        
+                        gift_name = parts[1].strip()
+                        send_telegram_message(chat_id, f"🎨 Generating skins grid for '{gift_name}'. This may take a moment...")
+
+                        skin_data = fetch_collectible_parts(gift_name)
+                        models = skin_data.get('models', [])
+
+                        if not models:
+                            send_telegram_message(chat_id, f"Sorry, I couldn't find any skins/models for '{gift_name}'. Please check the name (case-sensitive, no spaces) and try again.")
+                            return jsonify({"status": "ok"}), 200
+
+                        grid_image_bytes = create_skins_grid_image(models, gift_name)
+
+                        if grid_image_bytes:
+                            send_telegram_photo(chat_id, grid_image_bytes, caption=f"Available skins for {gift_name}")
+                        else:
+                            send_telegram_message(chat_id, "An error occurred while generating the skins image.")
+
+                    except Exception as e:
+                        app.logger.error(f"Error handling /skins command: {e}", exc_info=True)
+                        send_telegram_message(chat_id, "An unexpected error occurred.")
+
+
                 elif text.startswith("/start"):
                     if "giveaway" in text:
                         try:
@@ -441,6 +601,7 @@ def webhook_handler():
                         caption = ("<b>Welcome to the Gift Upgrade Demo!</b>\n\n"
                                    "This app is a simulation of Telegram's gift and collectible system. "
                                    "You can buy gifts, upgrade them, and trade them with other users.\n\n"
+                                   "Use /skins [GiftName] to see all available models for a gift (e.g., /skins PlushPepe).\n\n"
                                    "Tap the button below to get started!")
                         photo_url = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/IMG_20250706_195911_731.jpg"
                         reply_markup = {
@@ -456,6 +617,7 @@ def webhook_handler():
 
     return jsonify({"status": "ok"}), 200
 
+
 # --- API ENDPOINTS ---
 
 @app.route('/api/profile/<string:username>', methods=['GET'])
@@ -467,7 +629,7 @@ def get_user_profile(username):
             cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
             user_profile = cur.fetchone()
             if not user_profile: return jsonify({"error": "User profile not found."}), 404
-            
+
             profile_data = dict(user_profile)
             user_id = profile_data['tg_id']
 
@@ -475,7 +637,7 @@ def get_user_profile(username):
                 SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar
                 FROM gifts g
                 JOIN accounts a ON g.owner_id = a.tg_id
-                WHERE g.owner_id = %s AND g.is_hidden = FALSE 
+                WHERE g.owner_id = %s AND g.is_hidden = FALSE
                 ORDER BY g.is_pinned DESC, g.pin_order ASC NULLS LAST, g.acquired_date DESC;
             """, (user_id,))
             gifts = [dict(row) for row in cur.fetchall()]
@@ -508,9 +670,9 @@ def get_or_create_account():
                 conn.commit()
             cur.execute("SELECT * FROM accounts WHERE tg_id = %s;", (tg_id,))
             account_data = dict(cur.fetchone())
-            
+
             cur.execute("""
-                SELECT * FROM gifts WHERE owner_id = %s 
+                SELECT * FROM gifts WHERE owner_id = %s
                 ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
             """, (tg_id,))
             gifts = [dict(row) for row in cur.fetchall()]
@@ -518,7 +680,7 @@ def get_or_create_account():
                 if gift.get('collectible_data') and isinstance(gift.get('collectible_data'), str):
                     gift['collectible_data'] = json.loads(gift['collectible_data'])
             account_data['owned_gifts'] = gifts
-            
+
             cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (tg_id,))
             account_data['collectible_usernames'] = [row['username'] for row in cur.fetchall()]
             return jsonify(account_data), 200
@@ -593,10 +755,15 @@ def upgrade_gift():
             selected_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
             if not all([selected_model, selected_backdrop, selected_pattern]): return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
             supply = random.randint(2000, 10000)
+            
+            # Adjust for custom gift which has 'image' instead of being derived from name
+            model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
+            lottie_model_path = selected_model.get('lottie') or f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
+            
             collectible_data = {
                 "model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern,
-                "modelImage": f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png",
-                "lottieModelPath": f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json",
+                "modelImage": model_image_url,
+                "lottieModelPath": lottie_model_path,
                 "patternImage": f"{CDN_BASE_URL}patterns/{quote(gift_name)}/png/{quote(selected_pattern['name'])}.png",
                 "backdropColors": selected_backdrop.get('hex'), "supply": supply
             }
@@ -610,7 +777,7 @@ def upgrade_gift():
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error upgrading gift {instance_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
-        
+
 @app.route('/api/gifts/clone', methods=['POST'])
 def clone_gift():
     data = request.get_json()
@@ -621,7 +788,7 @@ def clone_gift():
     parsed_url = urlparse(url)
     if not (parsed_url.scheme in ['http', 'https'] and parsed_url.netloc in ['t.me', 'telegram.me']):
          return jsonify({"error": "Invalid Telegram URL provided."}), 400
-         
+
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -629,7 +796,7 @@ def clone_gift():
 
         title_el = soup.find('div', class_='tgme_page_title')
         gift_name = title_el.find('span').text.strip() if title_el and title_el.find('span') else "Unknown Gift"
-        
+
         scraped_parts = {}
         table = soup.find('table', class_='tgme_gift_table')
         if table:
@@ -653,22 +820,25 @@ def clone_gift():
 
         if not all([custom_model, custom_backdrop, custom_pattern]):
             return jsonify({"error": "Could not match scraped part names to available data."}), 500
-        
+
         new_instance_id = str(uuid.uuid4())
-        
-        base_gift_id_to_clone = "1" 
-        
+
+        base_gift_id_to_clone = "1"
+
         conn = get_db_connection()
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name) VALUES (%s, %s, %s, %s);", (new_instance_id, owner_id, base_gift_id_to_clone, gift_name))
-            
+
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (base_gift_id_to_clone,))
             next_number = cur.fetchone()[0]
             
+            model_image_url = custom_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(custom_model['name'])}.png"
+            lottie_model_path = custom_model.get('lottie') or f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(custom_model['name'])}.json"
+
             collectible_data = {
                 "model": custom_model, "backdrop": custom_backdrop, "pattern": custom_pattern,
-                "modelImage": f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(custom_model['name'])}.png",
-                "lottieModelPath": f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(custom_model['name'])}.json",
+                "modelImage": model_image_url,
+                "lottieModelPath": lottie_model_path,
                 "patternImage": f"{CDN_BASE_URL}patterns/{quote(gift_name)}/png/{quote(custom_pattern['name'])}.png",
                 "backdropColors": custom_backdrop.get('hex'), "supply": random.randint(2000, 10000)
             }
@@ -715,7 +885,7 @@ def update_gift_state(instance_id):
                 owner_id_result = cur.fetchone()
                 if not owner_id_result: return jsonify({"error": "Gift not found for wear action."}), 404
                 cur.execute("UPDATE gifts SET is_worn = FALSE WHERE owner_id = %s AND is_worn = TRUE;", (owner_id_result[0],))
-            
+
             update_query = f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;"
             if action == 'hide' and value is True:
                 update_query = "UPDATE gifts SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;"
@@ -756,7 +926,7 @@ def sell_gift():
 
     if not all([instance_id, price, owner_id]):
         return jsonify({"error": "instance_id, price, and owner_id are required"}), 400
-    
+
     try:
         price_int = int(price)
         if not (MIN_SALE_PRICE <= price_int <= MAX_SALE_PRICE):
@@ -772,7 +942,7 @@ def sell_gift():
             cur.execute("SELECT 1 FROM gifts WHERE instance_id = %s AND owner_id = %s;", (instance_id, owner_id))
             if not cur.fetchone():
                 return jsonify({"error": "Gift not found or you are not the owner."}), 404
-            
+
             cur.execute("""
                 UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
                 WHERE instance_id = %s;
@@ -826,7 +996,7 @@ def batch_gift_action():
 
     if not all([action, instance_ids, owner_id]) or not isinstance(instance_ids, list):
         return jsonify({"error": "action, instance_ids list, and owner_id are required"}), 400
-    
+
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
 
@@ -834,7 +1004,7 @@ def batch_gift_action():
         try:
             if action == 'hide':
                 cur.execute("""
-                    UPDATE gifts 
+                    UPDATE gifts
                     SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
                     WHERE instance_id = ANY(%s) AND owner_id = %s;
                 """, (instance_ids, owner_id))
@@ -861,20 +1031,20 @@ def batch_gift_action():
                     return jsonify({"error": f"Receiver's gift limit would be exceeded."}), 403
 
                 cur.execute("""
-                    UPDATE gifts 
+                    UPDATE gifts
                     SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
                     WHERE instance_id = ANY(%s) AND owner_id = %s;
                 """, (receiver_id, instance_ids, owner_id))
-                
+
                 if cur.rowcount == 0:
                     conn.rollback()
                     return jsonify({"error": "No gifts were transferred. Check ownership."}), 404
-                
+
                 conn.commit()
-                
+
                 num_transferred = len(instance_ids)
                 gift_text = f"{num_transferred} gift" if num_transferred == 1 else f"{num_transferred} gifts"
-                
+
                 sender_text = f'You successfully transferred {gift_text} to @{receiver_username}'
                 if comment: sender_text += f'\n\n<i>With comment: "{comment}"</i>'
                 send_telegram_message(owner_id, sender_text)
@@ -882,7 +1052,7 @@ def batch_gift_action():
                 receiver_text = f'You have received {gift_text} from @{sender_username}'
                 if comment: receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
                 send_telegram_message(receiver_id, receiver_text)
-                
+
                 return jsonify({"message": f"{num_transferred} gifts transferred."}), 200
 
             else:
@@ -922,14 +1092,14 @@ def transfer_gift():
 
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
-            
+
             cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s AND is_collectible = TRUE;""", (receiver_id, instance_id))
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
             conn.commit()
 
             deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{gift_number}"
             link_text = f"{gift_name} #{gift_number:,}"
-            
+
             sender_text = f'You successfully transferred Gift <a href="{deep_link}">{link_text}</a> to @{receiver_username}'
             if comment: sender_text += f'\n\n<i>With comment: "{comment}"</i>'
             send_telegram_message(sender_id, sender_text)
@@ -938,7 +1108,7 @@ def transfer_gift():
             if comment: receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
             receiver_markup = {"inline_keyboard": [[{"text": "Check out", "url": deep_link}]]}
             send_telegram_message(receiver_id, receiver_text, receiver_markup)
-            
+
             return jsonify({"message": "Gift transferred successfully"}), 200
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error during gift transfer of {instance_id}: {e}", exc_info=True)
@@ -949,7 +1119,7 @@ def transfer_gift():
 def send_generated_image():
     data = request.get_json()
     if not data: return jsonify({"error": "Invalid JSON payload"}), 400
-        
+
     image_data_url = data.get('imageDataUrl')
     user_id = data.get('userId')
     caption = data.get('caption', None)
@@ -960,14 +1130,14 @@ def send_generated_image():
         header, encoded_data = image_data_url.split(',', 1)
         image_bytes = base64.b64decode(encoded_data)
         result = send_telegram_photo(user_id, image_bytes, caption=caption)
-        
+
         if result and result.get('ok'):
             return jsonify({"message": "Image sent successfully"}), 200
         else:
             error_message = result.get('description') if result else "Unknown Telegram API error"
             app.logger.error(f"Telegram API failed to send image to {user_id}: {error_message}")
             return jsonify({"error": "Failed to send image via Telegram API", "details": error_message}), 502
-            
+
     except (ValueError, TypeError, IndexError) as e:
         app.logger.error(f"Error decoding base64 image for user {user_id}: {e}", exc_info=True)
         return jsonify({"error": "Invalid base64 image data format"}), 400
@@ -1024,7 +1194,7 @@ def create_giveaway():
 
     if not all([creator_id, gift_instance_ids, winner_rule]):
         return jsonify({"error": "creator_id, gift_instance_ids, and winner_rule are required"}), 400
-    
+
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed"}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -1033,7 +1203,7 @@ def create_giveaway():
             giveaway_id = cur.fetchone()['id']
             for gift_id in gift_instance_ids:
                 cur.execute("INSERT INTO giveaway_gifts (giveaway_id, gift_instance_id) VALUES (%s, %s);", (giveaway_id, gift_id))
-            
+
             new_state = f"awaiting_giveaway_channel_{giveaway_id}"
             cur.execute("UPDATE accounts SET bot_state = %s WHERE tg_id = %s;", (new_state, creator_id))
             conn.commit()
@@ -1046,7 +1216,7 @@ def create_giveaway():
                  "<i>The bot must be able to post in this channel (i.e., it must be public).</i>\n\n"
                  "To cancel, send /cancel.")
             )
-            
+
             return jsonify({"message": "Giveaway initiated.", "giveaway_id": giveaway_id}), 201
 
         except Exception as e:
@@ -1055,7 +1225,7 @@ def create_giveaway():
             return jsonify({"error": "An internal server error occurred."}), 500
         finally:
             conn.close()
-        
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """
@@ -1078,14 +1248,14 @@ def get_stats():
 
             cur.execute("SELECT COUNT(*) FROM gifts WHERE is_collectible = TRUE;")
             collectible_items = cur.fetchone()[0]
-            
+
             non_collectible_items = total_gifts - collectible_items
 
             cur.execute("""
-                SELECT gift_name, COUNT(*) as count 
-                FROM gifts 
-                GROUP BY gift_name 
-                ORDER BY count DESC 
+                SELECT gift_name, COUNT(*) as count
+                FROM gifts
+                GROUP BY gift_name
+                ORDER BY count DESC
                 LIMIT 1;
             """)
             most_frequent_gift = cur.fetchone()
@@ -1102,46 +1272,46 @@ def get_stats():
 
             # --- 2. Top Gift Holders ---
             cur.execute("""
-                SELECT a.username, a.full_name, COUNT(g.instance_id) as gift_count 
-                FROM accounts a 
-                JOIN gifts g ON a.tg_id = g.owner_id 
+                SELECT a.username, a.full_name, COUNT(g.instance_id) as gift_count
+                FROM accounts a
+                JOIN gifts g ON a.tg_id = g.owner_id
                 WHERE a.tg_id != %s
-                GROUP BY a.tg_id, a.username, a.full_name 
-                ORDER BY gift_count DESC 
+                GROUP BY a.tg_id, a.username, a.full_name
+                ORDER BY gift_count DESC
                 LIMIT 10;
             """, (TEST_ACCOUNT_TG_ID,))
             stats['top_gift_holders'] = [dict(row) for row in cur.fetchall()]
 
             # --- 3. Most Common Collectible Models ---
             cur.execute("""
-                SELECT 
-                    collectible_data->'model'->>'name' as model_name, 
-                    COUNT(*) as model_count 
-                FROM gifts 
-                WHERE is_collectible = TRUE AND collectible_data->'model'->>'name' IS NOT NULL 
-                GROUP BY model_name 
-                ORDER BY model_count DESC 
+                SELECT
+                    collectible_data->'model'->>'name' as model_name,
+                    COUNT(*) as model_count
+                FROM gifts
+                WHERE is_collectible = TRUE AND collectible_data->'model'->>'name' IS NOT NULL
+                GROUP BY model_name
+                ORDER BY model_count DESC
                 LIMIT 5;
             """)
             stats['most_common_models'] = [dict(row) for row in cur.fetchall()]
 
             # --- 4. Rarest Collectible Highlights ---
             cur.execute("""
-                SELECT 
-                    g.gift_name, 
+                SELECT
+                    g.gift_name,
                     g.collectible_data,
                     a.username as owner_username
                 FROM gifts g
                 JOIN accounts a ON g.owner_id = a.tg_id
-                WHERE g.is_collectible = TRUE 
+                WHERE g.is_collectible = TRUE
                   AND g.collectible_data->'model'->>'rarityPermille' IS NOT NULL
                   AND g.collectible_data->'pattern'->>'rarityPermille' IS NOT NULL
-                ORDER BY 
-                    (g.collectible_data->'model'->>'rarityPermille')::numeric + 
+                ORDER BY
+                    (g.collectible_data->'model'->>'rarityPermille')::numeric +
                     (g.collectible_data->'pattern'->>'rarityPermille')::numeric ASC
                 LIMIT 5;
             """)
-            
+
             rarest_highlights = []
             for row in cur.fetchall():
                 model_rarity = int(row['collectible_data']['model']['rarityPermille'])
@@ -1152,7 +1322,7 @@ def get_stats():
                     "model_rarity_permille": model_rarity,
                     "pattern_rarity_permille": pattern_rarity,
                     # Example of combining rarities. Denominator is 1000*1000
-                    "combined_rarity_text": f"{model_rarity + pattern_rarity}/2000" 
+                    "combined_rarity_text": f"{model_rarity + pattern_rarity}/2000"
                 }
                 rarest_highlights.append(highlight)
             stats['rarest_highlights'] = rarest_highlights
@@ -1164,16 +1334,16 @@ def get_stats():
 
             for name in collection_names:
                 cur.execute("""
-                    SELECT a.full_name, a.username, COUNT(g.instance_id) as item_count 
-                    FROM gifts g 
-                    JOIN accounts a ON g.owner_id = a.tg_id 
+                    SELECT a.full_name, a.username, COUNT(g.instance_id) as item_count
+                    FROM gifts g
+                    JOIN accounts a ON g.owner_id = a.tg_id
                     WHERE g.gift_name = %s AND a.tg_id != %s
-                    GROUP BY a.tg_id, a.full_name, a.username 
-                    ORDER BY item_count DESC 
+                    GROUP BY a.tg_id, a.full_name, a.username
+                    ORDER BY item_count DESC
                     LIMIT 3;
                 """, (name, TEST_ACCOUNT_TG_ID))
                 featured_collections[name] = [dict(row) for row in cur.fetchall()]
-            
+
             stats['featured_collections'] = featured_collections
 
             return jsonify(stats), 200
@@ -1231,7 +1401,7 @@ def process_giveaway_winners(giveaway_id):
                     winner_username = cur.fetchone()['username']
                     deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift['gift_type_id']}-{gift['collectible_number']}"
                     results_text += f'🎁 <a href="{deep_link}">{gift["gift_name"]} #{gift["collectible_number"]:,}</a> ➔ @{winner_username}\n'
-            
+
             send_telegram_message(giveaway['channel_id'], results_text, disable_web_page_preview=True)
             cur.execute("UPDATE giveaways SET status = 'finished' WHERE id = %s;", (giveaway_id,))
             conn.commit()
