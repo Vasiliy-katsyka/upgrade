@@ -8,7 +8,6 @@ import time
 import base64
 import uuid
 import logging
-import math
 import io
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -17,7 +16,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import pytz
 from psycopg2.extras import DictCursor
-from PIL import Image, ImageDraw, ImageFont
 
 # --- CONFIGURATION ---
 
@@ -206,82 +204,6 @@ def init_db():
     conn.close()
     app.logger.info("Database initialized successfully.")
 
-# --- IMAGE GENERATION HELPER ---
-def create_skins_grid_image(skins, gift_name):
-    if not skins:
-        return None
-
-    try:
-        # Configuration
-        cols = 4
-        img_width, img_height = 200, 200
-        text_height = 60
-        padding = 10
-        cell_width = img_width + 2 * padding
-        cell_height = img_height + text_height + 2 * padding
-        rows = math.ceil(len(skins) / cols)
-        total_width = cols * cell_width
-        total_height = rows * cell_height
-
-        # Create canvas
-        grid_image = Image.new('RGB', (total_width, total_height), color='#17212b')
-        draw = ImageDraw.Draw(grid_image)
-        try:
-            # Using a default font which should be available on most systems
-            font_name = ImageFont.load_default()
-            font_rarity = ImageFont.load_default()
-        except IOError:
-            app.logger.warning("Default font not found. Text will not be rendered on skins image.")
-            font_name = None
-            font_rarity = None
-
-        for i, skin in enumerate(skins):
-            try:
-                # Download and open image
-                response = requests.get(skin['image'], stream=True, timeout=10)
-                response.raise_for_status()
-                skin_img = Image.open(io.BytesIO(response.content)).convert("RGBA")
-
-                # Calculate position
-                row = i // cols
-                col = i % cols
-                x_offset = col * cell_width
-                y_offset = row * cell_height
-
-                # Paste image
-                skin_img.thumbnail((img_width, img_height), Image.Resampling.LANCZOS)
-                paste_x = x_offset + padding + (img_width - skin_img.width) // 2
-                paste_y = y_offset + padding + (img_height - skin_img.height) // 2
-                grid_image.paste(skin_img, (paste_x, paste_y), skin_img)
-
-                # Draw text
-                if font_name and font_rarity:
-                    text_y_start = y_offset + padding + img_height + 5
-                    # Skin Name
-                    draw.text((x_offset + padding, text_y_start), skin['name'], font=font_name, fill='#FFFFFF')
-                    # Rarity
-                    rarity_permille = skin.get('rarityPermille', 0)
-                    rarity_percent = rarity_permille / 10
-                    rarity_text = f"Rarity: {rarity_percent}%"
-                    draw.text((x_offset + padding, text_y_start + 20), rarity_text, font=font_rarity, fill='#708499')
-
-            except requests.RequestException as e:
-                app.logger.error(f"Failed to download skin image {skin.get('image')}: {e}")
-                continue
-            except Exception as e:
-                app.logger.error(f"Error processing skin {skin.get('name')}: {e}", exc_info=True)
-                continue
-
-        # Save to buffer
-        buf = io.BytesIO()
-        grid_image.save(buf, format='PNG')
-        buf.seek(0)
-        return buf
-
-    except Exception as e:
-        app.logger.error(f"Failed to create skins grid image for {gift_name}: {e}", exc_info=True)
-        return None
-
 # --- TELEGRAM BOT HELPERS ---
 
 def send_telegram_message(chat_id, text, reply_markup=None, disable_web_page_preview=False):
@@ -325,7 +247,7 @@ def send_telegram_photo(chat_id, photo, caption=None, reply_markup=None):
         data['reply_markup'] = json.dumps(reply_markup)
 
     try:
-        response = requests.post(url, data=data, files=files, timeout=20) # Increased timeout for image uploads
+        response = requests.post(url, data=data, files=files, timeout=20)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -547,35 +469,6 @@ def webhook_handler():
                 if user_state and user_state.startswith("awaiting_giveaway"):
                     handle_giveaway_setup(conn, cur, chat_id, user_state, text)
 
-                elif text.startswith("/skins"):
-                    try:
-                        parts = text.split(None, 1)
-                        if len(parts) < 2 or not parts[1]:
-                            send_telegram_message(chat_id, "Please provide a gift name. Usage: /skins GiftName (no spaces).")
-                            return jsonify({"status": "ok"}), 200
-                        
-                        gift_name = parts[1].strip()
-                        send_telegram_message(chat_id, f"🎨 Generating skins grid for '{gift_name}'. This may take a moment...")
-
-                        skin_data = fetch_collectible_parts(gift_name)
-                        models = skin_data.get('models', [])
-
-                        if not models:
-                            send_telegram_message(chat_id, f"Sorry, I couldn't find any skins/models for '{gift_name}'. Please check the name (case-sensitive, no spaces) and try again.")
-                            return jsonify({"status": "ok"}), 200
-
-                        grid_image_bytes = create_skins_grid_image(models, gift_name)
-
-                        if grid_image_bytes:
-                            send_telegram_photo(chat_id, grid_image_bytes, caption=f"Available skins for {gift_name}")
-                        else:
-                            send_telegram_message(chat_id, "An error occurred while generating the skins image.")
-
-                    except Exception as e:
-                        app.logger.error(f"Error handling /skins command: {e}", exc_info=True)
-                        send_telegram_message(chat_id, "An unexpected error occurred.")
-
-
                 elif text.startswith("/start"):
                     if "giveaway" in text:
                         try:
@@ -601,7 +494,6 @@ def webhook_handler():
                         caption = ("<b>Welcome to the Gift Upgrade Demo!</b>\n\n"
                                    "This app is a simulation of Telegram's gift and collectible system. "
                                    "You can buy gifts, upgrade them, and trade them with other users.\n\n"
-                                   "Use /skins [GiftName] to see all available models for a gift (e.g., /skins PlushPepe).\n\n"
                                    "Tap the button below to get started!")
                         photo_url = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/IMG_20250706_195911_731.jpg"
                         reply_markup = {
@@ -717,7 +609,7 @@ def update_account():
 @app.route('/api/gifts', methods=['POST'])
 def add_gift():
     data = request.get_json()
-    required_fields = ['owner_id', 'gift_type_id', 'gift_name', 'original_image_url', 'lottie_path', 'instance_id']
+    required_fields = ['owner_id', 'gift_type_id', 'gift_name', 'original_image_url', 'instance_id']
     if not all(field in data for field in required_fields): return jsonify({"error": "Missing data"}), 400
     owner_id = data['owner_id']
     conn = get_db_connection()
@@ -726,7 +618,7 @@ def add_gift():
         try:
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
-            cur.execute("""INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) VALUES (%s, %s, %s, %s, %s, %s);""", (data['instance_id'], owner_id, data['gift_type_id'], data['gift_name'], data['original_image_url'], data['lottie_path']))
+            cur.execute("""INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) VALUES (%s, %s, %s, %s, %s, %s);""", (data['instance_id'], owner_id, data['gift_type_id'], data['gift_name'], data['original_image_url'], data.get('lottie_path')))
             conn.commit()
             return jsonify({"message": "Gift added"}), 201
         except Exception as e:
@@ -755,16 +647,18 @@ def upgrade_gift():
             selected_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
             if not all([selected_model, selected_backdrop, selected_pattern]): return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
             supply = random.randint(2000, 10000)
-            
-            # Adjust for custom gift which has 'image' instead of being derived from name
+
+            pattern_source_name = "Astral Shard" if gift_name.lower() == 'dildo' else gift_name
             model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
-            lottie_model_path = selected_model.get('lottie') or f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
-            
+            lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
+            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+
+
             collectible_data = {
                 "model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern,
                 "modelImage": model_image_url,
                 "lottieModelPath": lottie_model_path,
-                "patternImage": f"{CDN_BASE_URL}patterns/{quote(gift_name)}/png/{quote(selected_pattern['name'])}.png",
+                "patternImage": pattern_image_url,
                 "backdropColors": selected_backdrop.get('hex'), "supply": supply
             }
             cur.execute("""UPDATE gifts SET is_collectible = TRUE, collectible_data = %s, collectible_number = %s, lottie_path = NULL WHERE instance_id = %s;""", (json.dumps(collectible_data), next_number, instance_id))
@@ -832,14 +726,16 @@ def clone_gift():
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (base_gift_id_to_clone,))
             next_number = cur.fetchone()[0]
             
+            pattern_source_name = "Astral Shard" if gift_name.lower() == 'dildo' else gift_name
             model_image_url = custom_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(custom_model['name'])}.png"
-            lottie_model_path = custom_model.get('lottie') or f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(custom_model['name'])}.json"
+            lottie_model_path = custom_model.get('lottie') if custom_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(custom_model['name'])}.json"
+            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(custom_pattern['name'])}.png"
 
             collectible_data = {
                 "model": custom_model, "backdrop": custom_backdrop, "pattern": custom_pattern,
                 "modelImage": model_image_url,
                 "lottieModelPath": lottie_model_path,
-                "patternImage": f"{CDN_BASE_URL}patterns/{quote(gift_name)}/png/{quote(custom_pattern['name'])}.png",
+                "patternImage": pattern_image_url,
                 "backdropColors": custom_backdrop.get('hex'), "supply": random.randint(2000, 10000)
             }
             cur.execute("""UPDATE gifts SET is_collectible = TRUE, collectible_data = %s, collectible_number = %s WHERE instance_id = %s;""", (json.dumps(collectible_data), next_number, new_instance_id))
