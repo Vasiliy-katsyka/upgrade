@@ -634,16 +634,23 @@
 
         /* === COLLECTIBLE MODAL REDESIGN === */
         #collectible-detail-modal .modal-content { padding-top: 0; }
+        /* Moved inside collectible-display-area */
         #collectible-detail-modal .page-header {
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
             background-color: transparent; /* Changed to transparent */
             position: absolute; top: 0; left: 0; right: 0; z-index: 3; /* Z-index above patterns */
+            display: flex; align-items: center; padding: 10px 15px; /* Re-added padding and display */
         }
+        #collectible-detail-modal .page-header h2 { /* Removed this element from HTML, hide its styles too */
+            display: none;
+        }
+
         #collectible-detail-modal .modal-scrollable-content { padding: 0; }
 
         /* Background and Pattern Container (NEW) */
         .collectible-display-area {
+            /* Now responsible for top border radius and background */
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
             padding: 40px 0 30px 0; /* Vertical padding, no horizontal padding */
             text-align: center;
             position: relative;
@@ -700,51 +707,15 @@
         .collectible-display-area p a:hover {
             text-decoration: underline;
         }
+
+        /* Buttons row (Moved inside collectible-display-area) */
+        #modal-collectible-actions {
+            position: relative;
+            z-index: 2;
+            margin-top: 25px; /* Space between text and buttons */
+            padding-bottom: 25px; /* Space below buttons within the background area */
+        }
         /* === END COLLECTIBLE MODAL REDESIGN === */
-
-        .modal-action-buttons-row {
-            display: flex; justify-content: space-around; gap: 10px;
-            padding: 15px 20px;
-            background-color: var(--tg-theme-bg-color);
-        }
-        .modal-action-buttons-row button {
-            flex-grow: 1; padding: 10px 5px; font-size: 0.9em;
-            background-color: var(--app-action-button-bg);
-            color: var(--tg-theme-text-color);
-            border: none; border-radius: 8px;
-            display: flex; flex-direction: column; align-items: center;
-            font-weight: 500;
-        }
-        .modal-action-buttons-row button .icon { margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
-        .modal-action-buttons-row button .icon svg { width: 22px; height: 22px; fill: var(--tg-theme-link-color); }
-        .modal-action-buttons-row button .text { font-size: 0.9em; }
-
-        .collectible-info-section { padding: 0 20px; background-color: var(--tg-theme-secondary-bg-color); }
-        .collectible-info-section .info-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 0; font-size: 0.95em;
-        }
-        .collectible-info-section .info-row:not(:last-child) { margin-bottom: 2px; }
-        .collectible-info-section .info-label { color: var(--tg-theme-text-color); }
-        .collectible-info-section .info-value { color: var(--tg-theme-hint-color); display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-        .collectible-info-section .info-value a {
-            color: var(--tg-theme-link-color);
-            text-decoration: none;
-        }
-        .collectible-info-section .info-value.clickable-info { cursor: pointer; }
-        .collectible-info-section .info-value.clickable-info:active { opacity: 0.7; }
-        .collectible-info-section .info-value img.owner-avatar { width: 24px; height: 24px; border-radius: 50%; margin-right: 8px; }
-        .collectible-info-section .info-value .rarity-chip {
-            background-color: var(--app-rarity-chip-bg);
-            color: var(--app-rarity-chip-text);
-            padding: 2px 7px; border-radius: 8px;
-            font-size: 0.8em; margin-left: 8px; font-weight: 500;
-        }
-        .rarity-chip .one-in-x {
-            font-size: 0.9em;
-            opacity: 0.7;
-            margin-left: 5px;
-        }
 
         .modal-footer-message {
             text-align: center; font-size: 0.85em;
@@ -1163,13 +1134,15 @@
 
         <div id="collectible-detail-modal" class="modal-overlay">
             <div class="modal-content">
-                <div class="page-header">
-                    <h2 id="modal-collectible-header-title">Collectible</h2>
-                    <button class="menu-button" id="collectible-menu-button">⋮</button>
-                </div>
                 <div class="modal-scrollable-content">
                     <!-- Collectible Display Area - Redesigned -->
                     <div class="collectible-display-area">
+                        <!-- Page Header with Menu Button (now inside this area) -->
+                        <div class="page-header">
+                            <!-- Removed h2, as gift name is now below the image -->
+                            <button class="menu-button" id="collectible-menu-button">⋮</button>
+                        </div>
+
                         <!-- New container for floating patterns -->
                         <div id="pattern-container-dynamic"></div>
 
@@ -1182,14 +1155,16 @@
                         <!-- Text content -->
                         <h3 id="modal-collectible-main-name">Model Name</h3>
                         <p id="modal-collectible-number-subtext">Collectible #123</p>
+
+                        <!-- Action buttons (now inside this area) -->
+                        <div id="modal-collectible-actions" class="modal-action-buttons-row">
+                            <!-- Removed collectible-action-copy-link button entirely from HTML -->
+                            <button id="collectible-action-wear"><span class="icon"></span><span class="text">Wear</span></button>
+                            <button id="collectible-action-sell"><span class="icon"></span><span class="text">Sell</span></button>
+                            <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Transfer</span></button>
+                        </div>
                     </div>
 
-                    <div id="modal-collectible-actions" class="modal-action-buttons-row">
-                        <button id="collectible-action-copy-link"><span class="icon"></span><span class="text">Copy Link</span></button>
-                        <button id="collectible-action-wear"><span class="icon"></span><span class="text">Wear</span></button>
-                        <button id="collectible-action-sell"><span class="icon"></span><span class="text">Sell</span></button>
-                        <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Transfer</span></button>
-                    </div>
                     <div class="collectible-info-section">
                         <div id="modal-collectible-info-table" class="modal-info-table"></div>
                     </div>
@@ -1530,7 +1505,7 @@
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const LINK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>link-variant</title><path d="M10.59,13.41C11,13.8 11,14.44 10.59,14.83C10.2,15.22 9.56,15.22 9.17,14.83L5.64,11.3C4.86,10.52 4.86,9.27 5.64,8.48L9.17,5.03C9.56,4.64 10.2,4.64 10.59,5.03C11,5.42 11,6.06 10.59,6.45L7.05,9.9C6.66,10.29 6.66,10.93 7.05,11.32L10.59,14.86M13.41,9.17C13,8.78 13,8.14 13.41,7.75L16.95,4.32C17.73,3.54 18.98,3.54 19.77,4.32L23.3,7.85C24.08,8.63 24.08,9.88 23.3,10.67L19.77,14.19C19.38,14.58 18.74,14.58 18.35,14.19C17.96,13.8 17.96,13.16 18.35,12.77L21.88,9.24C22.27,8.85 22.27,8.21 21.88,7.82L18.35,4.29C17.96,3.9 17.32,3.9 16.93,4.29L13.41,7.72C13,8.11 13,8.75 13.41,9.14" /></svg>`;
-        const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,4 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
+        const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
 
         // --- CUSTOM GIFT DATA ---
         const CUSTOM_GIFTS_DATA = {
@@ -1651,7 +1626,7 @@
         const closeGiftDetailModalButton = document.getElementById('close-gift-detail-modal');
 
         const collectibleDetailModal = document.getElementById('collectible-detail-modal');
-        const modalCollectibleHeaderTitle = document.getElementById('modal-collectible-header-title');
+        // Removed modalCollectibleHeaderTitle as it's no longer needed
         const collectibleDisplayArea = document.querySelector('.collectible-display-area'); // New: Added for direct access
         const patternContainerDynamic = document.getElementById('pattern-container-dynamic'); // New: Added for dynamic patterns
         const modalCollectibleVisual = document.getElementById('modal-collectible-visual');
@@ -1660,10 +1635,10 @@
         const modalCollectibleMainName = document.getElementById('modal-collectible-main-name');
         const modalCollectibleNumberSubtext = document.getElementById('modal-collectible-number-subtext');
         const modalCollectibleInfoTable = document.getElementById('modal-collectible-info-table');
-        const collectibleActionCopyLink = document.getElementById('collectible-action-copy-link');
-        const collectibleActionTransfer = document.getElementById('collectible-action-transfer');
+        // Removed collectibleActionCopyLink button and its related DOM element
         const collectibleActionWear = document.getElementById('collectible-action-wear');
         const collectibleActionSell = document.getElementById('collectible-action-sell');
+        const collectibleActionTransfer = document.getElementById('collectible-action-transfer');
         const closeCollectibleDetailModalButton = document.getElementById('close-collectible-detail-modal');
         const collectibleMenuButton = document.getElementById('collectible-menu-button');
         const hideLinkInModal = document.getElementById('hide-link-in-modal');
@@ -1704,6 +1679,18 @@
         const clearCurrentAccountDataButton = document.getElementById('clear-current-account-data-button');
         const clearAllAccountsDataButton = document.getElementById('clear-all-accounts-data-button');
 
+        const chancesModal = document.getElementById('chances-modal');
+        const chancesGiftName = document.getElementById('chances-gift-name');
+        const chancesLoadingSpinner = document.getElementById('chances-loading-spinner');
+        const chancesProbabilityDisplay = document.getElementById('chances-probability-display');
+        const chancesModelsSection = document.getElementById('chances-models-section');
+        const chancesOptionsModels = document.getElementById('chances-options-models');
+        const chancesBackdropsSection = document.getElementById('chances-backdrops-section');
+        const chancesOptionsBackdrops = document.getElementById('chances-options-backdrops');
+        const chancesPatternsSection = document.getElementById('chances-patterns-section');
+        const chancesOptionsPatterns = document.getElementById('chances-options-patterns');
+        const closeChancesModalButton = document.getElementById('close-chances-modal');
+
         const customBuyModal = document.getElementById('custom-buy-modal');
         const customBuyBaseGiftsGrid = document.getElementById('custom-buy-base-gifts-grid');
         const customBuyModelsSection = document.getElementById('custom-buy-models-section');
@@ -1723,18 +1710,6 @@
         const generatedImageMessage = document.getElementById('generated-image-message');
         const sendGeneratedImageButton = document.getElementById('send-generated-image-button');
         const closeGeneratedImageModalButton = document.getElementById('close-generated-image-modal');
-
-        const chancesModal = document.getElementById('chances-modal');
-        const chancesGiftName = document.getElementById('chances-gift-name');
-        const chancesLoadingSpinner = document.getElementById('chances-loading-spinner');
-        const chancesProbabilityDisplay = document.getElementById('chances-probability-display');
-        const chancesModelsSection = document.getElementById('chances-models-section');
-        const chancesOptionsModels = document.getElementById('chances-options-models');
-        const chancesBackdropsSection = document.getElementById('chances-backdrops-section');
-        const chancesOptionsBackdrops = document.getElementById('chances-options-backdrops');
-        const chancesPatternsSection = document.getElementById('chances-patterns-section');
-        const chancesOptionsPatterns = document.getElementById('chances-options-patterns');
-        const closeChancesModalButton = document.getElementById('close-chances-modal');
 
         const sellGiftModal = document.getElementById('sell-gift-modal');
         const sellGiftImage = document.getElementById('sell-gift-image');
@@ -1913,7 +1888,7 @@
             tg.ready(); tg.expand();
             initLottieObserver();
 
-            collectibleActionCopyLink.querySelector('.icon').innerHTML = LINK_SVG;
+            // Removed collectibleActionCopyLink icon setup
             collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
@@ -2360,7 +2335,7 @@
                 item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
                 item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
-                item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
+                item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImage, lottiePath); });
 
                 observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
@@ -2390,8 +2365,8 @@
                          }
                     } else if (container.closest('#profile-top-pinned-gifts')) { renderTopPinnedGiftsPreview(); }
                 } else {
-                    if (lottieContainer) {
-                        destroyLottieAnimation(lottieContainer);
+                    if (container) { // Ensure container exists before destroying
+                        destroyLottieAnimation(container);
                         if (parentCard) { // Ensure static fallback is visible for grid items and modals
                              const staticFallback = parentCard.querySelector('.static-image-fallback');
                              if(staticFallback) staticFallback.style.display = 'block';
@@ -2806,11 +2781,9 @@
 
         async function populateCollectibleDetailModal(gift) {
             const cd = gift.collectible_data;
-            modalCollectibleHeaderTitle.textContent = gift.gift_name;
-            modalCollectibleMainName.textContent = cd.model?.name || gift.gift_name;
-
-            const numberForLink = gift.collectible_number;
-            modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">Collectible #${numberForLink.toLocaleString()}</a>`;
+            // Removed modalCollectibleHeaderTitle.textContent = gift.gift_name;
+            modalCollectibleMainName.textContent = gift.gift_name; // Use gift.gift_name as primary title
+            modalCollectibleNumberSubtext.innerHTML = `Collectible #${gift.collectible_number.toLocaleString()}`; // Use gift.collectible_number
 
             // Clear previous patterns
             if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
@@ -2899,22 +2872,19 @@
                 <div class="info-row"><span class="info-label">Model</span><span id="collectible-model-value" class="info-value clickable-info">${cd.model?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.model?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Backdrop</span><span id="collectible-backdrop-value" class="info-value clickable-info">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.backdrop?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
-                <div class="info-row"><span class="info-label">Number</span><span class="info-value">#${gift.collectible_number.toLocaleString()} of ${cd.supply?.toLocaleString() || 'N/A'}</span></div>`;
+                <div class="info-row"><span class="info-label">Supply</span><span class="info-value">#${gift.collectible_number.toLocaleString()} of ${cd.supply?.toLocaleString() || 'N/A'}</span></div>`;
 
             const isOwner = (gift.owner_id === currentAccountTgId);
-            collectibleActionCopyLink.style.display = 'flex';
-            collectibleActionTransfer.style.display = isOwner ? 'flex' : 'none';
+            // collectibleActionCopyLink.style.display = 'flex'; // Removed this button
             collectibleActionWear.style.display = isOwner ? 'flex' : 'none';
             collectibleActionSell.style.display = isOwner ? 'flex' : 'none';
+            collectibleActionTransfer.style.display = isOwner ? 'flex' : 'none';
             collectibleMenuButton.style.display = isOwner ? 'flex' : 'none';
             hideLinkInModal.style.display = isOwner ? 'inline' : 'none';
 
             collectibleActionWear.querySelector('.text').textContent = (gift.is_worn === true) ? 'Take Off' : 'Wear';
 
-            document.getElementById('collectible-link-copier').onclick = (e) => {
-                e.preventDefault();
-                copyGiftLink(gift);
-            };
+            // No event listener for collectible-link-copier as the button is removed.
 
             const modelValueEl = document.getElementById('collectible-model-value');
             const backdropValueEl = document.getElementById('collectible-backdrop-value');
@@ -2950,7 +2920,7 @@
                 menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin';
                 menuPinAction.classList.toggle('disabled', !isOwner);
                 menuShareImageAction.classList.remove('hidden');
-                menuCopyLinkAction.classList.remove('hidden');
+                // menuCopyLinkAction.classList.remove('hidden'); // Removed this line as button is removed
                 menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
             }
 
@@ -2978,7 +2948,7 @@
             menuHideAction.classList.toggle('disabled', !isOwner);
             menuDeleteAction.classList.toggle('disabled', !isOwner);
             menuShareImageAction.classList.remove('hidden');
-            menuCopyLinkAction.classList.remove('hidden');
+            // menuCopyLinkAction.classList.remove('hidden'); // Removed this line as button is removed
             menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
 
             const menuWidth = longPressMenu.offsetWidth || 220;
@@ -3777,8 +3747,8 @@
             closeModal(collectibleDetailModal);
 
             transferModalTitle.textContent = "Transfer Gift";
-            transferGiftImage.classList.remove('hidden');
-            transferGiftName.classList.remove('hidden');
+            transferGiftImage.classList.add('hidden');
+            transferGiftName.classList.add('hidden');
             transferUsernameInput.value = '';
             transferCommentInput.value = '';
             confirmTransferButton.disabled = true;
@@ -4293,11 +4263,7 @@
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
 
-            collectibleActionCopyLink.addEventListener('click', () => {
-                const giftInstanceId = collectibleDetailModal.dataset.instanceId;
-                const gift = ownedGifts.find(g => g.instance_id === giftInstanceId) || currentlySortedGifts.find(g => g.instance_id === giftInstanceId);
-                if (gift) copyGiftLink(gift);
-            });
+            // Removed collectibleActionCopyLink event listener as the button is removed
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
                 const giftInstanceId = collectibleDetailModal.dataset.instanceId;
@@ -4321,7 +4287,7 @@
 
             menuPinAction.addEventListener('click', handlePinAction);
             menuHideAction.addEventListener('click', handleHideAction);
-            menuCopyLinkAction.addEventListener('click', () => { if(currentLongPressGift) copyGiftLink(currentLongPressGift); });
+            // Removed menuCopyLinkAction event listener
             menuDeleteAction.addEventListener('click', handleDeleteAction);
             menuShareImageAction.addEventListener('click', handleShareImageAction);
             menuReorderAction.addEventListener('click', enterReorderMode);
