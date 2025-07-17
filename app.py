@@ -303,16 +303,19 @@ def select_weighted_random(items):
     return items[-1]
 
 def fetch_collectible_parts(gift_name):
-    # Handle custom gift "Dildo"
-    if gift_name.lower() == "dildo":
-        dildo_data = CUSTOM_GIFTS_DATA.get("Dildo", {})
+    # Handle ALL custom gifts defined in the dictionary
+    if gift_name in CUSTOM_GIFTS_DATA:
+        custom_gift_data = CUSTOM_GIFTS_DATA.get(gift_name, {})
         parts = {
-            "models": dildo_data.get("models", []),
-            # Fetch backdrops and patterns from the specified source
-            "backdrops": fetch_collectible_parts(dildo_data.get("backdrops_source", "")).get("backdrops", []),
-            "patterns": fetch_collectible_parts(dildo_data.get("patterns_source", "")).get("patterns", [])
+            "models": custom_gift_data.get("models", []),
+            "backdrops": fetch_collectible_parts(custom_gift_data.get("backdrops_source", "")).get("backdrops", []),
+            "patterns": fetch_collectible_parts(custom_gift_data.get("patterns_source", "")).get("patterns", [])
         }
         return parts
+
+    # Original logic for CDN gifts (this part stays the same)
+    # gift_name_encoded = quote(gift_name)
+    # ... rest of the function
 
     # Original logic for CDN gifts
     gift_name_encoded = quote(gift_name)
