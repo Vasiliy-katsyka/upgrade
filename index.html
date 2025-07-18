@@ -2329,10 +2329,14 @@
                 const name = allAvailableGifts[id];
                 let originalImageUrl, lottiePath;
 
-                if (id === CUSTOM_GIFTS_DATA.Dildo.id) {
-                    originalImageUrl = CUSTOM_GIFTS_DATA.Dildo.defaultImage;
-                    lottiePath = null; // No Lottie animation for custom gift
+                // --- CORRECTED LOGIC ---
+                // Check if the gift's name exists as a key in our custom data object
+                if (CUSTOM_GIFTS_DATA[name]) {
+                    // If it's a custom gift, get its specific default image
+                    originalImageUrl = CUSTOM_GIFTS_DATA[name].defaultImage;
+                    lottiePath = null; // Custom gifts in this app don't have a default Lottie
                 } else {
+                    // Otherwise, it's a standard CDN gift, so build the URL as before
                     originalImageUrl = `${CDN_BASE_URL}originals/${id}/Original.png`;
                     lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`;
                 }
