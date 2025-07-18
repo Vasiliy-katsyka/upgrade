@@ -2302,10 +2302,13 @@
                 allAvailableGifts = await response.json();
 
                 // Add custom gift to the end of the list
-                const dildoData = CUSTOM_GIFTS_DATA.Dildo;
-                if (dildoData) {
-                    allAvailableGifts[dildoData.id] = "Dildo";
-                }
+                // Add all custom gifts to the end of the list
+                for (const giftName in CUSTOM_GIFTS_DATA) {
+                    const customGift = CUSTOM_GIFTS_DATA[giftName];
+                    if (customGift && customGift.id) {
+                        allAvailableGifts[customGift.id] = giftName;
+                    }
+                 }
 
                 renderAvailableGifts();
                 populateFilterOptions();
