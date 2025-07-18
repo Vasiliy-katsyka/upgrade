@@ -4,6 +4,7 @@ import json
 import random
 import requests
 import threading
+import pytz
 import time
 import base64
 import uuid
@@ -1159,7 +1160,6 @@ def create_giveaway():
         finally:
             conn.close()
 
-import pytz
 from psycopg2.extras import DictCursor
 
 # (This assumes the rest of your Flask app setup, get_db_connection(), etc., remains the same)
