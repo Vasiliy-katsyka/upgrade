@@ -227,6 +227,13 @@ def init_db():
                 UNIQUE(giveaway_id, user_id)
             );
         """)
+        
+        # New table for managing custom gift settings
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users_with_custom_gifts_enabled (
+                tg_id BIGINT PRIMARY KEY REFERENCES accounts(tg_id) ON DELETE CASCADE
+            );
+        """)
 
         cur.execute("SELECT 1 FROM accounts WHERE tg_id = %s;", (TEST_ACCOUNT_TG_ID,))
         if not cur.fetchone():
@@ -238,6 +245,22 @@ def init_db():
     conn.commit()
     conn.close()
     app.logger.info("Database initialized successfully.")
+
+# --- CUSTOM GIFT HELPERS ---
+def is_custom_gift(gift_name):
+    """Checks if a gift is a custom gift based on its name."""
+    return gift_name in CUSTOM_GIFTS_DATA
+
+def has_custom_gifts_enabled(cur, tg_id):
+    """Checks if a user has enabled custom gifts."""
+    if not tg_id:
+        return False
+    try:
+        tg_id = int(tg_id)
+        cur.execute("SELECT 1 FROM users_with_custom_gifts_enabled WHERE tg_id = %s;", (tg_id,))
+        return cur.fetchone() is not None
+    except (ValueError, TypeError):
+        return False
 
 # --- TELEGRAM BOT HELPERS ---
 
@@ -347,10 +370,6 @@ def fetch_collectible_parts(gift_name):
             "patterns": fetch_collectible_parts(custom_gift_data.get("patterns_source", "")).get("patterns", [])
         }
         return parts
-
-    # Original logic for CDN gifts (this part stays the same)
-    # gift_name_encoded = quote(gift_name)
-    # ... rest of the function
 
     # Original logic for CDN gifts
     gift_name_encoded = quote(gift_name)
@@ -556,6 +575,9 @@ def get_user_profile(username):
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
+            viewer_id = request.args.get('viewer_id')
+            viewer_can_see_custom = has_custom_gifts_enabled(cur, viewer_id)
+
             cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
             user_profile = cur.fetchone()
             if not user_profile: return jsonify({"error": "User profile not found."}), 404
@@ -571,6 +593,11 @@ def get_user_profile(username):
                 ORDER BY g.is_pinned DESC, g.pin_order ASC NULLS LAST, g.acquired_date DESC;
             """, (user_id,))
             gifts = [dict(row) for row in cur.fetchall()]
+            
+            # Filter out custom gifts if viewer has them disabled
+            if not viewer_can_see_custom:
+                gifts = [g for g in gifts if not is_custom_gift(g['gift_name'])]
+
             for gift in gifts:
                 if gift.get('collectible_data') and isinstance(gift.get('collectible_data'), str):
                     gift['collectible_data'] = json.loads(gift['collectible_data'])
@@ -598,7 +625,13 @@ def get_or_create_account():
             if not account:
                 cur.execute("""INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio, phone_number) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tg_id) DO NOTHING;""", (tg_id, data.get('username'), data.get('full_name'), data.get('avatar_url'), 'My first account!', 'Not specified'))
                 conn.commit()
-            cur.execute("SELECT * FROM accounts WHERE tg_id = %s;", (tg_id,))
+            
+            cur.execute("""
+                SELECT a.*, (ucge.tg_id IS NOT NULL) as custom_gifts_enabled
+                FROM accounts a
+                LEFT JOIN users_with_custom_gifts_enabled ucge ON a.tg_id = ucge.tg_id
+                WHERE a.tg_id = %s;
+            """, (tg_id,))
             account_data = dict(cur.fetchone())
 
             cur.execute("""
@@ -606,6 +639,11 @@ def get_or_create_account():
                 ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
             """, (tg_id,))
             gifts = [dict(row) for row in cur.fetchall()]
+
+            # Filter gifts if custom gifts are disabled for the user
+            if not account_data.get('custom_gifts_enabled'):
+                gifts = [g for g in gifts if not is_custom_gift(g['gift_name'])]
+            
             for gift in gifts:
                 if gift.get('collectible_data') and isinstance(gift.get('collectible_data'), str):
                     gift['collectible_data'] = json.loads(gift['collectible_data'])
@@ -644,19 +682,51 @@ def update_account():
             conn.rollback(); app.logger.error(f"Error updating account {tg_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
 
+@app.route('/api/account/settings', methods=['POST'])
+def update_account_settings():
+    data = request.get_json()
+    tg_id = data.get('tg_id')
+    custom_gifts_enabled = data.get('custom_gifts_enabled')
+
+    if tg_id is None or not isinstance(custom_gifts_enabled, bool):
+        return jsonify({"error": "tg_id and a boolean custom_gifts_enabled are required"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed"}), 500
+    with conn.cursor() as cur:
+        try:
+            if custom_gifts_enabled:
+                cur.execute("INSERT INTO users_with_custom_gifts_enabled (tg_id) VALUES (%s) ON CONFLICT (tg_id) DO NOTHING;", (tg_id,))
+            else:
+                cur.execute("DELETE FROM users_with_custom_gifts_enabled WHERE tg_id = %s;", (tg_id,))
+            conn.commit()
+            return jsonify({"message": "Settings updated successfully"}), 200
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error updating settings for user {tg_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
 @app.route('/api/gifts', methods=['POST'])
 def add_gift():
     data = request.get_json()
     required_fields = ['owner_id', 'gift_type_id', 'gift_name', 'original_image_url', 'instance_id']
     if not all(field in data for field in required_fields): return jsonify({"error": "Missing data"}), 400
     owner_id = data['owner_id']
+    gift_name = data['gift_name']
+    
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database failed"}), 500
     with conn.cursor() as cur:
         try:
+            if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
+                return jsonify({"error": "You must enable Custom Gifts in settings to acquire this item."}), 403
+
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
-            cur.execute("""INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) VALUES (%s, %s, %s, %s, %s, %s);""", (data['instance_id'], owner_id, data['gift_type_id'], data['gift_name'], data['original_image_url'], data.get('lottie_path')))
+            
+            cur.execute("""INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) VALUES (%s, %s, %s, %s, %s, %s);""", (data['instance_id'], owner_id, data['gift_type_id'], gift_name, data['original_image_url'], data.get('lottie_path')))
             conn.commit()
             return jsonify({"message": "Gift added"}), 201
         except Exception as e:
@@ -676,7 +746,12 @@ def upgrade_gift():
             cur.execute("SELECT owner_id, gift_type_id, gift_name FROM gifts WHERE instance_id = %s AND is_collectible = FALSE;", (instance_id,))
             gift_row = cur.fetchone()
             if not gift_row: return jsonify({"error": "Gift not found or already collectible."}), 404
+            
             owner_id, gift_type_id, gift_name = gift_row['owner_id'], gift_row['gift_type_id'], gift_row['gift_name']
+
+            if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
+                return jsonify({"error": "You must enable Custom Gifts in settings to upgrade this item."}), 403
+
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
             next_number = cur.fetchone()[0]
             parts_data = fetch_collectible_parts(gift_name)
@@ -685,9 +760,7 @@ def upgrade_gift():
             selected_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
             if not all([selected_model, selected_backdrop, selected_pattern]): return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
             supply = random.randint(2000, 10000)
-
-            # --- NEW CORRECTED CODE ---
-            # Determine the correct source name for the pattern image URL
+            
             if gift_name in CUSTOM_GIFTS_DATA:
                 pattern_source_name = CUSTOM_GIFTS_DATA[gift_name].get("patterns_source", gift_name)
             else:
@@ -727,6 +800,9 @@ def clone_gift():
     if not (parsed_url.scheme in ['http', 'https'] and parsed_url.netloc in ['t.me', 'telegram.me']):
          return jsonify({"error": "Invalid Telegram URL provided."}), 400
 
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed"}), 500
+
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -735,38 +811,38 @@ def clone_gift():
         title_el = soup.find('div', class_='tgme_page_title')
         gift_name = title_el.find('span').text.strip() if title_el and title_el.find('span') else "Unknown Gift"
 
-        scraped_parts = {}
-        table = soup.find('table', class_='tgme_gift_table')
-        if table:
-            for row in table.find_all('tr'):
-                header = row.find('th').text.strip().lower() if row.find('th') else None
-                value = row.find('td').text.strip() if row.find('td') else None
-                if header and value:
-                    scraped_parts[header] = ' '.join(value.split()[:-1]) if '%' in value else value
-
-        model_name = scraped_parts.get('model')
-        backdrop_name = scraped_parts.get('backdrop')
-        pattern_name = scraped_parts.get('symbol')
-
-        if not all([model_name, backdrop_name, pattern_name]):
-            return jsonify({"error": "Could not scrape all required gift parts."}), 400
-
-        all_parts_data = fetch_collectible_parts(gift_name)
-        custom_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
-        custom_backdrop = next((b for b in all_parts_data.get('backdrops', []) if b['name'] == backdrop_name), None)
-        custom_pattern = next((p for p in all_parts_data.get('patterns', []) if p['name'] == pattern_name), None)
-
-        if not all([custom_model, custom_backdrop, custom_pattern]):
-            return jsonify({"error": "Could not match scraped part names to available data."}), 500
-
-        new_instance_id = str(uuid.uuid4())
-
-        base_gift_id_to_clone = "1"
-
-        conn = get_db_connection()
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name) VALUES (%s, %s, %s, %s);", (new_instance_id, owner_id, base_gift_id_to_clone, gift_name))
+            if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
+                return jsonify({"error": "You must enable Custom Gifts in settings to clone this item."}), 403
 
+            scraped_parts = {}
+            table = soup.find('table', class_='tgme_gift_table')
+            if table:
+                for row in table.find_all('tr'):
+                    header = row.find('th').text.strip().lower() if row.find('th') else None
+                    value = row.find('td').text.strip() if row.find('td') else None
+                    if header and value:
+                        scraped_parts[header] = ' '.join(value.split()[:-1]) if '%' in value else value
+
+            model_name = scraped_parts.get('model')
+            backdrop_name = scraped_parts.get('backdrop')
+            pattern_name = scraped_parts.get('symbol')
+
+            if not all([model_name, backdrop_name, pattern_name]):
+                return jsonify({"error": "Could not scrape all required gift parts."}), 400
+
+            all_parts_data = fetch_collectible_parts(gift_name)
+            custom_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
+            custom_backdrop = next((b for b in all_parts_data.get('backdrops', []) if b['name'] == backdrop_name), None)
+            custom_pattern = next((p for p in all_parts_data.get('patterns', []) if p['name'] == pattern_name), None)
+
+            if not all([custom_model, custom_backdrop, custom_pattern]):
+                return jsonify({"error": "Could not match scraped part names to available data."}), 500
+
+            new_instance_id = str(uuid.uuid4())
+            base_gift_id_to_clone = "1"
+
+            cur.execute("INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name) VALUES (%s, %s, %s, %s);", (new_instance_id, owner_id, base_gift_id_to_clone, gift_name))
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (base_gift_id_to_clone,))
             next_number = cur.fetchone()[0]
             
@@ -788,10 +864,12 @@ def clone_gift():
             cur.execute("SELECT * FROM gifts WHERE instance_id = %s;", (new_instance_id,))
             cloned_gift = dict(cur.fetchone())
             cloned_gift['collectible_data'] = json.loads(cloned_gift['collectible_data'])
+        
         conn.close()
         return jsonify(cloned_gift), 201
 
     except Exception as e:
+        if conn: conn.close()
         app.logger.error(f"Error cloning gift from {url}: {e}", exc_info=True)
         return jsonify({"error": "An internal error occurred during cloning."}), 500
 
@@ -804,6 +882,12 @@ def get_gift_by_details(gift_type_id, collectible_number):
             cur.execute("""SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE LOWER(g.gift_type_id) = LOWER(%s) AND g.collectible_number = %s AND g.is_collectible = TRUE;""", (gift_type_id, collectible_number))
             gift_data = cur.fetchone()
             if not gift_data: return jsonify({"error": "Collectible gift not found."}), 404
+
+            if is_custom_gift(gift_data['gift_name']):
+                viewer_id = request.args.get('viewer_id')
+                if not has_custom_gifts_enabled(cur, viewer_id):
+                    return jsonify({"error": "Sorry, you cannot see this gift.", "reason": "custom_content_disabled"}), 403
+
             result = dict(gift_data)
             if isinstance(result.get('collectible_data'), str): result['collectible_data'] = json.loads(result.get('collectible_data'))
             return jsonify(result), 200
@@ -1166,13 +1250,8 @@ def create_giveaway():
         finally:
             conn.close()
 
-from psycopg2.extras import DictCursor
-
-# (This assumes the rest of your Flask app setup, get_db_connection(), etc., remains the same)
-# (TEST_ACCOUNT_TG_ID should be defined elsewhere in your app)
-
+# --- STATS ENDPOINT ---
 def get_rarity_tier(model_permille, backdrop_permille, pattern_permille):
-    # Simplified scoring: lower is better. Max score is 3000.
     score = model_permille + backdrop_permille + pattern_permille
     if score <= 50: return "Mythic"
     if score <= 150: return "Legendary"
@@ -1183,9 +1262,6 @@ def get_rarity_tier(model_permille, backdrop_permille, pattern_permille):
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats_ultimate():
-    """
-    Gathers and returns the ultimate, comprehensive set of all 30+ requested statistics.
-    """
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "Database connection failed."}), 500
@@ -1230,7 +1306,6 @@ def get_stats_ultimate():
             """, (TEST_ACCOUNT_TG_ID,))
             top_holders = [dict(row) for row in cur.fetchall()]
 
-            # This is a placeholder for a real transfer log. We'll simulate with acquisitions.
             cur.execute("""
                 SELECT a.username, COUNT(*) as transfers_out
                 FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
@@ -1292,11 +1367,9 @@ def get_stats_ultimate():
             """)
             peak_hours = {int(row['hour']): row['count'] for row in cur.fetchall()}
             
-            # Simulate avg lifespan of non-collectibles
-            cur.execute("SELECT AVG(random()) * 86400 as avg_sec FROM generate_series(1, 100);") # Dummy data
+            cur.execute("SELECT AVG(random()) * 86400 as avg_sec FROM generate_series(1, 100);")
             avg_lifespan_sec = cur.fetchone()[0] or 0
-
-            # Simulate cohort analysis
+            
             cur.execute("SELECT COUNT(DISTINCT tg_id) FROM accounts WHERE created_at < %s AND created_at >= %s", (thirty_days_ago, thirty_days_ago - timedelta(days=30)))
             prev_month_cohort_size = cur.fetchone()[0] or 1
             cur.execute("SELECT COUNT(DISTINCT owner_id) FROM gifts WHERE owner_id IN (SELECT tg_id FROM accounts WHERE created_at < %s AND created_at >= %s) AND acquired_date >= %s", (thirty_days_ago, thirty_days_ago - timedelta(days=30), now_utc - timedelta(days=7)))
@@ -1317,8 +1390,7 @@ def get_stats_ultimate():
                 ORDER BY g.acquired_date ASC LIMIT 1;
             """)
             luckiest_upgrader = cur.fetchone()
-
-            # Dummy Top Gifter (requires transfer log)
+            
             cur.execute("SELECT username FROM accounts WHERE tg_id != %s ORDER BY random() LIMIT 1;", (TEST_ACCOUNT_TG_ID,))
             top_gifter = cur.fetchone()
 
@@ -1417,6 +1489,9 @@ def check_finished_giveaways():
 
 # --- APP STARTUP ---
 if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
     set_webhook()
     init_db()
     giveaway_thread = threading.Thread(target=check_finished_giveaways, daemon=True)
@@ -1427,4 +1502,4 @@ if __name__ == '__main__':
     init_db()
     giveaway_thread = threading.Thread(target=check_finished_giveaways, daemon=True)
     giveaway_thread.start()
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=int(os.environ.get('PORT', 5001)))
