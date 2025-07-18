@@ -686,7 +686,13 @@ def upgrade_gift():
             if not all([selected_model, selected_backdrop, selected_pattern]): return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
             supply = random.randint(2000, 10000)
 
-            pattern_source_name = "Astral Shard" if gift_name.lower() == 'dildo' else gift_name
+            # --- NEW CORRECTED CODE ---
+            # Determine the correct source name for the pattern image URL
+            if gift_name in CUSTOM_GIFTS_DATA:
+                pattern_source_name = CUSTOM_GIFTS_DATA[gift_name].get("patterns_source", gift_name)
+            else:
+                pattern_source_name = gift_name
+            
             model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
             lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
             pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
