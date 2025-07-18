@@ -1170,137 +1170,175 @@ def get_stats():
         return jsonify({"error": "Database connection failed."}), 500
 
     stats = {}
+    now_utc = datetime.now(pytz.utc)
+    one_day_ago = now_utc - timedelta(days=1)
+    seven_days_ago = now_utc - timedelta(days=7)
+
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
-            # --- General & User Engagement ---
+            # === 1. General & Live Statistics ===
             cur.execute("SELECT COUNT(*) FROM gifts;")
-            stats['total_gifts'] = cur.fetchone()[0]
-
+            total_gifts = cur.fetchone()[0]
             cur.execute("SELECT COUNT(DISTINCT owner_id) FROM gifts WHERE owner_id != %s;", (TEST_ACCOUNT_TG_ID,))
-            stats['unique_owners'] = cur.fetchone()[0]
-
+            unique_owners = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM gifts WHERE is_collectible = TRUE;")
-            stats['collectible_items'] = cur.fetchone()[0]
-            stats['non_collectible_items'] = stats['total_gifts'] - stats['collectible_items']
-
-            cur.execute("SELECT COUNT(*) FROM accounts;")
-            stats['total_accounts'] = cur.fetchone()[0]
-
-            cur.execute("SELECT COUNT(*) FROM accounts WHERE created_at >= NOW() - INTERVAL '30 days';")
-            stats['new_users_monthly'] = cur.fetchone()[0]
-
-            cur.execute("""
-                SELECT AVG(gift_count) FROM (
-                    SELECT owner_id, COUNT(*) as gift_count FROM gifts GROUP BY owner_id
-                ) as user_gift_counts;
-            """)
-            avg_gifts_per_user = cur.fetchone()[0]
-            stats['avg_gifts_per_user'] = round(avg_gifts_per_user, 2) if avg_gifts_per_user else 0
-
-            cur.execute("SELECT COUNT(*) FROM giveaways WHERE status = 'active';")
-            stats['active_giveaways'] = cur.fetchone()[0]
-
-            cur.execute("""
-                SELECT AVG(p_count) FROM (
-                    SELECT g.id, COUNT(p.id) as p_count
-                    FROM giveaways g
-                    LEFT JOIN giveaway_participants p ON g.id = p.giveaway_id
-                    GROUP BY g.id
-                ) as giveaway_participants_counts;
-            """)
-            avg_participants = cur.fetchone()[0]
-            stats['avg_participants_per_giveaway'] = round(avg_participants, 2) if avg_participants else 0
-
-            cur.execute("SELECT COUNT(*) FROM gifts WHERE is_hidden = TRUE;")
-            stats['hidden_gift_count'] = cur.fetchone()[0]
-
-            # --- Live Leaderboards ---
-            cur.execute("""
-                SELECT gift_name, COUNT(*) as count FROM gifts
-                GROUP BY gift_name ORDER BY count DESC LIMIT 1;
-            """)
+            collectible_items = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM accounts WHERE created_at >= %s;", (one_day_ago,))
+            new_users_24h = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE acquired_date >= %s;", (one_day_ago,))
+            gifts_created_24h = cur.fetchone()[0]
+            cur.execute("SELECT gift_name, COUNT(*) as count FROM gifts GROUP BY gift_name ORDER BY count DESC LIMIT 1;")
             most_frequent_gift = cur.fetchone()
-            stats['most_frequent_gift'] = dict(most_frequent_gift) if most_frequent_gift else None
 
+            stats['general_stats'] = {
+                'total_gifts': total_gifts,
+                'unique_owners': unique_owners,
+                'collectible_items': collectible_items,
+                'non_collectible_items': total_gifts - collectible_items,
+                'most_frequent_gift': dict(most_frequent_gift) if most_frequent_gift else None,
+                'new_users_24h': new_users_24h,
+                'gifts_created_24h': gifts_created_24h
+            }
+
+            # === 2. User & Engagement Metrics ===
             cur.execute("""
                 SELECT a.username, a.full_name, COUNT(g.instance_id) as gift_count
                 FROM accounts a JOIN gifts g ON a.tg_id = g.owner_id
-                WHERE a.tg_id != %s GROUP BY a.tg_id, a.username, a.full_name
-                ORDER BY gift_count DESC LIMIT 10;
+                WHERE a.tg_id != %s GROUP BY a.tg_id ORDER BY gift_count DESC LIMIT 10;
             """, (TEST_ACCOUNT_TG_ID,))
-            stats['top_gift_holders'] = [dict(row) for row in cur.fetchall()]
+            top_gift_holders = [dict(row) for row in cur.fetchall()]
 
             cur.execute("""
-                SELECT a.username, COUNT(g.instance_id) as diversity_count
-                FROM accounts a
-                JOIN (SELECT DISTINCT owner_id, gift_name FROM gifts) as g ON a.tg_id = g.owner_id
-                WHERE a.tg_id != %s GROUP BY a.tg_id, a.username
-                ORDER BY diversity_count DESC LIMIT 5;
+                SELECT owner_id, COUNT(DISTINCT gift_name) as unique_models_count
+                FROM gifts WHERE is_collectible = TRUE AND owner_id != %s
+                GROUP BY owner_id ORDER BY unique_models_count DESC LIMIT 5;
             """, (TEST_ACCOUNT_TG_ID,))
-            stats['power_collectors'] = [dict(row) for row in cur.fetchall()]
+            power_collectors_data = cur.fetchall()
+            power_collectors = []
+            for pc in power_collectors_data:
+                cur.execute("SELECT username, full_name FROM accounts WHERE tg_id = %s;", (pc['owner_id'],))
+                user_info = cur.fetchone()
+                power_collectors.append({
+                    'username': user_info['username'],
+                    'full_name': user_info['full_name'],
+                    'unique_models_count': pc['unique_models_count']
+                })
 
+            stats['user_engagement'] = {
+                'top_gift_holders': top_gift_holders,
+                'power_collectors': power_collectors
+            }
+            
+            # === 3. Economic & Transactional Data ===
+            cur.execute("SELECT COUNT(*) FROM giveaways WHERE status = 'active';")
+            active_giveaways = cur.fetchone()[0]
+            cur.execute("""
+                SELECT COALESCE(AVG(p.count), 0) FROM (
+                    SELECT COUNT(user_id) as count FROM giveaway_participants GROUP BY giveaway_id
+                ) p;
+            """)
+            avg_giveaway_participants = cur.fetchone()[0]
+            
+            stats['economic_data'] = {
+                 'active_giveaways': active_giveaways,
+                 'avg_giveaway_participants': round(avg_giveaway_participants)
+            }
+
+            # === 4. Gift & Collection Specifics ===
             cur.execute("""
                 SELECT collectible_data->'model'->>'name' as model_name, COUNT(*) as model_count
                 FROM gifts WHERE is_collectible = TRUE AND collectible_data->'model'->>'name' IS NOT NULL
                 GROUP BY model_name ORDER BY model_count DESC LIMIT 5;
             """)
-            stats['most_common_models'] = [dict(row) for row in cur.fetchall()]
+            most_common_models = [dict(row) for row in cur.fetchall()]
 
-            # --- Gift & Collection Specifics ---
+            cur.execute("""
+                SELECT collectible_data->'backdrop'->>'name' as backdrop_name, COUNT(*) as backdrop_count
+                FROM gifts WHERE is_collectible = TRUE AND collectible_data->'backdrop'->>'name' IS NOT NULL
+                GROUP BY backdrop_name ORDER BY backdrop_count DESC LIMIT 5;
+            """)
+            most_common_backdrops = [dict(row) for row in cur.fetchall()]
+
+            cur.execute("""
+                SELECT collectible_data->'pattern'->>'name' as pattern_name, COUNT(*) as pattern_count
+                FROM gifts WHERE is_collectible = TRUE AND collectible_data->'pattern'->>'name' IS NOT NULL
+                GROUP BY pattern_name ORDER BY pattern_count DESC LIMIT 5;
+            """)
+            most_common_patterns = [dict(row) for row in cur.fetchall()]
+            
             cur.execute("""
                 SELECT g.gift_name, g.collectible_number, g.collectible_data, a.username as owner_username
                 FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
                 WHERE g.is_collectible = TRUE
+                  AND g.collectible_data->'model'->>'rarityPermille' IS NOT NULL
+                  AND g.collectible_data->'backdrop'->>'rarityPermille' IS NOT NULL
+                  AND g.collectible_data->'pattern'->>'rarityPermille' IS NOT NULL
                 ORDER BY
-                    (g.collectible_data->'model'->>'rarityPermille')::numeric +
-                    (g.collectible_data->'backdrop'->>'rarityPermille')::numeric +
+                    (g.collectible_data->'model'->>'rarityPermille')::numeric *
+                    (g.collectible_data->'backdrop'->>'rarityPermille')::numeric *
                     (g.collectible_data->'pattern'->>'rarityPermille')::numeric ASC
                 LIMIT 5;
             """)
-            stats['rarest_highlights'] = [dict(row) for row in cur.fetchall()]
+            rarest_gifts = []
+            for row in cur.fetchall():
+                c_data = row['collectible_data']
+                total_prob = ( (c_data['model']['rarityPermille']/1000) * 
+                               (c_data['backdrop']['rarityPermille']/1000) * 
+                               (c_data['pattern']['rarityPermille']/1000) )
+                one_in_x = round(1 / total_prob) if total_prob > 0 else 0
+                rarest_gifts.append({
+                    "gift_name": row['gift_name'],
+                    "collectible_number": row['collectible_number'],
+                    "owner_username": row['owner_username'],
+                    "rarity_text": f"1 in {one_in_x:,}"
+                })
 
-            cur.execute("""
-                SELECT collectible_data->'backdrop'->>'name' as backdrop_name, COUNT(*) as count
-                FROM gifts WHERE is_collectible = TRUE GROUP BY backdrop_name ORDER BY count DESC LIMIT 1;
-            """)
-            stats['most_popular_backdrop'] = dict(cur.fetchone() or {})
+            stats['gift_specifics'] = {
+                'most_common_models': most_common_models,
+                'most_common_backdrops': most_common_backdrops,
+                'most_common_patterns': most_common_patterns,
+                'rarest_gifts': rarest_gifts,
+            }
 
+            # === 5. Featured & Trending Collections ===
             cur.execute("""
-                SELECT collectible_data->'pattern'->>'name' as pattern_name, COUNT(*) as count
-                FROM gifts WHERE is_collectible = TRUE GROUP BY pattern_name ORDER BY count DESC LIMIT 1;
-            """)
-            stats['most_popular_pattern'] = dict(cur.fetchone() or {})
-            
+                SELECT gift_name, COUNT(*) as count 
+                FROM gifts
+                WHERE acquired_date >= %s AND is_collectible = TRUE
+                GROUP BY gift_name ORDER BY count DESC LIMIT 5;
+            """, (seven_days_ago,))
+            trending_collections_7d = [dict(row) for row in cur.fetchall()]
+
             featured_collections = {}
-            collection_names = ["Plush Pepe", "Swiss Watch", "Snoop Dogg", "Dildo", "Skebob"]
+            # Using a dynamic list of top 3 most populous collections
+            cur.execute("""
+                SELECT gift_name FROM gifts 
+                WHERE is_collectible=TRUE 
+                GROUP BY gift_name 
+                ORDER BY COUNT(*) DESC LIMIT 3;
+            """)
+            collection_names_res = cur.fetchall()
+            collection_names = [row['gift_name'] for row in collection_names_res]
+
             for name in collection_names:
                 cur.execute("""
                     SELECT a.full_name, a.username, COUNT(g.instance_id) as item_count
                     FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
                     WHERE g.gift_name = %s AND a.tg_id != %s
-                    GROUP BY a.tg_id, a.full_name, a.username
-                    ORDER BY item_count DESC LIMIT 3;
+                    GROUP BY a.tg_id ORDER BY item_count DESC LIMIT 3;
                 """, (name, TEST_ACCOUNT_TG_ID))
-                featured_collections[name] = [dict(row) for row in cur.fetchall()]
-            stats['featured_collections'] = featured_collections
+                featured_collections[name] = {
+                    'top_holders': [dict(row) for row in cur.fetchall()]
+                }
+                cur.execute("SELECT COUNT(*) FROM gifts WHERE gift_name = %s AND is_collectible=TRUE;", (name,))
+                featured_collections[name]['total_count'] = cur.fetchone()[0]
 
-            # --- Temporal & Trend Analysis ---
-            cur.execute("""
-                SELECT date_trunc('day', acquired_date)::date as day, COUNT(*) as count
-                FROM gifts
-                WHERE is_collectible = TRUE AND acquired_date >= NOW() - INTERVAL '30 days'
-                GROUP BY day ORDER BY day;
-            """)
-            stats['daily_minting_rate'] = [dict(row) for row in cur.fetchall()]
 
-            cur.execute("""
-                SELECT date_trunc('hour', acquired_date)::time as hour, COUNT(*) as count
-                FROM gifts
-                GROUP BY hour ORDER BY count DESC LIMIT 1;
-            """)
-            peak_activity = cur.fetchone()
-            stats['peak_activity_hour'] = str(peak_activity['hour']) if peak_activity else 'N/A'
-            
+            stats['collection_insights'] = {
+                'trending_collections_7d': trending_collections_7d,
+                'featured_collections': featured_collections
+            }
+
             return jsonify(stats), 200
 
         except Exception as e:
