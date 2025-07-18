@@ -1238,10 +1238,17 @@
                     <h3>Settings</h3>
                 </div>
                 <div class="modal-scrollable-content">
-                    <div class="settings-row">
+                     <div class="settings-row">
                         <label>Animations</label>
                         <label class="switch">
                             <input type="checkbox" id="animation-toggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row">
+                        <label>Custom Gifts</label>
+                        <label class="switch">
+                            <input type="checkbox" id="custom-gifts-toggle">
                             <span class="slider round"></span>
                         </label>
                     </div>
@@ -1596,6 +1603,7 @@
 
         let animationsEnabled = true;
         let showHiddenGifts = false;
+        let customGiftsEnabled = false;
         let activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
 
         let tg = window.Telegram.WebApp;
@@ -1701,6 +1709,7 @@
 
         const settingsModal = document.getElementById('settings-modal');
         const animationToggle = document.getElementById('animation-toggle');
+        const customGiftsToggle = document.getElementById('custom-gifts-toggle');
         const showHiddenToggle = document.getElementById('show-hidden-toggle');
         const hideMultipleButton = document.getElementById('hide-multiple-button');
         const transferMultipleButton = document.getElementById('transfer-multiple-button');
@@ -1816,8 +1825,10 @@
         let selectedGiveawayGifts = new Set();
 
         // --- API Utility Function ---
-        async function callBackend(endpoint, method = 'GET', data = null) {
-            const url = `${BACKEND_BASE_URL}${endpoint}`;
+        async function callBackend(endpoint, method = 'GET', data = null, params = {}) {
+            const queryParams = new URLSearchParams(params).toString();
+            const url = `${BACKEND_BASE_URL}${endpoint}${queryParams ? '?' + queryParams : ''}`;
+
             const options = {
                 method: method,
                 headers: {
@@ -1829,14 +1840,21 @@
 
             try {
                 const response = await fetch(url, options);
+                const responseData = await response.json().catch(() => ({}));
+
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: response.statusText || 'Unknown error' }));
-                    throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.error || errorData.message}`);
+                    throw { 
+                        status: response.status, 
+                        message: responseData.error || response.statusText || 'Unknown error',
+                        reason: responseData.reason 
+                    };
                 }
-                return response.status === 204 ? null : await response.json();
+                return response.status === 204 ? null : responseData;
             } catch (error) {
                 console.error(`Backend API call failed: ${endpoint}`, error);
-                tg.showAlert(`Error: ${error.message}`);
+                if (error.status !== 403) { // Don't show generic alert for permission errors handled elsewhere
+                    tg.showAlert(`Error: ${error.message}`);
+                }
                 throw error;
             }
         }
@@ -1916,7 +1934,6 @@
             tg.ready(); tg.expand();
             initLottieObserver();
 
-            // collectibleActionCopyLink.querySelector('.icon').innerHTML = LINK_SVG; // Button removed
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
@@ -1926,7 +1943,6 @@
 
             const startAppParam = tg.initDataUnsafe?.start_param;
             if (startAppParam) {
-                // IMPORTANT: Always initialize our own user first to have a valid currentAccountTgId
                 await initializeTelegramUserAccount();
                 if (startAppParam.startsWith('user')) {
                     const username = startAppParam.substring(4);
@@ -1990,6 +2006,7 @@
 
                 currentAccountTgId = accountData.tg_id;
                 ownedGifts = accountData.owned_gifts || [];
+                customGiftsEnabled = accountData.custom_gifts_enabled || false;
 
                 let existingAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
                 if (existingAccount) {
@@ -2007,19 +2024,19 @@
 
         async function displayDeepLinkedGift(giftTypeId, collectibleNumber) {
             try {
-                const giftData = await callBackend(`/api/gift/${giftTypeId}/${collectibleNumber}`);
+                const giftData = await callBackend(`/api/gift/${giftTypeId}/${collectibleNumber}`, 'GET', null, { viewer_id: currentAccountTgId });
                 if (giftData) {
                     openModal(collectibleDetailModal, giftData);
-                } else {
-                    tg.showAlert(`Gift with ID ${giftTypeId} #${collectibleNumber} not found.`);
                 }
             } catch (error) {
+                if (error.reason === 'custom_content_disabled') {
+                    tg.showAlert("Sorry, you cannot see this gift.");
+                }
                 console.error("Error fetching deep-linked gift:", error);
             }
         }
 
         async function displayUserProfile(username) {
-             // If we're trying to view our own profile via link, just load it normally
              const ownAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
              if (ownAccount && ownAccount.username && ownAccount.username.toLowerCase() === username.toLowerCase()) {
                  await initializeTelegramUserAccount();
@@ -2028,7 +2045,7 @@
 
              viewingOwnProfile = false;
              try {
-                const profileData = await callBackend(`/api/profile/${username}`);
+                const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
                 ownedGifts = profileData.owned_gifts || [];
 
                 profileName.textContent = profileData.full_name || 'User';
@@ -2068,13 +2085,12 @@
                 tg.BackButton.onClick(onClickHandler);
             } else {
                 tg.BackButton.hide();
-                // Always try to remove the last handler to prevent multiple handlers from stacking up.
                 if (tg._backButtonCallback) {
                      tg.BackButton.offClick(tg._backButtonCallback);
                      delete tg._backButtonCallback;
                 }
                 if (onClickHandler) {
-                    tg._backButtonCallback = onClickHandler; // Store reference to the new handler
+                    tg._backButtonCallback = onClickHandler;
                 }
             }
         }
@@ -2146,7 +2162,6 @@
             animationsEnabled = JSON.parse(localStorage.getItem('animationsEnabled' + APP_VERSION_SUFFIX)) ?? true;
             showHiddenGifts = JSON.parse(localStorage.getItem('showHiddenGifts' + APP_VERSION_SUFFIX)) ?? false;
             activeFilters = JSON.parse(localStorage.getItem('activeFilters' + APP_VERSION_SUFFIX)) || { collection: null, model: null, backdrop: null, pattern: null };
-
             accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
             currentAccountTgId = localStorage.getItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX);
         }
@@ -2208,6 +2223,7 @@
             renderAccountsList();
             animationToggle.checked = animationsEnabled;
             showHiddenToggle.checked = showHiddenGifts;
+            customGiftsToggle.checked = customGiftsEnabled;
             applyWornGiftStyles();
             renderProfileGifts();
             displayFilterExitButton();
@@ -2276,6 +2292,7 @@
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             if(pageId === 'buy-gifts-page') {
+                renderAvailableGifts();
                 manageBackButton(true, () => showPage('profile-page'));
             } else {
                 manageBackButton(false);
@@ -2309,7 +2326,6 @@
                     }
                 }
 
-                renderAvailableGifts();
                 populateFilterOptions();
             } catch (error) {
                 console.error("Could not load available gifts:", error);
@@ -2321,33 +2337,37 @@
 
         function renderAvailableGifts() {
             buyGiftsGrid.innerHTML = '';
-            if (Object.keys(allAvailableGifts).length === 0 && !buyGiftsLoadingSpinner.classList.contains('hidden')) {
-                buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">No gifts available right now.</p>`; return;
+            let giftsToRender = { ...allAvailableGifts };
+
+            if (!customGiftsEnabled) {
+                giftsToRender = Object.fromEntries(
+                    Object.entries(allAvailableGifts).filter(([id, name]) => !CUSTOM_GIFTS_DATA[name])
+                );
             }
-            for (const id in allAvailableGifts) {
-                const name = allAvailableGifts[id];
+
+            if (Object.keys(giftsToRender).length === 0) {
+                buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">No gifts available right now.</p>`;
+                return;
+            }
+
+            for (const id in giftsToRender) {
+                const name = giftsToRender[id];
                 let originalImageUrl, lottiePath;
 
-                // Check if the gift's name exists as a key in our custom data object
                 if (CUSTOM_GIFTS_DATA[name]) {
-                    // If it's a custom gift, get its specific default image
                     originalImageUrl = CUSTOM_GIFTS_DATA[name].defaultImage;
-                    lottiePath = null; // Custom gifts in this app don't have a default Lottie
+                    lottiePath = null;
                 } else {
-                    // Otherwise, it's a standard CDN gift, so build the URL as before
                     originalImageUrl = `${CDN_BASE_URL}originals/${id}/Original.png`;
                     lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`;
                 }
 
                 const price = giftPrices[name];
-
                 const item = document.createElement('div');
                 item.className = 'buy-gift-item';
                 item.dataset.id = id; item.dataset.name = name;
                 item.dataset.originalImage = originalImageUrl;
-                if (lottiePath) {
-                    item.dataset.lottiePath = lottiePath;
-                }
+                if (lottiePath) item.dataset.lottiePath = lottiePath;
 
                 const priceHTML = price
                     ? `<div class="gift-price has-price"><img src="${STAR_ICON_URL}" class="star-icon" alt="Star"/> ${price}</div>`
@@ -2363,13 +2383,11 @@
                     <div class="limited-label">Limited</div>
                 `;
                 item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
-
                 let buyItemLongPressTimer;
                 item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
                 item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
                 item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
-
                 observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
             }
@@ -2578,38 +2596,19 @@
             }
 
             try {
-                let lastPinnedIndex = -1;
-                for(let i = ownedGifts.length - 1; i >= 0; i--) {
-                    if (ownedGifts[i].is_pinned) {
-                        lastPinnedIndex = i;
-                        break;
-                    }
-                }
-                const insertIndex = lastPinnedIndex + 1;
-
+                // Call backend first to ensure user is allowed to get this gift
                 for (let i = 0; i < quantity; i++) {
-                    const newGiftInstanceId = generateUniqueId();
-                    await callBackend('/api/gifts', 'POST', {
-                        instance_id: newGiftInstanceId,
+                     await callBackend('/api/gifts', 'POST', {
+                        instance_id: generateUniqueId(), // Instance ID is generated on backend now
                         owner_id: currentAccountTgId,
                         gift_type_id: id,
                         gift_name: name,
                         original_image_url: originalImage,
                         lottie_path: lottiePath
                     });
-
-                    const newGift = {
-                        instance_id: newGiftInstanceId,
-                        owner_id: currentAccountTgId,
-                        gift_type_id: id,
-                        gift_name: name,
-                        original_image_url: originalImage,
-                        lottie_path: lottiePath,
-                        is_collectible: false,
-                        acquired_date: new Date().toISOString()
-                    };
-                    ownedGifts.splice(insertIndex, 0, newGift);
                 }
+                
+                await initializeTelegramUserAccount();
 
                 renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('success');
@@ -2660,6 +2659,10 @@
 
         async function upgradeSingleGiftLogic(giftToUpgrade) {
             if (giftToUpgrade.is_collectible) return { instance_id: giftToUpgrade.instance_id, name: giftToUpgrade.gift_name, status: 'skipped' };
+            
+            if (CUSTOM_GIFTS_DATA[giftToUpgrade.gift_name] && !customGiftsEnabled) {
+                return { instance_id: giftToUpgrade.instance_id, name: giftToUpgrade.gift_name, status: 'failed', error: "Custom Gifts disabled" };
+            }
 
             try {
                 const upgradedGiftData = await callBackend('/api/gifts/upgrade', 'POST', { instance_id: giftToUpgrade.instance_id });
@@ -2682,6 +2685,11 @@
             const gift = ownedGifts.find(g => g.instance_id === instanceId);
             if (!gift || gift.is_collectible) return;
 
+            if (CUSTOM_GIFTS_DATA[gift.gift_name] && !customGiftsEnabled) {
+                tg.showAlert("Please enable Custom Gifts in settings to upgrade this item.");
+                return;
+            }
+
             const upgradeButton = document.getElementById(`modal-action-upgrade-gift-${instanceId}`);
             const uniquenessValueEl = document.getElementById(`modal-uniqueness-value-${instanceId}`);
             if (upgradeButton) { upgradeButton.textContent = 'Upgrading...'; upgradeButton.disabled = true; }
@@ -2691,7 +2699,7 @@
                 const result = await upgradeSingleGiftLogic(gift);
                 if (result.status === 'success') {
                     renderProfileGifts();
-                    tg.HapticFeedback.notificationOccurred('success');
+                                        tg.HapticFeedback.notificationOccurred('success');
                     setTimeout(() => { closeModal(giftDetailModal); openGiftDetailByInstanceId(gift.instance_id); }, 1200);
                 } else if (result.status === 'failed') {
                     if (uniquenessValueEl) uniquenessValueEl.textContent = 'Error';
@@ -2816,19 +2824,15 @@
             modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">Collectible #${numberForLink.toLocaleString()}</a>`;
             document.getElementById('collectible-link-copier').onclick = (e) => { e.preventDefault(); copyGiftLink(gift); };
 
-            // Clear previous patterns
             if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
 
-            // Apply Backdrop Gradient (dynamically from collectible_data.backdrop.hex)
             if (collectibleDisplayArea && cd.backdropColors) {
                 collectibleDisplayArea.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
             } else {
                 collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
 
-            // Populate Pattern Container with structured layout
             if (cd.patternImage && patternContainerDynamic) {
-                // Use a short timeout to ensure the container has dimensions before we calculate positions
                 setTimeout(() => {
                     const containerWidth = patternContainerDynamic.offsetWidth;
                     const containerHeight = patternContainerDynamic.offsetHeight;
@@ -2876,7 +2880,6 @@
                 }, 50);
             }
 
-            // Render main model image/Lottie
             destroyLottieAnimation(modalLottieCollectibleModel);
             modalCollectibleModelImgStatic.style.display = 'block';
             modalLottieCollectibleModel.style.display = 'none';
@@ -2889,7 +2892,6 @@
                  modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
             }
 
-            // --- OWNER DISPLAY LOGIC (FIXED) ---
             let ownerName, ownerAvatar, ownerUsername;
             const isOwner = (gift.owner_id === currentAccountTgId);
             if(isOwner) {
@@ -2914,7 +2916,6 @@
                 <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Supply</span><span class="info-value">${cd.supply?.toLocaleString() || 'N/A'} issued</span></div>`;
 
-            // Button visibility
             collectibleActionWear.style.display = isOwner ? 'flex' : 'none';
             collectibleActionSell.style.display = isOwner ? 'flex' : 'none';
             collectibleActionTransfer.style.display = isOwner ? 'flex' : 'none';
@@ -3291,9 +3292,40 @@
             renderProfileGifts();
             saveClientSideState();
         }
+        
+        async function handleCustomGiftsToggle() {
+            const isEnabling = customGiftsToggle.checked;
+            
+            if (isEnabling) {
+                tg.showAlert("By enabling, you confirm you're over 18.");
+            }
+            
+            customGiftsEnabled = isEnabling;
+            tg.HapticFeedback.impactOccurred('light');
+
+            try {
+                await updateCustomGiftsSetting(isEnabling);
+                await initializeTelegramUserAccount(); // Refresh data to show/hide gifts
+            } catch (error) {
+                // Revert toggle on failure
+                customGiftsEnabled = !isEnabling;
+                customGiftsToggle.checked = !isEnabling;
+            }
+        }
+
+        async function updateCustomGiftsSetting(enabled) {
+            return await callBackend('/api/account/settings', 'POST', {
+                tg_id: currentAccountTgId,
+                custom_gifts_enabled: enabled
+            });
+        }
 
         // --- CUSTOM BUY & CLONE ---
         function openCustomBuyModal() {
+            if (!customGiftsEnabled) {
+                tg.showAlert("Please enable Custom Gifts in settings to create or clone gifts.");
+                return;
+            }
             selectedCustomGift = {};
             customBuyConfirmButton.disabled = true;
             cloneUrlInput.value = '';
@@ -3303,6 +3335,10 @@
             for (const id in allAvailableGifts) {
                 const name = allAvailableGifts[id];
                 const customGiftData = CUSTOM_GIFTS_DATA[name];
+                
+                // Skip custom gifts if disabled
+                if (customGiftData && !customGiftsEnabled) continue;
+                
                 const originalImageUrl = customGiftData
                     ? customGiftData.defaultImage
                     : `${CDN_BASE_URL}originals/${id}/Original.png`;
@@ -3329,7 +3365,7 @@
             const customGiftInfo = CUSTOM_GIFTS_DATA[name];
             selectedCustomGift.lottiePath = customGiftInfo ? null : `${CDN_BASE_URL}originals/${id}/Original.json`;
             
-            if (customGiftInfo) { // This handles ALL custom gifts
+            if (customGiftInfo) {
                 const backdropsSourceName = customGiftInfo.backdrops_source;
                 const patternsSourceName = customGiftInfo.patterns_source;
 
@@ -3347,7 +3383,7 @@
                     console.error(`Failed to fetch parts for ${name}:`, error);
                     cachedCollectibleParts[id] = { models: customGiftInfo.models, backdrops: [], patterns: [] };
                 }
-            } else { // Handle standard CDN gifts
+            } else {
                 if (!cachedCollectibleParts[id]) {
                     try {
                         const giftNameEncoded = encodeURIComponent(name);
@@ -3365,7 +3401,6 @@
                 }
             }
 
-            // Populate options from cached data
             const { models, backdrops, patterns } = cachedCollectibleParts[id];
             const customData = CUSTOM_GIFTS_DATA[name];
             const patternSourceName = customData ? customData.patterns_source : name;
@@ -3448,7 +3483,6 @@
             selectedCustomGift[type] = data;
             if (type === 'model') {
                 selectedCustomGift.modelImage = imagePath;
-                // For custom gift, lottie path is based on its own name, not the model name
                 selectedCustomGift.lottieModelPath = data.image ? null : `${CDN_BASE_URL}models/${encodeURIComponent(selectedCustomGift.name)}/lottie/${encodeURIComponent(data.name)}.json`;
             } else if (type === 'pattern') { selectedCustomGift.patternImage = imagePath; }
             else if (type === 'backdrop') { selectedCustomGift.backdropColors = data.hex; }
@@ -4346,6 +4380,7 @@
 
             settingsModal.querySelector('.modal-button.secondary')?.addEventListener('click', () => closeModal(settingsModal));
             animationToggle.addEventListener('change', handleAnimationToggle);
+            customGiftsToggle.addEventListener('change', handleCustomGiftsToggle);
             showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
             hideMultipleButton.addEventListener('click', () => enterSelectionMode('hide'));
             transferMultipleButton.addEventListener('click', () => enterSelectionMode('transfer'));
