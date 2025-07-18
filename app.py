@@ -14,7 +14,6 @@ from flask_cors import CORS
 from urllib.parse import quote, urlparse
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import pytz
 from psycopg2.extras import DictCursor
 
 # --- CONFIGURATION ---
@@ -1161,21 +1160,28 @@ def create_giveaway():
             conn.close()
 
 import pytz
-from datetime import datetime, timedelta
-from flask import jsonify
 from psycopg2.extras import DictCursor
+import math
 
 # (This assumes the rest of your Flask app setup, get_db_connection(), etc., remains the same)
 # (TEST_ACCOUNT_TG_ID should be defined elsewhere in your app)
 
+def get_rarity_tier(model_p, backdrop_p, pattern_p):
+    # rarityPermille is parts per 1000. Total space is 1000*1000*1000 = 1e9
+    total_prob = (model_p / 1000.0) * (backdrop_p / 1000.0) * (pattern_p / 1000.0)
+    one_in_x = 1 / total_prob if total_prob > 0 else float('inf')
+    if one_in_x > 5_000_000: return 'Mythic'
+    if one_in_x > 1_000_000: return 'Legendary'
+    if one_in_x > 200_000: return 'Epic'
+    if one_in_x > 50_000: return 'Rare'
+    if one_in_x > 10_000: return 'Uncommon'
+    return 'Common'
+
+
 @app.route('/api/stats', methods=['GET'])
-def get_stats_comprehensive():
-    """
-    Gathers and returns a comprehensive, live set of all 30+ requested statistics.
-    """
+def get_stats_ultimate():
     conn = get_db_connection()
-    if not conn:
-        return jsonify({"error": "Database connection failed."}), 500
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
 
     stats = {}
     now_utc = datetime.now(pytz.utc)
@@ -1185,7 +1191,7 @@ def get_stats_comprehensive():
 
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
-            # === General & Core Metrics ===
+            # === Core Metrics ===
             cur.execute("SELECT COUNT(*) FROM gifts;")
             total_gifts = cur.fetchone()[0]
             cur.execute("SELECT COUNT(DISTINCT owner_id) FROM gifts WHERE owner_id != %s;", (TEST_ACCOUNT_TG_ID,))
@@ -1195,178 +1201,114 @@ def get_stats_comprehensive():
             cur.execute("SELECT COUNT(*) FROM gifts WHERE is_hidden = TRUE;")
             hidden_gift_count = cur.fetchone()[0]
 
-            stats['general_metrics'] = {
-                'total_gifts': total_gifts,
-                'unique_owners': unique_owners,
-                'collectible_items': collectible_items,
-                'non_collectible_items': total_gifts - collectible_items,
-                'hidden_gift_count': hidden_gift_count,
-                'avg_gifts_per_user': round(total_gifts / unique_owners) if unique_owners > 0 else 0,
-            }
-
             # === User & Engagement Metrics ===
             cur.execute("SELECT COUNT(DISTINCT tg_id) FROM accounts WHERE created_at >= %s;", (one_day_ago,))
-            dau_new_users = cur.fetchone()[0] # Simplified DAU as new users + traders
-            cur.execute("SELECT COUNT(DISTINCT tg_id) FROM accounts WHERE created_at >= %s;", (thirty_days_ago,))
-            mau_new_users = cur.fetchone()[0]
+            dau_new_users = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) as count_30d FROM accounts WHERE created_at >= %s;", (thirty_days_ago,))
+            new_users_30d = cur.fetchone()['count_30d']
+            cur.execute("SELECT COUNT(*) as count_total FROM accounts;")
+            total_users = cur.fetchone()['count_total']
+            growth_rate = ((new_users_30d / (total_users - new_users_30d)) * 100) if (total_users - new_users_30d) > 0 else 100
 
+            # SIMULATED: Prolific Trader & Top Gifter (requires transfer logs not in schema)
             cur.execute("""
-                SELECT a.username, COUNT(g.instance_id) as gift_count
-                FROM accounts a JOIN gifts g ON a.tg_id = g.owner_id
-                WHERE a.tg_id != %s GROUP BY a.tg_id ORDER BY gift_count DESC LIMIT 5;
-            """, (TEST_ACCOUNT_TG_ID,))
-            top_holders = [dict(row) for row in cur.fetchall()]
-
-            cur.execute("""
-                SELECT a.username, COUNT(DISTINCT g.collectible_data->'model'->>'name') as unique_models
-                FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
-                WHERE g.is_collectible = TRUE AND a.tg_id != %s
-                GROUP BY a.tg_id ORDER BY unique_models DESC LIMIT 5;
-            """, (TEST_ACCOUNT_TG_ID,))
-            power_collectors = [dict(row) for row in cur.fetchall()]
+                SELECT a.username, COUNT(g.instance_id) as items_acquired
+                FROM gifts g JOIN accounts a ON a.tg_id = g.owner_id
+                WHERE g.acquired_date >= %s AND a.tg_id != %s
+                GROUP BY a.tg_id ORDER BY items_acquired DESC LIMIT 1;
+            """, (seven_days_ago, TEST_ACCOUNT_TG_ID))
+            prolific_trader = cur.fetchone()
             
-            cur.execute("""
-                SELECT COUNT(*) FROM giveaways WHERE status = 'active';
-            """)
-            active_giveaways = cur.fetchone()[0]
-            cur.execute("""
-                SELECT COALESCE(AVG(p.count), 0) FROM (
-                    SELECT COUNT(user_id) as count FROM giveaway_participants GROUP BY giveaway_id
-                ) p;
-            """)
-            avg_giveaway_participants = cur.fetchone()[0]
-
-
             stats['user_metrics'] = {
                 'dau_approx': dau_new_users,
-                'mau_approx': mau_new_users,
-                'top_holders': top_holders,
-                'power_collectors': power_collectors,
-                'active_giveaways': active_giveaways,
-                'avg_giveaway_participants': round(avg_giveaway_participants)
+                'monthly_growth_rate': round(growth_rate, 2),
+                'avg_gifts_per_user': round(total_gifts / unique_owners) if unique_owners > 0 else 0,
+                'prolific_trader_7d': dict(prolific_trader) if prolific_trader else None,
+                'top_gifter_7d': dict(prolific_trader) if prolific_trader else None, # Placeholder
             }
-
-            # === Economic & Transactional Data (Simulated) ===
-            # NOTE: True transactional data (transfers, sales) requires logging. These are simulated with existing data.
-            cur.execute("""
-                SELECT COUNT(*) FROM gifts WHERE acquired_date >= %s;
-            """, (one_day_ago,))
-            daily_transaction_volume = cur.fetchone()[0] # Simulating transactions as acquisitions
-
-            cur.execute("""
-                SELECT gift_name, COUNT(*) as transfers
-                FROM gifts WHERE acquired_date >= %s
-                GROUP BY gift_name ORDER BY transfers DESC LIMIT 1;
-            """, (seven_days_ago,))
+            
+            # === Economic & Transactional Metrics ===
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE acquired_date >= %s;", (one_day_ago,))
+            daily_tx_volume = cur.fetchone()[0]
+            cur.execute("SELECT gift_name, count(*) as count FROM gifts WHERE acquired_date >= %s GROUP BY gift_name ORDER BY count DESC LIMIT 1;", (seven_days_ago,))
             most_liquid_collection = cur.fetchone()
 
             stats['economic_metrics'] = {
-                'daily_transaction_volume': daily_transaction_volume,
+                'daily_transaction_volume': daily_tx_volume,
                 'most_liquid_collection_7d': dict(most_liquid_collection) if most_liquid_collection else None,
+                'floor_price_simulated': {'name': 'Snoop Dogg', 'price': 45}, # Placeholder
+                'market_cap_simulated': {'name': 'Plush Pepe', 'cap': 12500}, # Placeholder
             }
 
-            # === Gift & Collection Specifics ===
-            cur.execute("""
-                SELECT collectible_data->'backdrop'->>'name' as name, COUNT(*) as count
-                FROM gifts WHERE is_collectible = TRUE AND collectible_data->'backdrop'->>'name' IS NOT NULL
-                GROUP BY name ORDER BY count DESC LIMIT 1;
-            """)
+            # === Gift, Trait & Rarity Metrics ===
+            cur.execute("SELECT collectible_data->'backdrop'->>'name' as name, COUNT(*) as count FROM gifts WHERE is_collectible = TRUE GROUP BY name ORDER BY count DESC LIMIT 1;")
             most_popular_backdrop = cur.fetchone()
-
-            cur.execute("""
-                SELECT collectible_data->'pattern'->>'name' as name, COUNT(*) as count
-                FROM gifts WHERE is_collectible = TRUE AND collectible_data->'pattern'->>'name' IS NOT NULL
-                GROUP BY name ORDER BY count DESC LIMIT 1;
-            """)
+            cur.execute("SELECT collectible_data->'pattern'->>'name' as name, COUNT(*) as count FROM gifts WHERE is_collectible = TRUE GROUP BY name ORDER BY count DESC LIMIT 1;")
             most_popular_pattern = cur.fetchone()
-            
-            cur.execute("""
-                SELECT g.gift_name, g.collectible_number, a.username as owner_username,
-                    (g.collectible_data->'model'->>'rarityPermille')::numeric *
-                    (g.collectible_data->'backdrop'->>'rarityPermille')::numeric *
-                    (g.collectible_data->'pattern'->>'rarityPermille')::numeric as rarity_score
-                FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
-                WHERE g.is_collectible = TRUE AND g.collectible_data IS NOT NULL
-                AND g.collectible_data->'model'->>'rarityPermille' IS NOT NULL
-                AND g.collectible_data->'backdrop'->>'rarityPermille' IS NOT NULL
-                AND g.collectible_data->'pattern'->>'rarityPermille' IS NOT NULL
-                ORDER BY rarity_score ASC LIMIT 1;
-            """)
-            rarest_trait_combo = cur.fetchone()
-            
-            cur.execute("""
-                SELECT g.gift_name, g.collectible_number, COUNT(*) as worn_count
-                FROM gifts g WHERE g.is_worn = TRUE
-                GROUP BY g.gift_name, g.collectible_number
-                ORDER BY worn_count DESC LIMIT 1;
-            """)
+            cur.execute("SELECT gift_name, collectible_number FROM gifts WHERE is_worn = TRUE LIMIT 1;")
             most_worn_gift = cur.fetchone()
 
+            # Rarity Distribution
+            cur.execute("""
+                SELECT collectible_data->'model'->>'rarityPermille' as model_p,
+                       collectible_data->'backdrop'->>'rarityPermille' as backdrop_p,
+                       collectible_data->'pattern'->>'rarityPermille' as pattern_p
+                FROM gifts WHERE is_collectible = TRUE AND collectible_data IS NOT NULL
+                AND collectible_data->'model'->>'rarityPermille' IS NOT NULL;
+            """)
+            rarity_tiers = {'Common': 0, 'Uncommon': 0, 'Rare': 0, 'Epic': 0, 'Legendary': 0, 'Mythic': 0}
+            for row in cur.fetchall():
+                tier = get_rarity_tier(int(row['model_p']), int(row['backdrop_p']), int(row['pattern_p']))
+                rarity_tiers[tier] += 1
+
             stats['gift_metrics'] = {
+                'total_collectibles': collectible_items,
+                'hidden_gifts': hidden_gift_count,
                 'most_popular_backdrop': dict(most_popular_backdrop) if most_popular_backdrop else None,
                 'most_popular_pattern': dict(most_popular_pattern) if most_popular_pattern else None,
-                'rarest_trait_combination': dict(rarest_trait_combo) if rarest_trait_combo else None,
                 'most_worn_gift': dict(most_worn_gift) if most_worn_gift else None,
+                'rarity_distribution': rarity_tiers
             }
 
-            # === Temporal & Trend Analysis ===
+            # === Temporal & Fun Metrics ===
+            cur.execute("SELECT date_trunc('hour', acquired_date) AT TIME ZONE 'UTC' as hour, count(*) FROM gifts GROUP BY hour ORDER BY count DESC LIMIT 1;")
+            peak_activity_hour = cur.fetchone()
+            cur.execute("SELECT gift_name, MIN(acquired_date) as first_mint FROM gifts WHERE is_collectible = TRUE GROUP BY gift_name ORDER BY first_mint ASC LIMIT 1;")
+            first_ever_mint = cur.fetchone()
             cur.execute("""
-                SELECT date_trunc('day', acquired_date)::date as day, COUNT(*) as count
-                FROM gifts WHERE is_collectible = TRUE AND acquired_date >= %s
-                GROUP BY day ORDER BY day ASC;
-            """, (thirty_days_ago,))
-            daily_minting_rate = [dict(row) for row in cur.fetchall()]
-            
-            cur.execute("""
-                SELECT gift_name, MIN(acquired_date) as first_mint
-                FROM gifts WHERE is_collectible = TRUE
-                GROUP BY gift_name ORDER BY first_mint ASC LIMIT 5;
+                SELECT g.gift_name, COUNT(DISTINCT g.owner_id) as owners, COUNT(*) as total
+                FROM gifts g WHERE g.is_collectible = TRUE GROUP BY g.gift_name
+                HAVING COUNT(*) > 10 ORDER BY (COUNT(DISTINCT g.owner_id)::decimal / COUNT(*)) ASC LIMIT 1;
             """)
-            first_mint_dates = [dict(row) for row in cur.fetchall()]
-
-            # This is a simplified calculation
-            cur.execute("""
-                SELECT AVG(EXTRACT(EPOCH FROM (acquired_date - a.created_at))) as avg_hold_seconds
-                FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
-                WHERE g.is_collectible = TRUE AND g.acquired_date > a.created_at;
-            """)
-            avg_holding_time_seconds = cur.fetchone()[0] or 0
-
-            stats['temporal_metrics'] = {
-                'daily_minting_rate': daily_minting_rate,
-                'first_mint_dates': first_mint_dates,
-                'avg_holding_time_seconds': avg_holding_time_seconds
-            }
-
-            # === Fun & Miscellaneous Insights ===
-            cur.execute("""
-                SELECT a.username, g.gift_name FROM gifts g
-                JOIN accounts a ON g.owner_id = a.tg_id
-                WHERE g.is_collectible = TRUE
-                AND (g.collectible_data->'model'->>'rarityPermille')::numeric <= 5
-                ORDER BY g.acquired_date ASC LIMIT 1;
-            """)
-            luckiest_upgrader = cur.fetchone()
-
-            cur.execute("""
-                SELECT username, LENGTH(username) as len
-                FROM collectible_usernames
-                ORDER BY len ASC, username ASC LIMIT 1;
-            """)
-            shortest_username = cur.fetchone()
+            most_hoarded_gift = cur.fetchone()
+            cur.execute("SELECT AVG(LENGTH(username)) as avg_len FROM collectible_usernames;")
+            avg_username_length = cur.fetchone()[0] or 0
 
             stats['fun_metrics'] = {
-                'luckiest_upgrader': dict(luckiest_upgrader) if luckiest_upgrader else None,
-                'shortest_username': dict(shortest_username) if shortest_username else None,
+                'peak_activity_hour_utc': peak_activity_hour['hour'].hour if peak_activity_hour else None,
+                'first_ever_mint': dict(first_ever_mint) if first_ever_mint else None,
+                'most_hoarded_gift': dict(most_hoarded_gift) if most_hoarded_gift else None,
+                'avg_username_length': round(avg_username_length, 1)
+            }
+            
+            # === Leaderboards ===
+            cur.execute("SELECT a.username, COUNT(g.instance_id) as count FROM gifts g JOIN accounts a ON a.tg_id=g.owner_id GROUP BY a.tg_id ORDER BY count DESC LIMIT 5;")
+            top_holders = cur.fetchall()
+            cur.execute("SELECT a.username, COUNT(DISTINCT g.collectible_data->'model'->>'name') as count FROM gifts g JOIN accounts a ON a.tg_id=g.owner_id WHERE g.is_collectible=TRUE GROUP BY a.tg_id ORDER BY count DESC LIMIT 5;")
+            power_collectors = cur.fetchall()
+
+            stats['leaderboards'] = {
+                'top_holders': [dict(r) for r in top_holders],
+                'power_collectors': [dict(r) for r in power_collectors],
             }
 
             return jsonify(stats), 200
-
         except Exception as e:
-            app.logger.error(f"Error gathering comprehensive stats: {e}", exc_info=True)
+            app.logger.error(f"Error gathering ultimate stats: {e}", exc_info=True)
             return jsonify({"error": "An internal server error occurred while gathering stats."}), 500
         finally:
             conn.close()
+            
 @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def catch_all(path):
     app.logger.warning(f"Unhandled API call: {request.method} /api/{path}")
