@@ -1541,7 +1541,7 @@
             },
             "Skebob": {
                 "id": "custom_skebob",
-                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/refs/heads/main/IMG_20250717_213249_176.jpg",
+                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/IMG_20250717_213249_176.jpg",
                 "models": [
                     {"name": "Nikitka", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012302911-min.png"},
                     {"name": "Gold", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220944840-min.png"},
@@ -2301,14 +2301,13 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 allAvailableGifts = await response.json();
 
-                // Add custom gift to the end of the list
                 // Add all custom gifts to the end of the list
                 for (const giftName in CUSTOM_GIFTS_DATA) {
                     const customGift = CUSTOM_GIFTS_DATA[giftName];
                     if (customGift && customGift.id) {
                         allAvailableGifts[customGift.id] = giftName;
                     }
-                 }
+                }
 
                 renderAvailableGifts();
                 populateFilterOptions();
@@ -2329,7 +2328,6 @@
                 const name = allAvailableGifts[id];
                 let originalImageUrl, lottiePath;
 
-                // --- CORRECTED LOGIC ---
                 // Check if the gift's name exists as a key in our custom data object
                 if (CUSTOM_GIFTS_DATA[name]) {
                     // If it's a custom gift, get its specific default image
@@ -3304,8 +3302,9 @@
 
             for (const id in allAvailableGifts) {
                 const name = allAvailableGifts[id];
-                const originalImageUrl = (id === CUSTOM_GIFTS_DATA.Dildo.id)
-                    ? CUSTOM_GIFTS_DATA.Dildo.defaultImage
+                const customGiftData = CUSTOM_GIFTS_DATA[name];
+                const originalImageUrl = customGiftData
+                    ? customGiftData.defaultImage
                     : `${CDN_BASE_URL}originals/${id}/Original.png`;
 
                 const item = document.createElement('div');
@@ -3326,26 +3325,27 @@
             Array.from(customBuyBaseGiftsGrid.children).forEach(el => el.classList.remove('selected'));
             document.querySelector(`#custom-buy-base-gifts-grid [data-id="${id}"]`).classList.add('selected');
             selectedCustomGift.id = id; selectedCustomGift.name = name; selectedCustomGift.originalImage = originalImage;
-            selectedCustomGift.lottiePath = (id === CUSTOM_GIFTS_DATA.Dildo.id) ? null : `${CDN_BASE_URL}originals/${id}/Original.json`;
-
-            // Handle custom gift "Dildo"
-            if (name === 'Dildo') {
-                const dildoData = CUSTOM_GIFTS_DATA.Dildo;
-                const astralShardName = dildoData.backdrops_source; // "Astral Shard"
+            
+            const customGiftInfo = CUSTOM_GIFTS_DATA[name];
+            selectedCustomGift.lottiePath = customGiftInfo ? null : `${CDN_BASE_URL}originals/${id}/Original.json`;
+            
+            if (customGiftInfo) { // This handles ALL custom gifts
+                const backdropsSourceName = customGiftInfo.backdrops_source;
+                const patternsSourceName = customGiftInfo.patterns_source;
 
                 try {
-                    const astralParts = await Promise.all([
-                        fetch(`${CDN_BASE_URL}backdrops/${encodeURIComponent(astralShardName)}/backdrops.json`).then(res => res.ok ? res.json() : []),
-                        fetch(`${CDN_BASE_URL}patterns/${encodeURIComponent(astralShardName)}/patterns.json`).then(res => res.ok ? res.json() : [])
+                    const parts = await Promise.all([
+                        fetch(`${CDN_BASE_URL}backdrops/${encodeURIComponent(backdropsSourceName)}/backdrops.json`).then(res => res.ok ? res.json() : []),
+                        fetch(`${CDN_BASE_URL}patterns/${encodeURIComponent(patternsSourceName)}/patterns.json`).then(res => res.ok ? res.json() : [])
                     ]);
                     cachedCollectibleParts[id] = {
-                        models: dildoData.models,
-                        backdrops: astralParts[0],
-                        patterns: astralParts[1]
+                        models: customGiftInfo.models,
+                        backdrops: parts[0],
+                        patterns: parts[1]
                     };
                 } catch (error) {
-                    console.error(`Failed to fetch Astral Shard parts for Dildo:`, error);
-                    cachedCollectibleParts[id] = { models: dildoData.models, backdrops: [], patterns: [] };
+                    console.error(`Failed to fetch parts for ${name}:`, error);
+                    cachedCollectibleParts[id] = { models: customGiftInfo.models, backdrops: [], patterns: [] };
                 }
             } else { // Handle standard CDN gifts
                 if (!cachedCollectibleParts[id]) {
@@ -3367,8 +3367,8 @@
 
             // Populate options from cached data
             const { models, backdrops, patterns } = cachedCollectibleParts[id];
-            const backdropSourceName = (name === 'Dildo') ? CUSTOM_GIFTS_DATA.Dildo.backdrops_source : name;
-            const patternSourceName = (name === 'Dildo') ? CUSTOM_GIFTS_DATA.Dildo.patterns_source : name;
+            const customData = CUSTOM_GIFTS_DATA[name];
+            const patternSourceName = customData ? customData.patterns_source : name;
 
             if (models.length > 0) {
                 customBuyModelsSection.classList.remove('hidden');
@@ -3652,7 +3652,8 @@
         }
         function renderChanceOptions(container, items, type, giftName) {
             container.innerHTML = '';
-            const patternSourceName = (giftName === 'Dildo') ? CUSTOM_GIFTS_DATA.Dildo.patterns_source : giftName;
+            const customData = CUSTOM_GIFTS_DATA[giftName];
+            const patternSourceName = customData ? customData.patterns_source : giftName;
 
             items.forEach(itemData => {
                 const optionEl = document.createElement('div');
