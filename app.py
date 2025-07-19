@@ -248,11 +248,9 @@ def init_db():
 
 # --- CUSTOM GIFT HELPERS ---
 def is_custom_gift(gift_name):
-    """Checks if a gift is a custom gift based on its name."""
     return gift_name in CUSTOM_GIFTS_DATA
 
 def has_custom_gifts_enabled(cur, tg_id):
-    """Checks if a user has enabled custom gifts."""
     if not tg_id:
         return False
     try:
@@ -386,35 +384,30 @@ def fetch_collectible_parts(gift_name):
             app.logger.warning(f"Could not fetch {part_type} from {url}: {e}")
             parts[part_type] = []
     return parts
+    
+def normalize_and_build_clone_url(input_str):
+    input_str = input_str.strip()
+    # Case 1: Full URL
+    if input_str.startswith(('http://', 'https://')):
+        parsed_url = urlparse(input_str)
+        if parsed_url.netloc in ['t.me', 'telegram.me'] and parsed_url.path.startswith('/nft/'):
+            return input_str
+        else:
+            return None
 
-def normalize_and_build_clone_url(text_input):
-    """
-    Normalizes various text inputs into a standard Telegram NFT URL.
-    Handles formats like 't.me/nft/PlushPepe-1', 'Plush Pepe 1', 'Plush Pepe #1', 'PlushPepe-1'.
-    """
-    if not text_input:
-        return None
-    text_input = text_input.strip()
-
-    parsed_url = urlparse(text_input)
-    if parsed_url.netloc in ['t.me', 'telegram.me'] and parsed_url.path.startswith('/nft/'):
-        return text_input
-
-    # Regex to capture the name part (can include spaces) and the number part at the end.
-    # It handles an optional space, hash, or hyphen as a separator.
-    match = re.search(r'^(.*?)(?:\s*#?|-)\s*(\d+)$', text_input)
-
+    # Case 2: Formats like "Plush Pepe 1", "Plush Pepe #1", "PlushPepe-1"
+    # This regex captures the name (group 1) and the number (group 2)
+    match = re.match(r'^([\w\s]+?)\s*[#-]?\s*(\d+)$', input_str)
     if not match:
-        return None
-
-    name_part = match.group(1).strip()
-    number_part = match.group(2).strip()
-
-    # Create the slug by removing all spaces from the name part. e.g., "Plush Pepe" -> "PlushPepe"
-    slug = re.sub(r'\s+', '', name_part)
-
-    return f"https://t.me/nft/{slug}-{number_part}"
-
+        # Try a pattern for names without spaces like "PlushPepe-1"
+        match = re.match(r'^([a-zA-Z]+)-(\d+)$', input_str)
+    
+    if match:
+        name_part = match.group(1).strip().replace(' ', '')
+        number_part = match.group(2).strip()
+        return f"https://t.me/nft/{name_part}-{number_part}"
+        
+    return None
 
 # --- WEBHOOK & GIVEAWAY BOT LOGIC ---
 
@@ -817,52 +810,48 @@ def upgrade_gift():
 @app.route('/api/gifts/clone', methods=['POST'])
 def clone_gift():
     data = request.get_json()
-    raw_url_input = data.get('url')
+    raw_input = data.get('url')
     owner_id = data.get('owner_id')
 
-    if not raw_url_input or not owner_id:
+    if not raw_input or not owner_id:
         return jsonify({"error": "url and owner_id are required"}), 400
-
-    url = normalize_and_build_clone_url(raw_url_input)
-    if not url:
-        return jsonify({"error": "Invalid gift link format provided."}), 400
+    
+    normalized_url = normalize_and_build_clone_url(raw_input)
+    if not normalized_url:
+        return jsonify({"error": "Invalid gift format. Please use a valid t.me/nft/ link or 'Name #Number' format."}), 400
 
     conn = get_db_connection()
-    if not conn:
-        return jsonify({"error": "Database connection failed"}), 500
-
+    if not conn: return jsonify({"error": "Database connection failed"}), 500
+    
     try:
+        response = requests.get(normalized_url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # --- New, corrected scraping logic ---
+        gift_name_element = soup.find('div', class_='tgme_gift_preview').find('text')
+        gift_name = gift_name_element.text.strip() if gift_name_element else None
+
+        scraped_parts = {}
+        table = soup.find('table', class_='tgme_gift_table')
+        if table:
+            for row in table.find_all('tr'):
+                header = row.find('th').text.strip().lower() if row.find('th') else None
+                value = ' '.join(row.find('td').text.split()) if row.find('td') else None
+                if header and value:
+                    scraped_parts[header] = ' '.join(value.split(' ')[:-1]) if '%' in value else value
+        
+        model_name = scraped_parts.get('model')
+        backdrop_name = scraped_parts.get('backdrop')
+        pattern_name = scraped_parts.get('symbol')
+
+        if not all([gift_name, model_name, backdrop_name, pattern_name]):
+            app.logger.error(f"Scraping failed for URL {normalized_url}. Found: name={gift_name}, model={model_name}, backdrop={backdrop_name}, pattern={pattern_name}")
+            return jsonify({"error": "Could not scrape all required gift parts from the provided link."}), 400
+
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            # Scrape first to identify the gift type
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            gift_name_element = soup.find('div', class_='tgme_gift_preview').find('text')
-            gift_name = gift_name_element.text.strip() if gift_name_element else "Unknown Gift"
-
             if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
                 return jsonify({"error": "You must enable Custom Gifts in settings to clone this item."}), 403
-
-            scraped_parts = {}
-            table = soup.find('table', class_='tgme_gift_table')
-            if table:
-                for row in table.find_all('tr'):
-                    header_el = row.find('th')
-                    value_el = row.find('td')
-                    if header_el and value_el:
-                        header = header_el.text.strip().lower()
-                        value = ' '.join(value_el.text.split()) # Normalize whitespace
-                        if header:
-                           scraped_parts[header] = value.split(' (')[0] # Remove rarity percentage like '(10.0%)'
-
-            model_name = scraped_parts.get('model')
-            backdrop_name = scraped_parts.get('backdrop')
-            pattern_name = scraped_parts.get('symbol')
-
-            if not all([model_name, backdrop_name, pattern_name]):
-                app.logger.warning(f"Failed to scrape parts from {url}. Scraped data: {scraped_parts}")
-                return jsonify({"error": "Could not scrape all required gift parts from the link."}), 400
 
             all_parts_data = fetch_collectible_parts(gift_name)
             custom_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
@@ -870,19 +859,17 @@ def clone_gift():
             custom_pattern = next((p for p in all_parts_data.get('patterns', []) if p['name'] == pattern_name), None)
 
             if not all([custom_model, custom_backdrop, custom_pattern]):
-                return jsonify({"error": "Could not match scraped part names to available gift data."}), 500
+                return jsonify({"error": "Could not match scraped part names to available data."}), 500
 
             new_instance_id = str(uuid.uuid4())
-            base_gift_id_to_clone = f"cloned-{uuid.uuid4()}" # Make it unique
+            base_gift_id_to_clone = "1" 
 
             cur.execute("INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name) VALUES (%s, %s, %s, %s);", (new_instance_id, owner_id, base_gift_id_to_clone, gift_name))
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (base_gift_id_to_clone,))
             next_number = cur.fetchone()[0]
             
-            pattern_source_name = gift_name
-            if gift_name in CUSTOM_GIFTS_DATA:
-                pattern_source_name = CUSTOM_GIFTS_DATA[gift_name].get("patterns_source", gift_name)
-
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+            
             model_image_url = custom_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(custom_model['name'])}.png"
             lottie_model_path = custom_model.get('lottie') if custom_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(custom_model['name'])}.json"
             pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(custom_pattern['name'])}.png"
@@ -906,7 +893,7 @@ def clone_gift():
 
     except Exception as e:
         if conn: conn.close()
-        app.logger.error(f"Error cloning gift from {raw_url_input}: {e}", exc_info=True)
+        app.logger.error(f"Error cloning gift from {raw_input}: {e}", exc_info=True)
         return jsonify({"error": "An internal error occurred during cloning."}), 500
 
 @app.route('/api/gift/<string:gift_type_id>/<int:collectible_number>', methods=['GET'])
@@ -1309,7 +1296,6 @@ def get_stats_ultimate():
     
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
-            # === General & Core Metrics ===
             cur.execute("SELECT COUNT(*) FROM gifts;")
             total_gifts = cur.fetchone()[0]
             cur.execute("SELECT COUNT(DISTINCT owner_id) FROM gifts WHERE owner_id != %s;", (TEST_ACCOUNT_TG_ID,))
@@ -1327,7 +1313,6 @@ def get_stats_ultimate():
                 'avg_gifts_per_user': round(total_gifts / unique_owners) if unique_owners > 0 else 0,
             }
 
-            # === User & Engagement Metrics ===
             cur.execute("SELECT COUNT(DISTINCT tg_id) FROM accounts WHERE created_at >= %s;", (one_day_ago,))
             new_users_24h = cur.fetchone()[0]
             cur.execute("""
@@ -1357,7 +1342,6 @@ def get_stats_ultimate():
                 'prolific_traders': prolific_traders,
             }
 
-            # === Economic & Market Snapshot (Simulated) ===
             cur.execute("""
                 SELECT gift_name, MIN(collectible_number) as floor_number
                 FROM gifts WHERE is_collectible=TRUE GROUP BY gift_name;
@@ -1377,7 +1361,6 @@ def get_stats_ultimate():
                 'market_caps': {k: round(v) for k, v in top_3_market_cap}
             }
             
-            # === Gift & Rarity Distribution ===
             cur.execute("""
                 SELECT 
                     (collectible_data->'model'->>'rarityPermille')::int as model,
@@ -1396,7 +1379,6 @@ def get_stats_ultimate():
                 'rarity_distribution': rarity_tiers
             }
 
-            # === Temporal & System Analysis ===
             cur.execute("""
                 SELECT EXTRACT(HOUR FROM acquired_date AT TIME ZONE 'UTC') as hour, COUNT(*) as count
                 FROM gifts GROUP BY hour ORDER BY hour;
@@ -1417,7 +1399,6 @@ def get_stats_ultimate():
                 'user_retention_7d_from_prev_month': round((retained_users / prev_month_cohort_size) * 100, 2) if prev_month_cohort_size > 0 else 0
             }
 
-            # === Fun Facts & Community ===
             cur.execute("""
                 SELECT a.username, g.gift_name FROM gifts g
                 JOIN accounts a ON g.owner_id = a.tg_id
