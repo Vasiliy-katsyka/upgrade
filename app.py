@@ -27,6 +27,7 @@ CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}
 # --- ENVIRONMENT VARIABLES & CONSTANTS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+TRANSFER_API_KEY = os.environ.get('TRANSFER_API_KEY')
 WEBHOOK_URL = "https://upgrade-a57g.onrender.com"
 
 if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
@@ -1503,6 +1504,100 @@ def check_finished_giveaways():
         except Exception as e:
              app.logger.error(f"Critical error in giveaway checker loop: {e}", exc_info=True)
         time.sleep(60)
+
+@app.route('/api/transfer_gift', methods=['POST'])
+def api_transfer_gift():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON payload"}), 400
+
+    api_key = data.get('api_key')
+    sender_username = data.get('sender_username')
+    receiver_username = data.get('receiver_username')
+    gift_name_and_number = data.get('giftnameandnumber')
+    comment = data.get('comment')  # Get the optional comment field
+
+    # 1. API Key Authentication
+    if not api_key or api_key != TRANSFER_API_KEY:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # 2. Validate Input
+    if not all([sender_username, receiver_username, gift_name_and_number]):
+        return jsonify({"error": "Missing required fields: sender_username, receiver_username, giftnameandnumber"}), 400
+
+    # 3. Parse Gift Name and Number
+    match = re.match(r'^(.*?)-(\d+)$', gift_name_and_number)
+    if not match:
+        return jsonify({"error": "Invalid giftnameandnumber format. Expected 'Name-Number', e.g., 'PlushPepe-1'."}), 400
+    
+    gift_name = match.group(1).strip()
+    collectible_number = int(match.group(2))
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+
+    with conn.cursor(cursor_factory=DictCursor) as cur:
+        try:
+            # 4. Find Sender, Receiver, and the Gift
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (sender_username,))
+            sender = cur.fetchone()
+            if not sender: return jsonify({"error": f"Sender '{sender_username}' not found."}), 404
+            sender_id = sender['tg_id']
+
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (receiver_username,))
+            receiver = cur.fetchone()
+            if not receiver: return jsonify({"error": f"Receiver '{receiver_username}' not found."}), 404
+            receiver_id = receiver['tg_id']
+
+            cur.execute("""
+                SELECT instance_id, gift_type_id FROM gifts 
+                WHERE owner_id = %s AND gift_name = %s AND collectible_number = %s AND is_collectible = TRUE;
+            """, (sender_id, gift_name, collectible_number))
+            gift = cur.fetchone()
+            if not gift:
+                return jsonify({"error": f"Gift '{gift_name} #{collectible_number}' not found or not owned by '{sender_username}'."}), 404
+            instance_id, gift_type_id = gift['instance_id'], gift['gift_type_id']
+
+            # 5. Check Receiver's Gift Limit
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+
+            # 6. Perform the Transfer
+            cur.execute("""
+                UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL 
+                WHERE instance_id = %s;
+            """, (receiver_id, instance_id))
+
+            if cur.rowcount == 0:
+                conn.rollback()
+                return jsonify({"error": "Gift transfer failed unexpectedly."}), 500
+
+            conn.commit()
+
+            # 7. Send Telegram Notifications (with comment)
+            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{collectible_number}"
+            link_text = f"{gift_name} #{collectible_number:,}"
+
+            sender_text = f'You successfully transferred Gift <a href="{deep_link}">{link_text}</a> to @{receiver_username}.'
+            if comment:
+                sender_text += f'\n\n<i>With comment: "{comment}"</i>'
+            send_telegram_message(sender_id, sender_text)
+
+            receiver_text = f'You have received Gift <a href="{deep_link}">{link_text}</a> from @{sender_username}.'
+            if comment:
+                receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
+            receiver_markup = {"inline_keyboard": [[{"text": "Check Out Gift", "url": deep_link}]]}
+            send_telegram_message(receiver_id, receiver_text, receiver_markup)
+
+            return jsonify({"message": "Gift transferred successfully"}), 200
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error during API gift transfer of {gift_name_and_number}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
 
 # --- APP STARTUP ---
 if __name__ != '__main__':
