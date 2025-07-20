@@ -47,6 +47,8 @@ MOSCOW_TZ = pytz.timezone('Europe/Moscow')
 GIVEAWAY_UPDATE_THROTTLE_SECONDS = 30
 
 # --- CUSTOM GIFT DATA ---
+# app.py
+# --- CUSTOM GIFT DATA ---
 CUSTOM_GIFTS_DATA = {
     "Dildo": {
         "models": [
@@ -117,6 +119,41 @@ CUSTOM_GIFTS_DATA = {
         ],
         "backdrops_source": "Snoop Dogg",
         "patterns_source": "Snoop Dogg"
+    },
+    "Baggin' Cat": {
+        "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153136834.png",
+        "models": [
+            {"name": "Redo", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154505502.png"},
+            {"name": "Bored Ape", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153421320.png"},
+            {"name": "Snoop Dogg", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153800346.png"},
+            {"name": "Austronaut", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153211676.png"},
+            {"name": "Chinese Dragon", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153332160.png"},
+            {"name": "Radioactive", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154437815.png"},
+            {"name": "Pink Guard", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154725761.png"},
+            {"name": "Angel", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155859028.png"},
+            {"name": "Devil", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155937967.png"},
+            {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153059849.png"},
+            {"name": "Rainbow", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153251813.png"},
+            {"name": "Spookie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153836181.png"},
+            {"name": "Spider", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154055429.png"},
+            {"name": "Dying Light", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154537813.png"},
+            {"name": "Hippo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155053345.png"},
+            {"name": "Poo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155200011.png"},
+            {"name": "Pikachu", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155411045.png"},
+            {"name": "XXXTentacion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155652114.png"},
+            {"name": "Electric", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155830968.png"},
+            {"name": "Glassy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160036747.png"},
+            {"name": "Alien", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160243304.png"},
+            {"name": "Piggy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160346910.png"},
+            {"name": "Panda", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153136834.png"},
+            {"name": "Capybara", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153629360.png"},
+            {"name": "Dolphin", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155125393.png"},
+            {"name": "Rabbit", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155341280.png"},
+            {"name": "Elephant", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160003197.png"},
+            {"name": "Bee", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160317620.png"}
+        ],
+        "backdrops_source": "Toy Bear",
+        "patterns_source": "Toy Bear"
     }
 }
 
