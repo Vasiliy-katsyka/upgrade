@@ -1522,25 +1522,95 @@ def process_giveaway_winners(giveaway_id):
         finally:
             conn.close()
 
-def check_finished_giveaways():
-    while True:
-        try:
-            conn = get_db_connection()
-            if conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT id FROM giveaways WHERE status = 'active' AND end_date <= CURRENT_TIMESTAMP;")
-                    giveaway_ids = [row[0] for row in cur.fetchall()]
-                    if giveaway_ids:
-                        cur.execute("UPDATE giveaways SET status = 'processing' WHERE id = ANY(%s);", (giveaway_ids,))
-                        conn.commit()
-                conn.close()
+# --- В файле app.py ---
 
+# Вспомогательная функция для запуска обработки
+def process_all_finished_giveaways():
+    app.logger.info("Running process_all_finished_giveaways...")
+    conn = get_db_connection()
+    if not conn: 
+        app.logger.error("Could not get DB connection to process winners.")
+        return
+
+    try:
+        with conn.cursor() as cur:
+            # Находим ВСЕ розыгрыши, которые уже должны были закончиться
+            cur.execute("SELECT id FROM giveaways WHERE status = 'active' AND end_date <= CURRENT_TIMESTAMP;")
+            giveaway_ids = [row[0] for row in cur.fetchall()]
+            
+            if giveaway_ids:
+                app.logger.info(f"Found finished giveaways: {giveaway_ids}. Setting status to 'processing'.")
+                # Помечаем их как "в обработке", чтобы не захватить их снова
+                cur.execute("UPDATE giveaways SET status = 'processing' WHERE id = ANY(%s);", (giveaway_ids,))
+                conn.commit()
+                
+                # Запускаем обработку каждого в отдельном потоке
                 for gid in giveaway_ids:
                     processing_thread = threading.Thread(target=process_giveaway_winners, args=(gid,))
                     processing_thread.start()
+            else:
+                app.logger.info("No giveaways found that have ended.")
+    except Exception as e:
+        app.logger.error(f"Error during process_all_finished_giveaways: {e}", exc_info=True)
+    finally:
+        conn.close()
+
+
+# НОВАЯ ВЕРСИЯ ФУНКЦИИ ПРОВЕРКИ
+def check_finished_giveaways():
+    NO_GIVEAWAYS_SLEEP_SECONDS = 3600 # 1 час. Увеличьте, если хотите еще реже.
+
+    while True:
+        try:
+            conn = get_db_connection()
+            if not conn:
+                app.logger.warning("DB connection failed in checker loop. Retrying in 5 minutes.")
+                time.sleep(300)
+                continue
+
+            next_giveaway_end_date = None
+            with conn.cursor() as cur:
+                # 1. Ищем дату окончания САМОГО БЛИЖАЙШЕГО активного розыгрыша.
+                # Этот запрос выполняется всего один раз за итерацию.
+                cur.execute("""
+                    SELECT end_date FROM giveaways 
+                    WHERE status = 'active' 
+                    ORDER BY end_date ASC 
+                    LIMIT 1;
+                """)
+                result = cur.fetchone()
+                if result:
+                    next_giveaway_end_date = result[0]
+            conn.close() # Закрываем соединение как можно раньше
+
+            # 2. Решаем, сколько спать
+            if next_giveaway_end_date:
+                now_utc = datetime.now(pytz.utc)
+                wait_seconds = (next_giveaway_end_date - now_utc).total_seconds()
+
+                if wait_seconds > 0:
+                    # Если ближайший розыгрыш еще не скоро, спим до его окончания.
+                    # Добавляем 1 секунду, чтобы проснуться гарантированно после окончания.
+                    sleep_duration = wait_seconds + 1
+                    app.logger.info(f"Next giveaway ends at {next_giveaway_end_date}. Sleeping for {sleep_duration:.0f} seconds.")
+                    time.sleep(sleep_duration)
+                
+                # Если wait_seconds <= 0, значит время уже подошло. Цикл начнется заново 
+                # без сна, и мы перейдем к шагу 3.
+                
+            else:
+                # 3. Если активных розыгрышей нет, спим ОЧЕНЬ долго.
+                app.logger.info(f"No active giveaways. Sleeping for {NO_GIVEAWAYS_SLEEP_SECONDS / 60} minutes.")
+                time.sleep(NO_GIVEAWAYS_SLEEP_SECONDS)
+
+            # 4. Когда проснулись (потому что время подошло), запускаем проверку и обработку
+            process_all_finished_giveaways()
+
+
         except Exception as e:
              app.logger.error(f"Critical error in giveaway checker loop: {e}", exc_info=True)
-        time.sleep(60)
+             # В случае любой ошибки, ждем 5 минут перед повторной попыткой
+             time.sleep(300)
 
 @app.route('/api/transfer_gift', methods=['POST'])
 def api_transfer_gift():
