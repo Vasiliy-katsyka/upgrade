@@ -34,6 +34,7 @@ if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
     raise ValueError("Missing required environment variables: DATABASE_URL and/or TELEGRAM_BOT_TOKEN")
 
 GIFT_LIMIT_PER_USER = 5000
+MAX_COLLECTIONS_PER_USER = 9
 MAX_COLLECTIBLE_USERNAMES = 10
 MIN_SALE_PRICE = 125
 MAX_SALE_PRICE = 100000
@@ -46,8 +47,6 @@ TEST_ACCOUNT_TG_ID = 9999999999
 MOSCOW_TZ = pytz.timezone('Europe/Moscow')
 GIVEAWAY_UPDATE_THROTTLE_SECONDS = 30
 
-# --- CUSTOM GIFT DATA ---
-# app.py
 # --- CUSTOM GIFT DATA ---
 CUSTOM_GIFTS_DATA = {
     "Dildo": {
@@ -273,6 +272,29 @@ def init_db():
             );
         """)
 
+        # New tables for Collections feature
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS collections (
+                id SERIAL PRIMARY KEY,
+                owner_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                display_order INT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(owner_id, name)
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS gift_collections (
+                id SERIAL PRIMARY KEY,
+                gift_instance_id VARCHAR(50) REFERENCES gifts(instance_id) ON DELETE CASCADE,
+                collection_id INT REFERENCES collections(id) ON DELETE CASCADE,
+                order_in_collection INT,
+                UNIQUE(gift_instance_id, collection_id)
+            );
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_collections_owner_id ON collections (owner_id);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gift_collections_collection_id ON gift_collections (collection_id);")
+
         cur.execute("SELECT 1 FROM accounts WHERE tg_id = %s;", (TEST_ACCOUNT_TG_ID,))
         if not cur.fetchone():
             cur.execute("""
@@ -297,6 +319,13 @@ def has_custom_gifts_enabled(cur, tg_id):
         return cur.fetchone() is not None
     except (ValueError, TypeError):
         return False
+
+def get_gift_author(gift_name):
+    if gift_name in ["Snoop Dogg", "Swag Bag", "Snoop Cigar", "Low Rider", "Westside Sign"]:
+        return "snoopdogg"
+    elif gift_name in ["Dildo", "Skebob", "Baggin' Cat"]:
+        return "Vasiliy939"
+    return None
 
 # --- TELEGRAM BOT HELPERS ---
 
@@ -662,6 +691,17 @@ def get_user_profile(username):
 
             cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (user_id,))
             profile_data['collectible_usernames'] = [row['username'] for row in cur.fetchall()]
+            
+            # Fetch collections
+            cur.execute("SELECT id, name FROM collections WHERE owner_id = %s ORDER BY display_order ASC, name ASC;", (user_id,))
+            collections_raw = cur.fetchall()
+            collections_with_order = []
+            for coll in collections_raw:
+                cur.execute("SELECT gift_instance_id FROM gift_collections WHERE collection_id = %s ORDER BY order_in_collection ASC;", (coll['id'],))
+                ordered_ids = [row['gift_instance_id'] for row in cur.fetchall()]
+                collections_with_order.append({ "id": coll['id'], "name": coll['name'], "ordered_instance_ids": ordered_ids })
+            profile_data['collections'] = collections_with_order
+
             return jsonify(profile_data), 200
         except Exception as e:
             app.logger.error(f"Error fetching profile for {username}: {e}", exc_info=True)
@@ -707,6 +747,17 @@ def get_or_create_account():
 
             cur.execute("SELECT username FROM collectible_usernames WHERE owner_id = %s;", (tg_id,))
             account_data['collectible_usernames'] = [row['username'] for row in cur.fetchall()]
+
+            # Fetch collections
+            cur.execute("SELECT id, name FROM collections WHERE owner_id = %s ORDER BY display_order ASC, name ASC;", (tg_id,))
+            collections_raw = cur.fetchall()
+            collections_with_order = []
+            for coll in collections_raw:
+                cur.execute("SELECT gift_instance_id FROM gift_collections WHERE collection_id = %s ORDER BY order_in_collection ASC;", (coll['id'],))
+                ordered_ids = [row['gift_instance_id'] for row in cur.fetchall()]
+                collections_with_order.append({ "id": coll['id'], "name": coll['name'], "ordered_instance_ids": ordered_ids })
+            account_data['collections'] = collections_with_order
+
             return jsonify(account_data), 200
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error in get_or_create_account for {tg_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
@@ -832,7 +883,8 @@ def upgrade_gift():
                 "modelImage": model_image_url,
                 "lottieModelPath": lottie_model_path,
                 "patternImage": pattern_image_url,
-                "backdropColors": selected_backdrop.get('hex'), "supply": supply
+                "backdropColors": selected_backdrop.get('hex'), "supply": supply,
+                "author": get_gift_author(gift_name)
             }
             cur.execute("""UPDATE gifts SET is_collectible = TRUE, collectible_data = %s, collectible_number = %s, lottie_path = NULL WHERE instance_id = %s;""", (json.dumps(collectible_data), next_number, instance_id))
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Failed to update gift."}), 404
@@ -866,7 +918,6 @@ def clone_gift():
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # --- New, corrected scraping logic ---
         gift_name_element = soup.find('div', class_='tgme_gift_preview').find('text')
         gift_name = gift_name_element.text.strip() if gift_name_element else None
 
@@ -917,7 +968,8 @@ def clone_gift():
                 "modelImage": model_image_url,
                 "lottieModelPath": lottie_model_path,
                 "patternImage": pattern_image_url,
-                "backdropColors": custom_backdrop.get('hex'), "supply": random.randint(2000, 10000)
+                "backdropColors": custom_backdrop.get('hex'), "supply": random.randint(2000, 10000),
+                "author": get_gift_author(gift_name)
             }
             cur.execute("""UPDATE gifts SET is_collectible = TRUE, collectible_data = %s, collectible_number = %s WHERE instance_id = %s;""", (json.dumps(collectible_data), next_number, new_instance_id))
             conn.commit()
@@ -993,6 +1045,8 @@ def delete_gift(instance_id):
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     with conn.cursor() as cur:
         try:
+            # Also remove from any collections
+            cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
             cur.execute("DELETE FROM gifts WHERE instance_id = %s;", (instance_id,))
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found."}), 404
             conn.commit()
@@ -1028,6 +1082,9 @@ def sell_gift():
             if not cur.fetchone():
                 return jsonify({"error": "Gift not found or you are not the owner."}), 404
 
+            # Remove from collections before selling
+            cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
+
             cur.execute("""
                 UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
                 WHERE instance_id = %s;
@@ -1060,9 +1117,16 @@ def reorder_pinned_gifts():
 
     with conn.cursor() as cur:
         try:
+            # This logic is sound. It resets the pin order for all pinned gifts owned by the user
+            # and then iterates through the provided ordered list, setting the new order.
+            # This prevents issues with orphaned pin orders.
             cur.execute("UPDATE gifts SET pin_order = NULL WHERE owner_id = %s AND is_pinned = TRUE;", (owner_id,))
             for index, instance_id in enumerate(ordered_ids):
-                cur.execute("UPDATE gifts SET pin_order = %s WHERE instance_id = %s AND owner_id = %s;", (index, instance_id, owner_id))
+                # Ensure the gift being reordered is actually pinned and owned by the user.
+                cur.execute("""
+                    UPDATE gifts SET pin_order = %s 
+                    WHERE instance_id = %s AND owner_id = %s AND is_pinned = TRUE;
+                """, (index, instance_id, owner_id))
             conn.commit()
             return jsonify({"message": "Pinned gifts reordered successfully."}), 200
         except Exception as e:
@@ -1115,6 +1179,9 @@ def batch_gift_action():
                 if receiver_gift_count + len(instance_ids) > GIFT_LIMIT_PER_USER:
                     return jsonify({"error": f"Receiver's gift limit would be exceeded."}), 403
 
+                # Remove from sender's collections before transferring
+                cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = ANY(%s);", (instance_ids,))
+                
                 cur.execute("""
                     UPDATE gifts
                     SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL
@@ -1177,6 +1244,9 @@ def transfer_gift():
 
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+
+            # Remove from sender's collections before transferring
+            cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
 
             cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s AND is_collectible = TRUE;""", (receiver_id, instance_id))
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
@@ -1310,6 +1380,106 @@ def create_giveaway():
             return jsonify({"error": "An internal server error occurred."}), 500
         finally:
             conn.close()
+
+# --- COLLECTION ENDPOINTS ---
+@app.route('/api/collections', methods=['POST'])
+def create_collection():
+    data = request.get_json()
+    owner_id = data.get('owner_id')
+    name = data.get('name')
+    if not all([owner_id, name]):
+        return jsonify({"error": "owner_id and name are required."}), 400
+    
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database failed"}), 500
+    with conn.cursor(cursor_factory=DictCursor) as cur:
+        try:
+            cur.execute("SELECT COUNT(*) FROM collections WHERE owner_id = %s;", (owner_id,))
+            if cur.fetchone()[0] >= MAX_COLLECTIONS_PER_USER:
+                return jsonify({"error": f"Collection limit of {MAX_COLLECTIONS_PER_USER} reached."}), 403
+
+            cur.execute("INSERT INTO collections (owner_id, name) VALUES (%s, %s) RETURNING id, name;", (owner_id, name))
+            new_collection = cur.fetchone()
+            conn.commit()
+            return jsonify(dict(new_collection)), 201
+        except psycopg2.IntegrityError:
+            conn.rollback()
+            return jsonify({"error": "A collection with this name already exists."}), 409
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error creating collection for user {owner_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/collections/<int:collection_id>/gifts', methods=['POST'])
+def add_gifts_to_collection(collection_id):
+    data = request.get_json()
+    instance_ids = data.get('instance_ids')
+    owner_id = data.get('owner_id') # For validation
+    if not all([instance_ids, owner_id]) or not isinstance(instance_ids, list):
+        return jsonify({"error": "owner_id and a list of instance_ids are required."}), 400
+        
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database failed"}), 500
+    with conn.cursor() as cur:
+        try:
+            cur.execute("SELECT 1 FROM collections WHERE id = %s AND owner_id = %s;", (collection_id, owner_id))
+            if not cur.fetchone():
+                return jsonify({"error": "Collection not found or you are not the owner."}), 404
+            
+            # Get max order to append new gifts
+            cur.execute("SELECT COALESCE(MAX(order_in_collection), -1) FROM gift_collections WHERE collection_id = %s;", (collection_id,))
+            max_order = cur.fetchone()[0]
+            
+            for i, instance_id in enumerate(instance_ids):
+                # Using ON CONFLICT DO NOTHING to silently ignore duplicates
+                cur.execute("""
+                    INSERT INTO gift_collections (collection_id, gift_instance_id, order_in_collection)
+                    VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;
+                """, (collection_id, instance_id, max_order + 1 + i))
+            
+            conn.commit()
+            return jsonify({"message": "Gifts added to collection."}), 200
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error adding gifts to collection {collection_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/collections/reorder_in_collection', methods=['POST'])
+def reorder_in_collection():
+    data = request.get_json()
+    collection_id = data.get('collection_id')
+    ordered_ids = data.get('ordered_instance_ids')
+    owner_id = data.get('owner_id')
+    if not all([collection_id, owner_id]) or not isinstance(ordered_ids, list):
+        return jsonify({"error": "collection_id, owner_id, and ordered_instance_ids list are required"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database failed"}), 500
+    with conn.cursor() as cur:
+        try:
+            cur.execute("SELECT 1 FROM collections WHERE id = %s AND owner_id = %s;", (collection_id, owner_id))
+            if not cur.fetchone():
+                return jsonify({"error": "Collection not found or not owned by you."}), 404
+            
+            for index, instance_id in enumerate(ordered_ids):
+                cur.execute("""
+                    UPDATE gift_collections SET order_in_collection = %s
+                    WHERE collection_id = %s AND gift_instance_id = %s;
+                """, (index, collection_id, instance_id))
+
+            conn.commit()
+            return jsonify({"message": "Gifts reordered in collection."}), 200
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error reordering in collection {collection_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
 
 # --- STATS ENDPOINT ---
 def get_rarity_tier(model_permille, backdrop_permille, pattern_permille):
@@ -1522,9 +1692,6 @@ def process_giveaway_winners(giveaway_id):
         finally:
             conn.close()
 
-# --- В файле app.py ---
-
-# Вспомогательная функция для запуска обработки
 def process_all_finished_giveaways():
     app.logger.info("Running process_all_finished_giveaways...")
     conn = get_db_connection()
@@ -1534,17 +1701,14 @@ def process_all_finished_giveaways():
 
     try:
         with conn.cursor() as cur:
-            # Находим ВСЕ розыгрыши, которые уже должны были закончиться
             cur.execute("SELECT id FROM giveaways WHERE status = 'active' AND end_date <= CURRENT_TIMESTAMP;")
             giveaway_ids = [row[0] for row in cur.fetchall()]
             
             if giveaway_ids:
                 app.logger.info(f"Found finished giveaways: {giveaway_ids}. Setting status to 'processing'.")
-                # Помечаем их как "в обработке", чтобы не захватить их снова
                 cur.execute("UPDATE giveaways SET status = 'processing' WHERE id = ANY(%s);", (giveaway_ids,))
                 conn.commit()
                 
-                # Запускаем обработку каждого в отдельном потоке
                 for gid in giveaway_ids:
                     processing_thread = threading.Thread(target=process_giveaway_winners, args=(gid,))
                     processing_thread.start()
@@ -1556,9 +1720,8 @@ def process_all_finished_giveaways():
         conn.close()
 
 
-# НОВАЯ ВЕРСИЯ ФУНКЦИИ ПРОВЕРКИ
 def check_finished_giveaways():
-    NO_GIVEAWAYS_SLEEP_SECONDS = 3600 # 1 час. Увеличьте, если хотите еще реже.
+    NO_GIVEAWAYS_SLEEP_SECONDS = 3600
 
     while True:
         try:
@@ -1570,8 +1733,6 @@ def check_finished_giveaways():
 
             next_giveaway_end_date = None
             with conn.cursor() as cur:
-                # 1. Ищем дату окончания САМОГО БЛИЖАЙШЕГО активного розыгрыша.
-                # Этот запрос выполняется всего один раз за итерацию.
                 cur.execute("""
                     SELECT end_date FROM giveaways 
                     WHERE status = 'active' 
@@ -1581,35 +1742,24 @@ def check_finished_giveaways():
                 result = cur.fetchone()
                 if result:
                     next_giveaway_end_date = result[0]
-            conn.close() # Закрываем соединение как можно раньше
+            conn.close() 
 
-            # 2. Решаем, сколько спать
             if next_giveaway_end_date:
                 now_utc = datetime.now(pytz.utc)
                 wait_seconds = (next_giveaway_end_date - now_utc).total_seconds()
 
                 if wait_seconds > 0:
-                    # Если ближайший розыгрыш еще не скоро, спим до его окончания.
-                    # Добавляем 1 секунду, чтобы проснуться гарантированно после окончания.
                     sleep_duration = wait_seconds + 1
                     app.logger.info(f"Next giveaway ends at {next_giveaway_end_date}. Sleeping for {sleep_duration:.0f} seconds.")
                     time.sleep(sleep_duration)
-                
-                # Если wait_seconds <= 0, значит время уже подошло. Цикл начнется заново 
-                # без сна, и мы перейдем к шагу 3.
-                
             else:
-                # 3. Если активных розыгрышей нет, спим ОЧЕНЬ долго.
                 app.logger.info(f"No active giveaways. Sleeping for {NO_GIVEAWAYS_SLEEP_SECONDS / 60} minutes.")
                 time.sleep(NO_GIVEAWAYS_SLEEP_SECONDS)
 
-            # 4. Когда проснулись (потому что время подошло), запускаем проверку и обработку
             process_all_finished_giveaways()
-
 
         except Exception as e:
              app.logger.error(f"Critical error in giveaway checker loop: {e}", exc_info=True)
-             # В случае любой ошибки, ждем 5 минут перед повторной попыткой
              time.sleep(300)
 
 @app.route('/api/transfer_gift', methods=['POST'])
@@ -1622,17 +1772,14 @@ def api_transfer_gift():
     sender_username = data.get('sender_username')
     receiver_username = data.get('receiver_username')
     gift_name_and_number = data.get('giftnameandnumber')
-    comment = data.get('comment')  # Get the optional comment field
+    comment = data.get('comment')
 
-    # 1. API Key Authentication
     if not api_key or api_key != TRANSFER_API_KEY:
         return jsonify({"error": "Unauthorized"}), 401
 
-    # 2. Validate Input
     if not all([sender_username, receiver_username, gift_name_and_number]):
         return jsonify({"error": "Missing required fields: sender_username, receiver_username, giftnameandnumber"}), 400
 
-    # 3. Parse Gift Name and Number
     match = re.match(r'^(.*?)-(\d+)$', gift_name_and_number)
     if not match:
         return jsonify({"error": "Invalid giftnameandnumber format. Expected 'Name-Number', e.g., 'PlushPepe-1'."}), 400
@@ -1645,7 +1792,6 @@ def api_transfer_gift():
 
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
-            # 4. Find Sender, Receiver, and the Gift
             cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (sender_username,))
             sender = cur.fetchone()
             if not sender: return jsonify({"error": f"Sender '{sender_username}' not found."}), 404
@@ -1665,12 +1811,13 @@ def api_transfer_gift():
                 return jsonify({"error": f"Gift '{gift_name} #{collectible_number}' not found or not owned by '{sender_username}'."}), 404
             instance_id, gift_type_id = gift['instance_id'], gift['gift_type_id']
 
-            # 5. Check Receiver's Gift Limit
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
                 return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
 
-            # 6. Perform the Transfer
+            # Remove from sender's collections before transferring
+            cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
+
             cur.execute("""
                 UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL 
                 WHERE instance_id = %s;
@@ -1682,7 +1829,6 @@ def api_transfer_gift():
 
             conn.commit()
 
-            # 7. Send Telegram Notifications (with comment)
             deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{collectible_number}"
             link_text = f"{gift_name} #{collectible_number:,}"
 
