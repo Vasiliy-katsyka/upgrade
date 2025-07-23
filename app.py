@@ -47,6 +47,9 @@ TEST_ACCOUNT_TG_ID = 9999999999
 MOSCOW_TZ = pytz.timezone('Europe/Moscow')
 GIVEAWAY_UPDATE_THROTTLE_SECONDS = 30
 
+collectible_parts_cache = {}
+CACHE_DURATION_SECONDS = 3600  # Cache for 1 hour
+
 # --- CUSTOM GIFT DATA ---
 CUSTOM_GIFTS_DATA = {
     "Dildo": {
@@ -425,32 +428,81 @@ def select_weighted_random(items):
         random_num -= weight
     return items[-1]
 
-def fetch_collectible_parts(gift_name):
-    if gift_name in CUSTOM_GIFTS_DATA:
-        custom_gift_data = CUSTOM_GIFTS_DATA.get(gift_name, {})
-        parts = {
-            "models": custom_gift_data.get("models", []),
-            "backdrops": fetch_collectible_parts(custom_gift_data.get("backdrops_source", "")).get("backdrops", []),
-            "patterns": fetch_collectible_parts(custom_gift_data.get("patterns_source", "")).get("patterns", [])
-        }
-        return parts
+# --- Replace your entire old function with this new one ---
 
+def fetch_collectible_parts(gift_name):
+    """
+    Fetches collectible parts (models, backdrops, patterns) for a given gift.
+    Uses an in-memory cache to avoid repeated network requests for the same data.
+    """
+    # 1. Check if a valid cache entry exists
+    if gift_name in collectible_parts_cache:
+        cached_data, timestamp = collectible_parts_cache[gift_name]
+        if time.time() - timestamp < CACHE_DURATION_SECONDS:
+            app.logger.info(f"CACHE HIT for collectible parts: {gift_name}")
+            return cached_data
+
+    app.logger.info(f"CACHE MISS for collectible parts: {gift_name}")
+
+    # 2. Determine the correct URLs for the parts
     gift_name_encoded = quote(gift_name)
-    urls = {
-        "models": f"{CDN_BASE_URL}models/{gift_name_encoded}/models.json",
-        "backdrops": f"{CDN_BASE_URL}backdrops/{gift_name_encoded}/backdrops.json",
-        "patterns": f"{CDN_BASE_URL}patterns/{gift_name_encoded}/patterns.json"
-    }
-    parts = {}
-    for part_type, url in urls.items():
+    models_url, backdrops_url, patterns_url = None, None, None
+    models_list = []
+
+    if gift_name in CUSTOM_GIFTS_DATA:
+        custom_data = CUSTOM_GIFTS_DATA[gift_name]
+        models_list = custom_data.get("models", [])
+        backdrops_source_encoded = quote(custom_data.get("backdrops_source", gift_name))
+        patterns_source_encoded = quote(custom_data.get("patterns_source", gift_name))
+        
+        backdrops_url = f"{CDN_BASE_URL}backdrops/{backdrops_source_encoded}/backdrops.json"
+        patterns_url = f"{CDN_BASE_URL}patterns/{patterns_source_encoded}/patterns.json"
+    else:
+        # Standard gift logic
+        models_url = f"{CDN_BASE_URL}models/{gift_name_encoded}/models.json"
+        backdrops_url = f"{CDN_BASE_URL}backdrops/{gift_name_encoded}/backdrops.json"
+        patterns_url = f"{CDN_BASE_URL}patterns/{gift_name_encoded}/patterns.json"
+
+    # 3. Fetch the parts data from the URLs
+    
+    # Fetch Models (if not already loaded from CUSTOM_GIFTS_DATA)
+    if models_url:
         try:
-            response = requests.get(url, timeout=5)
+            response = requests.get(models_url, timeout=5)
             response.raise_for_status()
-            parts[part_type] = response.json()
-        except (requests.RequestException, json.JSONDecodeError) as e:
-            app.logger.warning(f"Could not fetch {part_type} from {url}: {e}")
-            parts[part_type] = []
-    return parts
+            models_list = response.json()
+        except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+            app.logger.warning(f"Could not fetch or decode models for {gift_name}: {e}")
+            models_list = []
+
+    # Fetch Backdrops
+    try:
+        response = requests.get(backdrops_url, timeout=5)
+        response.raise_for_status()
+        backdrops_list = response.json()
+    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+        app.logger.warning(f"Could not fetch or decode backdrops for {gift_name}: {e}")
+        backdrops_list = []
+
+    # Fetch Patterns
+    try:
+        response = requests.get(patterns_url, timeout=5)
+        response.raise_for_status()
+        patterns_list = response.json()
+    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+        app.logger.warning(f"Could not fetch or decode patterns for {gift_name}: {e}")
+        patterns_list = []
+        
+    all_parts = {
+        "models": models_list,
+        "backdrops": backdrops_list,
+        "patterns": patterns_list
+    }
+
+    # 4. Store the newly fetched data in the cache with the current timestamp
+    collectible_parts_cache[gift_name] = (all_parts, time.time())
+    
+    return all_parts
     
 def normalize_and_build_clone_url(input_str):
     input_str = input_str.strip()
