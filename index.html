@@ -317,7 +317,24 @@
             cursor: pointer; flex-grow: 1;
             border-bottom: 3px solid transparent; position: relative;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        #gifts-tab-button .gift-preview-container {
+            display: flex;
+            align-items: center;
+            margin-left: 8px;
+        }
+        #gifts-tab-button .gift-preview-container img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            margin-left: -4px; /* Creates overlap effect */
+            background-color: rgba(0,0,0,0.1); /* Fallback */
+            border-radius: 6px;
+        }
+
         .profile-tabs button.active { color: var(--tg-theme-link-color); }
         .profile-tabs button.active::after {
             content: ''; position: absolute;
@@ -1102,7 +1119,10 @@
                     <div class="profile-tabs">
                         <button id="posts-tab-button">Posts</button>
                         <button id="archive-tab-button">Archive</button>
-                        <button class="active" id="gifts-tab-button">Gifts</button>
+                        <button class="active" id="gifts-tab-button">
+                            Gifts
+                            <span class="gift-preview-container" id="gifts-tab-preview-container"></span>
+                        </button>
                     </div>
                     <div id="posts-content" class="tab-content">
                         <p class="empty-grid-message">Nothing to see here yet.</p>
@@ -1116,7 +1136,6 @@
                             <div class="profile-gifts-actions">
                                 <!-- Dynamic buttons will be prepended here by JS -->
                                 <button id="upgrade-all-gifts-button" class="action-button" style="display: none;">✨ Upgrade All</button>
-                                <button id="go-to-buy-gifts" class="action-button">🎁 Buy Gifts</button>
                             </div>
                         </div>
                         <div id="gifts-grid" class="gifts-grid">
@@ -1697,6 +1716,7 @@
         const profileTopPinnedGifts = document.getElementById('profile-top-pinned-gifts');
 
         const giftsTabButton = document.getElementById('gifts-tab-button');
+        const giftsTabPreviewContainer = document.getElementById('gifts-tab-preview-container');
         const postsTabButton = document.getElementById('posts-tab-button');
         const archiveTabButton = document.getElementById('archive-tab-button');
         const giftsContent = document.getElementById('gifts-content');
@@ -1704,7 +1724,6 @@
         const archiveContent = document.getElementById('archive-content');
 
         const profileGiftsActions = document.querySelector('.profile-gifts-actions');
-        const goToBuyGiftsButton = document.getElementById('go-to-buy-gifts');
         const upgradeAllGiftsButton = document.getElementById('upgrade-all-gifts-button');
         const filterLongPressTarget = document.getElementById('filter-long-press-target');
         const giftsGrid = document.getElementById('gifts-grid');
@@ -2512,12 +2531,22 @@
                 return true;
             });
 
+            // Sort gifts for display: Pinned first (by order), then by date
+            const sortedGifts = [...filteredGifts].sort((a, b) => {
+                const aIsPinned = a.is_pinned && a.pin_order != null;
+                const bIsPinned = b.is_pinned && b.pin_order != null;
+                if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
+                if (aIsPinned) return -1;
+                if (bIsPinned) return 1;
+                return new Date(b.acquired_date) - new Date(a.acquired_date);
+            });
+
+            currentlySortedGifts = sortedGifts;
+
             profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
             if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) {
                 profileGiftCountSubtext.textContent += ` of ${ownedGifts.length}`;
             }
-
-            currentlySortedGifts = filteredGifts;
 
             if (currentlySortedGifts.length === 0) {
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
@@ -2540,12 +2569,13 @@
                 });
             }
             renderTopPinnedGiftsPreview();
+            renderGiftsTabPreview();
+
             const hasNonCollectible = ownedGifts.some(g => !g.is_collectible);
             if (upgradeAllGiftsButton) {
                 upgradeAllGiftsButton.style.display = (hasNonCollectible && viewingOwnProfile && !reorderModeActive && !selectionModeActive) ? 'inline-block' : 'none';
                 if (!hasNonCollectible) { upgradeAllGiftsButton.textContent = '✨ Upgrade All'; upgradeAllGiftsButton.disabled = false; }
             }
-            if(goToBuyGiftsButton) goToBuyGiftsButton.style.display = (viewingOwnProfile && !reorderModeActive && !selectionModeActive) ? 'inline-block' : 'none';
             displayFilterExitButton();
         }
 
@@ -2646,6 +2676,32 @@
                      container.innerHTML = `<img src="${imageForPinned}" alt="${gift.gift_name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
                 }
                 profileTopPinnedGifts.appendChild(container);
+            });
+        }
+        
+        function renderGiftsTabPreview() {
+            giftsTabPreviewContainer.innerHTML = '';
+            const uniqueGiftTypes = new Set();
+            const giftsToShow = [];
+            
+            for (const gift of currentlySortedGifts) {
+                if (!uniqueGiftTypes.has(gift.gift_type_id)) {
+                    uniqueGiftTypes.add(gift.gift_type_id);
+                    giftsToShow.push(gift);
+                }
+                if (giftsToShow.length >= 3) break;
+            }
+
+            giftsToShow.forEach(gift => {
+                const img = document.createElement('img');
+                let imageUrl = gift.original_image_url;
+                if (gift.is_collectible && gift.collectible_data) {
+                    imageUrl = gift.collectible_data.modelImage || gift.original_image_url;
+                }
+                img.src = imageUrl;
+                img.alt = gift.gift_name;
+                img.onerror = () => { img.style.display = 'none'; };
+                giftsTabPreviewContainer.appendChild(img);
             });
         }
 
@@ -2884,14 +2940,38 @@
                 }
             }
         }
+        
+        function openTelegramProfile(event, username) {
+            event.stopPropagation(); // Prevent parent click
+            event.preventDefault();
+            tg.openTelegramLink(`https://t.me/${username}`);
+        }
 
         async function populateCollectibleDetailModal(gift) {
             const cd = gift.collectible_data;
             modalCollectibleMainName.textContent = cd.model?.name || gift.gift_name;
 
             const numberForLink = gift.collectible_number;
-            modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">Collectible #${numberForLink.toLocaleString()}</a>`;
-            document.getElementById('collectible-link-copier').onclick = (e) => { e.preventDefault(); copyGiftLink(gift); };
+            
+            const snoopGifts = ['Snoop Dogg', 'Swag Bag', 'Snoop Cigar', 'Low Rider', 'Westside Sign'];
+            const vasiliyGifts = ['Dildo', 'Skebob', "Baggin' Cat"];
+
+            let subtextHTML;
+            if (snoopGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'snoopdogg')">@snoopdogg</a>`;
+            } else if (vasiliyGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'Vasiliy939')">@Vasiliy939</a>`;
+            } else {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
+            }
+            modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">${subtextHTML}</a>`;
+
+            document.getElementById('collectible-link-copier').onclick = (e) => { 
+                if (e.target.tagName !== 'A' || e.target.id === 'collectible-link-copier') {
+                    e.preventDefault(); 
+                    copyGiftLink(gift); 
+                }
+            };
 
             if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
 
@@ -3572,7 +3652,22 @@
         }
         
         function populatePartSelector(id, name) {
-            const { models, backdrops, patterns } = cachedCollectibleParts[id];
+            let { models, backdrops, patterns } = cachedCollectibleParts[id];
+            
+            // Sort models by rarity
+            models = [...models].sort((a, b) => (a.rarityPermille || 999) - (b.rarityPermille || 999));
+            
+            // Sort backdrops with custom pinned order
+            const pinnedBackdropNames = ['Black', 'Onyx Black', 'Midnight Blue', 'Electric Purple', 'Amber', 'Cyberpunk'];
+            backdrops = [...backdrops].sort((a, b) => {
+                const aIndex = pinnedBackdropNames.indexOf(a.name);
+                const bIndex = pinnedBackdropNames.indexOf(b.name);
+                if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex; // both are pinned
+                if (aIndex !== -1) return -1; // only a is pinned
+                if (bIndex !== -1) return 1;  // only b is pinned
+                return a.name.localeCompare(b.name); // neither is pinned, sort alphabetically
+            });
+
             const customData = CUSTOM_GIFTS_DATA[name];
             const patternSourceName = customData ? customData.patterns_source : name;
             const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
@@ -4256,7 +4351,6 @@
             reorderModeActive = true;
             longPressMenu.classList.add('hidden');
             exitReorderModeButton.classList.remove('hidden');
-            goToBuyGiftsButton.classList.add('hidden');
             upgradeAllGiftsButton.classList.add('hidden');
             giftsGrid.classList.add('reordering');
             renderProfileGifts();
@@ -4273,29 +4367,35 @@
             reorderModeActive = false;
             if (sortableInstance) sortableInstance.destroy();
             sortableInstance = null;
-
+            exitReorderModeButton.classList.add('hidden');
+            giftsGrid.classList.remove('reordering');
+            
+            // Immediately apply the new sort order to the local array
             const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card[data-pinned="true"]')).map(el => el.dataset.instanceId);
-
             newOrderIds.forEach((id, index) => {
                 const gift = ownedGifts.find(g => g.instance_id === id);
                 if (gift) gift.pin_order = index;
             });
-
+            
+            // Re-render based on the updated local array
+            renderProfileGifts();
+        
             try {
+                // Send the final, correct order to the backend
                 await callBackend('/api/gifts/reorder', 'POST', {
                     owner_id: currentAccountTgId,
                     ordered_instance_ids: newOrderIds
                 });
             } catch (error) {
+                // If backend fails, re-fetch from server to ensure consistency
                 await initializeTelegramUserAccount();
             }
-
-            exitReorderModeButton.classList.add('hidden');
-            giftsGrid.classList.remove('reordering');
-            renderProfileGifts();
         }
 
-        function handleReorderEnd(evt) { }
+
+        function handleReorderEnd(evt) { 
+            // The logic is moved to exitReorderMode to save only on "Done" click
+        }
 
         // --- Selection Mode Logic ---
         function enterSelectionMode(action) {
@@ -4305,7 +4405,6 @@
             selectionAction = action;
             selectedGiftIds.clear();
 
-            goToBuyGiftsButton.classList.add('hidden');
             upgradeAllGiftsButton.classList.add('hidden');
             exitSelectionModeButton.classList.remove('hidden');
             if (action === 'hide') hideSelectedGiftsButton.classList.remove('hidden');
@@ -4322,7 +4421,6 @@
             hideSelectedGiftsButton.classList.add('hidden');
             transferSelectedGiftsButton.classList.add('hidden');
             const hasNonCollectible = ownedGifts.some(g => !g.is_collectible);
-            goToBuyGiftsButton.style.display = viewingOwnProfile ? 'inline-block' : 'none';
             upgradeAllGiftsButton.style.display = (hasNonCollectible && viewingOwnProfile) ? 'inline-block' : 'none';
 
             renderProfileGifts();
@@ -4504,7 +4602,6 @@
             postsTabButton.addEventListener('click', () => switchTab('posts'));
             archiveTabButton.addEventListener('click', () => switchTab('archive'));
 
-            goToBuyGiftsButton.addEventListener('click', () => showPage('buy-gifts-page'));
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
 
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
@@ -4515,8 +4612,7 @@
                     if (e.target === modal) closeModal(modal);
                 });
             });
-            document.getElementById('close-gift-detail-modal').addEventListener('click', () => closeModal(giftDetailModal));
-            document.getElementById('close-collectible-detail-modal').addEventListener('click', () => closeModal(collectibleDetailModal));
+                        document.getElementById('close-collectible-detail-modal').addEventListener('click', () => closeModal(collectibleDetailModal));
             document.getElementById('cancel-unpin-modal').addEventListener('click', () => closeModal(tooManyPinsModal));
             document.getElementById('cancel-buy-multiple').addEventListener('click', () => closeModal(buyMultipleModal));
             document.getElementById('close-chances-modal').addEventListener('click', () => closeModal(chancesModal));
@@ -4608,7 +4704,17 @@
             appContainer.addEventListener('touchend', e => {
                 if (e.target.closest('.account-sidebar')) return;
                 const touchEndX = e.changedTouches[0].screenX;
-                if (touchStartX < swipeEdgeThreshold && touchEndX - touchStartX > swipeEdgeThreshold) { openSidebar(); }
+                const deltaX = touchEndX - touchStartX;
+                const currentPage = document.querySelector('.page.active');
+                
+                // Swipe from left edge to open sidebar
+                if (touchStartX < swipeEdgeThreshold && deltaX > swipeEdgeThreshold) { 
+                    openSidebar(); 
+                }
+                // Swipe from right to open gift shop
+                else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold) {
+                    showPage('buy-gifts-page');
+                }
             }, { passive: true });
 
             sidebarOverlay.addEventListener('click', closeSidebar);
@@ -4652,6 +4758,7 @@
                     impactOccurred: (style) => console.log(`Haptic: ${style}`),
                     notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
                 };
+                tg.openTelegramLink = (url) => { console.log(`Opening TG Link: ${url}`); window.open(url, '_blank'); };
                 tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
                 tg.SettingsButton = { isVisible: false, onClick: (cb) => {tg._settingsCb = cb}, show: () => console.log("Settings Button Show"), hide: () => console.log("Settings Button Hide") };
                 tg.BackButton = { isVisible: false, onClick: (cb) => {tg._backCb = cb}, offClick: (cb) => {}, show: () => console.log("Back button shown"), hide: () => console.log("Back button hidden") };
