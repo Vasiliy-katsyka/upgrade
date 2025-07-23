@@ -1852,6 +1852,208 @@ def api_transfer_gift():
         finally:
             conn.close()
 
+@app.route('/api/create_and_transfer_random_gift', methods=['POST'])
+def create_and_transfer_random_gift():
+    data = request.get_json()
+    gift_name = data.get('giftname')
+    receiver_username = data.get('receiverUsername')
+    sender_username = data.get('senderUsername')
+    comment = data.get('comment')
+
+    if not all([gift_name, receiver_username, sender_username]):
+        return jsonify({"error": "Missing required fields: giftname, receiverUsername, senderUsername"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+
+    with conn.cursor(cursor_factory=DictCursor) as cur:
+        try:
+            # 1. Get Sender and Receiver Info
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (sender_username,))
+            sender = cur.fetchone()
+            if not sender: return jsonify({"error": f"Sender '{sender_username}' not found."}), 404
+            sender_id = sender['tg_id']
+
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (receiver_username,))
+            receiver = cur.fetchone()
+            if not receiver: return jsonify({"error": f"Receiver '{receiver_username}' not found."}), 404
+            receiver_id = receiver['tg_id']
+
+            # 2. Check Receiver's Gift Limit
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+
+            # 3. Select Random Parts
+            all_parts_data = fetch_collectible_parts(gift_name)
+            selected_model = select_weighted_random(all_parts_data.get('models', []))
+            selected_backdrop = select_weighted_random(all_parts_data.get('backdrops', []))
+            selected_pattern = select_weighted_random(all_parts_data.get('patterns', []))
+
+            if not all([selected_model, selected_backdrop, selected_pattern]):
+                return jsonify({"error": f"Could not determine all random parts for '{gift_name}'."}), 500
+
+            # This is a simplification; in a real system, you'd map the name to a persistent ID.
+            # For this demo, we'll use a placeholder or a custom ID if available.
+            gift_type_id = CUSTOM_GIFTS_DATA.get(gift_name, {}).get('id', 'generated_gift')
+
+            # 4. Get Next Collectible Number and Create Gift
+            cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
+            next_number = cur.fetchone()[0]
+            new_instance_id = str(uuid.uuid4())
+            
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+            model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
+            lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
+            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+
+            collectible_data = {
+                "model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern,
+                "modelImage": model_image_url, "lottieModelPath": lottie_model_path,
+                "patternImage": pattern_image_url, "backdropColors": selected_backdrop.get('hex'), 
+                "supply": random.randint(2000, 10000)
+            }
+            
+            cur.execute("""
+                INSERT INTO gifts 
+                (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number) 
+                VALUES (%s, %s, %s, %s, TRUE, %s, %s);
+            """, (new_instance_id, receiver_id, gift_type_id, gift_name, json.dumps(collectible_data), next_number))
+
+            conn.commit()
+
+            # 5. Send Notifications
+            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{next_number}"
+            link_text = f"{gift_name} #{next_number:,}"
+            sender_text = f'You successfully created and sent <a href="{deep_link}">{link_text}</a> to @{receiver_username}.'
+            if comment: sender_text += f'\n\n<i>With comment: "{comment}"</i>'
+            send_telegram_message(sender_id, sender_text)
+            
+            receiver_text = f'You have received a new gift, <a href="{deep_link}">{link_text}</a>, from @{sender_username}!'
+            if comment: receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
+            receiver_markup = {"inline_keyboard": [[{"text": "Check Out Gift", "url": deep_link}]]}
+            send_telegram_message(receiver_id, receiver_text, receiver_markup)
+
+            return jsonify({"message": "Random gift created and transferred successfully."}), 201
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error in create_and_transfer_random_gift: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
+
+@app.route('/api/create_and_transfer_custom_gift', methods=['POST'])
+def create_and_transfer_custom_gift():
+    data = request.get_json()
+    gift_name = data.get('giftname')
+    receiver_username = data.get('receiverUsername')
+    sender_username = data.get('senderUsername')
+    comment = data.get('comment')
+    model_name = data.get('model')
+    backdrop_name = data.get('backdrop')
+    pattern_name = data.get('pattern')
+
+    if not all([gift_name, receiver_username, sender_username]):
+        return jsonify({"error": "Missing required fields: giftname, receiverUsername, senderUsername"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+
+    with conn.cursor(cursor_factory=DictCursor) as cur:
+        try:
+            # 1. Get Sender and Receiver Info
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (sender_username,))
+            sender = cur.fetchone()
+            if not sender: return jsonify({"error": f"Sender '{sender_username}' not found."}), 404
+            sender_id = sender['tg_id']
+
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (receiver_username,))
+            receiver = cur.fetchone()
+            if not receiver: return jsonify({"error": f"Receiver '{receiver_username}' not found."}), 404
+            receiver_id = receiver['tg_id']
+            
+            # 2. Check Receiver's Gift Limit
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                return jsonify({"error": f"Receiver's gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+
+            # 3. Fetch all parts and select them
+            all_parts_data = fetch_collectible_parts(gift_name)
+            
+            # Select model
+            if model_name:
+                selected_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
+                if not selected_model: return jsonify({"error": f"Model '{model_name}' not found for this gift."}), 400
+            else:
+                selected_model = select_weighted_random(all_parts_data.get('models', []))
+
+            # Select backdrop
+            if backdrop_name:
+                selected_backdrop = next((b for b in all_parts_data.get('backdrops', []) if b['name'] == backdrop_name), None)
+                if not selected_backdrop: return jsonify({"error": f"Backdrop '{backdrop_name}' not found for this gift."}), 400
+            else:
+                selected_backdrop = select_weighted_random(all_parts_data.get('backdrops', []))
+
+            # Select pattern
+            if pattern_name:
+                selected_pattern = next((p for p in all_parts_data.get('patterns', []) if p['name'] == pattern_name), None)
+                if not selected_pattern: return jsonify({"error": f"Pattern '{pattern_name}' not found for this gift."}), 400
+            else:
+                selected_pattern = select_weighted_random(all_parts_data.get('patterns', []))
+
+            if not all([selected_model, selected_backdrop, selected_pattern]):
+                return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
+
+            gift_type_id = CUSTOM_GIFTS_DATA.get(gift_name, {}).get('id', 'generated_gift')
+
+            # 4. Get Next Collectible Number and Create Gift
+            cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
+            next_number = cur.fetchone()[0]
+            new_instance_id = str(uuid.uuid4())
+            
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+            model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
+            lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
+            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+
+            collectible_data = {
+                "model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern,
+                "modelImage": model_image_url, "lottieModelPath": lottie_model_path,
+                "patternImage": pattern_image_url, "backdropColors": selected_backdrop.get('hex'),
+                "supply": random.randint(2000, 10000)
+            }
+            
+            cur.execute("""
+                INSERT INTO gifts 
+                (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number) 
+                VALUES (%s, %s, %s, %s, TRUE, %s, %s);
+            """, (new_instance_id, receiver_id, gift_type_id, gift_name, json.dumps(collectible_data), next_number))
+
+            conn.commit()
+
+            # 5. Send Notifications
+            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{next_number}"
+            link_text = f"{gift_name} #{next_number:,}"
+            sender_text = f'You successfully created and sent <a href="{deep_link}">{link_text}</a> to @{receiver_username}.'
+            if comment: sender_text += f'\n\n<i>With comment: "{comment}"</i>'
+            send_telegram_message(sender_id, sender_text)
+            
+            receiver_text = f'You have received a new gift, <a href="{deep_link}">{link_text}</a>, from @{sender_username}!'
+            if comment: receiver_text += f'\n\n<i>With comment: "{comment}"</i>'
+            receiver_markup = {"inline_keyboard": [[{"text": "Check Out Gift", "url": deep_link}]]}
+            send_telegram_message(receiver_id, receiver_text, receiver_markup)
+            
+            return jsonify({"message": "Custom gift created and transferred successfully."}), 201
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error in create_and_transfer_custom_gift: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
 # --- APP STARTUP ---
 if __name__ != '__main__':
     gunicorn_logger = logging.getLogger('gunicorn.error')
