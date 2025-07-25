@@ -203,10 +203,8 @@
             padding-top: 56px;
             background: var(--app-profile-gradient-fallback);
             transition: background 0.3s ease;
-            height: 300px; /* Give it a fixed height */
-            overflow: hidden; /* Hide overflowing patterns */
         }
-        #profile-header-pattern-overlay {
+        .profile-header-pattern-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             background-repeat: repeat;
@@ -215,78 +213,28 @@
             pointer-events: none;
             z-index: 0;
         }
-        /* NEW: Container for floating pinned gifts */
-        #profile-floating-pinned-gifts {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 50; /* Above patterns, below content */
-            pointer-events: none; /* Allows clicks to go through to header content */
-        }
-        .pinned-gift-slot {
-            position: absolute;
-            width: 70px; /* Adjust size as needed */
-            height: 70px;
-            pointer-events: all; /* Make the gifts themselves clickable */
-            cursor: pointer;
-            transition: transform 0.2s ease-out;
-        }
-        .pinned-gift-slot:hover {
-            transform: scale(1.1);
-        }
-        /* Specific positions for the 6 pinned gifts */
-        #pinned-gift-slot-1 { top: 130px; left: 15px; transform: rotate(-15deg); width: 80px; height: 80px; }
-        #pinned-gift-slot-2 { top: 45px; left: 35%; transform: rotate(10deg); }
-        #pinned-gift-slot-3 { top: 120px; left: 55%; transform: rotate(-8deg); }
-        #pinned-gift-slot-4 { top: 55px; right: 10%; transform: rotate(15deg); }
-        #pinned-gift-slot-5 { top: 150px; right: 25%; transform: rotate(20deg) scale(0.9); }
-        #pinned-gift-slot-6 { top: 140px; right: 5%; transform: rotate(-20deg) scale(1.1); }
-
-        /* NEW: Container for Worn Gift Banner */
-        #worn-gift-banner {
-            position: absolute;
-            top: 110px; /* Adjust as needed */
-            right: 15px; /* Adjust as needed */
-            z-index: 60;
-            background-color: rgba(30, 30, 30, 0.7);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            color: #fff;
-            padding: 8px 14px;
-            border-radius: 12px;
-            font-size: 0.9em;
-            font-weight: 500;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            display: none; /* Hidden by default */
-        }
-        #worn-gift-banner::after {
-            content: '';
-            position: absolute;
-            bottom: -8px; /* Position the triangle */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid rgba(30, 30, 30, 0.7);
-        }
-
         .profile-header-content-wrapper {
              position: relative; z-index: 1;
              padding: 0 15px;
         }
-        
-        /* This is now deprecated and will be removed from use */
-        .profile-top-pinned-gifts { display: none; }
-
+        .profile-top-pinned-gifts {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 5px 0 8px 0;
+            min-height: 30px;
+        }
+        .profile-top-pinned-gifts .pinned-gift-item {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            background-color: rgba(0,0,0,0.1);
+            overflow: hidden;
+            cursor: pointer;
+        }
         .profile-main-info {
             display: flex;
             align-items: center;
             padding: 8px 0 20px 0;
-            position: absolute; /* Position over the header background */
-            bottom: 40px;
-            left: 15px;
-            z-index: 55;
         }
         .profile-avatar {
             width: 70px; height: 70px;
@@ -304,9 +252,7 @@
             color: var(--tg-theme-text-color);
         }
         #worn-gift-icon-container {
-            width: 28px; /* Slightly larger */
-            height: 28px; 
-            margin-left: 8px;
+            width: 24px; height: 24px; margin-left: 8px;
             overflow: hidden;
             cursor: pointer;
         }
@@ -316,7 +262,6 @@
         .profile-details-section {
             background-color: var(--tg-theme-bg-color);
             padding: 15px 15px 5px 15px;
-            margin-top: 300px; /* Push content down below the fixed-height header */
         }
         .profile-details .info-block {
             margin-bottom: 16px;
@@ -483,10 +428,7 @@
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-size: cover; pointer-events: none; z-index: 0;
         }
-        
-        /* This is now deprecated and will be removed from use */
-        .gift-card-pattern-overlay { display: none; }
-        .buy-gift-item-pattern-overlay {
+        .gift-card-pattern-overlay, .buy-gift-item-pattern-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-repeat: repeat;
             background-size: 30% auto;
@@ -494,7 +436,6 @@
             opacity: 0.1;
             pointer-events: none; z-index: 1;
         }
-
         .image-container {
             width: 70%; height: 70%;
             display: flex; align-items: center; justify-content: center;
@@ -514,45 +455,36 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Rotated Label - NEW 3D Design */
+        /* Rotated Label - CORRECTED */
         .gift-card .top-right-label {
             position: absolute;
-            top: 10px;
-            right: -32px;
+            top: 10px; /* Adjusted for visual balance */
+            right: -28px; /* Adjusted for visual balance */
             transform: rotate(45deg);
             transform-origin: center;
-            background-color: rgba(0,0,0,0.35); /* Fallback */
-            color: var(--tg-theme-button-text-color);
-            font-size: 0.7em;
-            padding: 2px 30px;
+            background-color: rgba(0,0,0,0.35);
+            color: var(--tg-theme-text-color);
+            font-size: 0.65em;
+            padding: 1px 25px;
             z-index: 4;
             font-weight: 500;
             white-space: nowrap;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* NEW Thumbtack Pin Icon */
         .gift-card .pin-indicator {
             position: absolute; top: 5px; left: 5px;
-            z-index: 5;
-            width: 22px; height: 22px;
+            z-index: 3; display: flex; align-items: center; justify-content: center;
         }
-        .gift-card .pin-indicator svg {
-            width: 100%; height: 100%;
-            fill: #fff;
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-        }
-
+        .gift-card .pin-indicator svg { width: 18px; height: 18px; fill: var(--tg-theme-link-color); opacity: 0.8; }
 
         /* Selection Mode Checkbox */
         .gift-card .selection-checkbox {
-            position: absolute; top: 5px; right: 5px;
+            position: absolute; top: 5px; right: 5px; /* Moved to right for consistency */
             width: 22px; height: 22px;
             background-color: rgba(0, 0, 0, 0.4);
             border: 2px solid #fff;
             border-radius: 50%;
-            z-index: 5;
+            z-index: 5; /* Higher than label */
             display: flex; align-items: center; justify-content: center;
             transition: background-color 0.2s;
         }
@@ -707,14 +639,14 @@
         #collectible-detail-modal #collectible-menu-button svg { fill: white; }
 
         .collectible-display-area {
-            padding: 40px 0 20px 0;
+            padding: 40px 0 20px 0; /* Adjusted padding */
             text-align: center;
             position: relative;
             overflow: hidden;
             border-top-left-radius: 12px;
             border-top-right-radius: 12px;
         }
-        .pattern-container {
+        #pattern-container-dynamic {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 1;
@@ -726,7 +658,6 @@
             width: 40px;
             height: auto;
             will-change: transform;
-            image-rendering: -webkit-optimize-contrast; /* Helps with crispness */
         }
 
         .modal-collectible-visual {
@@ -764,13 +695,13 @@
 
         .modal-action-buttons-row {
             display: flex; justify-content: space-around; gap: 10px;
-            padding: 20px;
-            background-color: transparent;
-            position: relative; z-index: 2;
+            padding: 20px; /* Moved padding here from display-area */
+            background-color: transparent; /* No longer has its own background */
+            position: relative; z-index: 2; /* Ensure buttons are on top */
         }
         .modal-action-buttons-row button {
             flex-grow: 1; padding: 10px 5px; font-size: 0.9em;
-            background-color: rgba(0,0,0,0.25);
+            background-color: rgba(0,0,0,0.25); /* Dark, transparent background */
             color: var(--tg-theme-text-color);
             border: none; border-radius: 8px;
             display: flex; flex-direction: column; align-items: center;
@@ -779,6 +710,7 @@
         .modal-action-buttons-row button .icon { margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
         .modal-action-buttons-row button .icon svg { width: 22px; height: 22px; fill: var(--tg-theme-link-color); }
         .modal-action-buttons-row button .text { font-size: 0.9em; }
+        /* === END COLLECTIBLE MODAL REDESIGN === */
 
         .collectible-info-section { padding: 0 20px; background-color: var(--tg-theme-secondary-bg-color); }
         .collectible-info-section .info-row {
@@ -819,7 +751,7 @@
             background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 2001;
+            z-index: 2001; /* Higher than sidebar overlay */
             padding: 6px 0; min-width: 220px;
         }
         #long-press-menu ul { list-style: none; }
@@ -1148,17 +1080,9 @@
             </div>
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
-                    <div id="profile-header-pattern-overlay" class="pattern-container"></div>
-                    <div id="profile-floating-pinned-gifts">
-                        <div id="pinned-gift-slot-1" class="pinned-gift-slot"></div>
-                        <div id="pinned-gift-slot-2" class="pinned-gift-slot"></div>
-                        <div id="pinned-gift-slot-3" class="pinned-gift-slot"></div>
-                        <div id="pinned-gift-slot-4" class="pinned-gift-slot"></div>
-                        <div id="pinned-gift-slot-5" class="pinned-gift-slot"></div>
-                        <div id="pinned-gift-slot-6" class="pinned-gift-slot"></div>
-                    </div>
-                    <div id="worn-gift-banner"></div>
+                    <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
                     <div class="profile-header-content-wrapper">
+                        <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div>
                         <div id="profile-main-info-block" class="profile-main-info">
                             <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
                             <div class="profile-name-status">
@@ -1253,9 +1177,10 @@
         <div id="collectible-detail-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-scrollable-content">
+                    <!-- Collectible Display Area - Redesigned -->
                     <div class="collectible-display-area">
                         <button class="menu-button" id="collectible-menu-button">⋮</button>
-                        <div id="pattern-container-dynamic" class="pattern-container"></div>
+                        <div id="pattern-container-dynamic"></div>
                         <div id="modal-collectible-visual" class="modal-collectible-visual">
                             <div id="modal-lottie-collectible-model" class="lottie-animation-container"></div>
                             <img id="modal-collectible-model-img-static" class="static-image-fallback" src="" alt="Model" style="display:none;">
@@ -1617,7 +1542,7 @@
         const MIN_SALE_PRICE = 125;
         const MAX_SALE_PRICE = 100000;
 
-        const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 3.02L16 3H8V3.02L8 8.66L4 12.63V14H9V21.5L11.5 21.5L12 21.5V14H17V12.63L13 8.66V3M18 2L20 4L18 6H6L4 4L6 2Z"/></svg>`;
+        const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
@@ -1776,8 +1701,6 @@
         const profilePage = document.getElementById('profile-page');
         const profileTopSection = document.getElementById('profile-top-section');
         const profileHeaderPatternOverlay = document.getElementById('profile-header-pattern-overlay');
-        const profileFloatingPinnedGifts = document.getElementById('profile-floating-pinned-gifts');
-        const wornGiftBanner = document.getElementById('worn-gift-banner');
         const profileAvatar = document.getElementById('profile-avatar');
         const avatarUploadInput = document.getElementById('avatar-upload-input');
         const profileName = document.getElementById('profile-name');
@@ -1789,6 +1712,7 @@
         const profileBio = document.getElementById('profile-bio');
         const profileUsername = document.getElementById('profile-username');
         const collectibleUsernamesContainer = document.getElementById('collectible-usernames-container');
+        const profileTopPinnedGifts = document.getElementById('profile-top-pinned-gifts');
 
         const giftsTabButton = document.getElementById('gifts-tab-button');
         const giftsTabPreviewContainer = document.getElementById('gifts-tab-preview-container');
@@ -2035,7 +1959,7 @@
         function playLottieAnimation(container, path, loop = true, isGridItem = false) {
             if (!animationsEnabled) {
                 destroyLottieAnimation(container);
-                const parentCard = container.closest('.gift-card, .buy-gift-item, .modal-collectible-visual, .pinned-gift-slot');
+                const parentCard = container.closest('.gift-card, .buy-gift-item, .modal-collectible-visual');
                 if (parentCard) {
                     const staticFallback = parentCard.querySelector('.static-image-fallback');
                     if(staticFallback) staticFallback.style.display = 'block';
@@ -2337,11 +2261,13 @@
 
         function saveClientSideAccounts() {
             try {
+                // FIX: Only store minimal account info to prevent storage overflow.
                 const accountsToStore = accounts.map(acc => ({
                     tg_id: acc.tg_id,
                     username: acc.username,
                     full_name: acc.full_name,
                     avatar_url: acc.avatar_url
+                    // IMPORTANT: Do NOT store owned_gifts or other large data here.
                 }));
                 localStorage.setItem('giftSimAccounts' + APP_VERSION_SUFFIX, JSON.stringify(accountsToStore));
                 localStorage.setItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX, currentAccountTgId);
@@ -2423,74 +2349,31 @@
             sidebarOverlay.classList.remove('active');
         }
 
-        function renderAtmosphericPatterns(container, patternUrl) {
-            container.innerHTML = ''; // Clear previous patterns
-            if (!patternUrl) return;
-
-            const numPatterns = 20; // Number of patterns to scatter
-            const containerWidth = container.offsetWidth;
-            const containerHeight = container.offsetHeight;
-
-            for (let i = 0; i < numPatterns; i++) {
-                const img = document.createElement('img');
-                img.src = patternUrl;
-                img.className = 'dynamic-pattern-instance';
-                img.crossOrigin = 'Anonymous';
-
-                // Random position
-                const x = Math.random() * containerWidth;
-                const y = Math.random() * containerHeight;
-
-                // Calculate distance from center to determine scale
-                const centerX = containerWidth / 2;
-                const centerY = containerHeight / 2;
-                const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-                const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
-                const scale = 1.2 - (distance / maxDistance); // Closer to center = larger
-
-                img.style.left = `${x}px`;
-                img.style.top = `${y}px`;
-                img.style.transform = `translate(-50%, -50%) scale(${(scale * 0.8) + 0.3}) rotate(${Math.random() * 360}deg)`;
-                img.style.opacity = Math.random() * 0.08 + 0.02; // Random slight opacity
-
-                container.appendChild(img);
-            }
-        }
-
         function applyWornGiftStyles() {
             const wornGift = ownedGifts.find(g => g.is_worn === true);
-            destroyLottieAnimation(wornGiftIconContainer);
 
+            destroyLottieAnimation(wornGiftIconContainer);
             if (wornGift && wornGift.is_collectible && wornGift.collectible_data) {
                 const cd = wornGift.collectible_data;
-                
-                // Update small icon next to name
                 if (animationsEnabled && cd.lottieModelPath) {
                     playLottieAnimation(wornGiftIconContainer, cd.lottieModelPath, true);
                 } else if (cd.modelImage) {
                     wornGiftIconContainer.innerHTML = `<img src="${cd.modelImage}" style="width:100%; height:100%; object-fit:contain;">`;
                 }
                 wornGiftIconContainer.classList.remove('hidden');
-
-                // Update big banner
-                wornGiftBanner.textContent = `${wornGift.gift_name} #${wornGift.collectible_number}`;
-                wornGiftBanner.style.display = 'block';
-
-                // Update header background color and patterns
                 const colors = cd.backdropColors;
-                profileTopSection.style.background = (colors) ?
-                    `radial-gradient(circle at 50% 0%, ${colors.centerColor} 0%, ${colors.edgeColor} 100%)` :
-                    'var(--app-profile-gradient-fallback)';
-                
-                renderAtmosphericPatterns(profileHeaderPatternOverlay, cd.patternImage);
-
+                if (colors) profileTopSection.style.background = `radial-gradient(circle at 50% 0%, ${colors.centerColor} 0%, ${colors.edgeColor} 100%)`;
+                else profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
+                if (cd.patternImage) {
+                    profileHeaderPatternOverlay.style.backgroundImage = `url('${cd.patternImage}')`;
+                    profileHeaderPatternOverlay.style.opacity = '0.07';
+                } else profileHeaderPatternOverlay.style.backgroundImage = 'none';
             } else {
                 wornGiftIconContainer.classList.add('hidden');
-                wornGiftBanner.style.display = 'none';
+                wornGiftIconContainer.innerHTML = '';
                 profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
-                profileHeaderPatternOverlay.innerHTML = '';
+                profileHeaderPatternOverlay.style.backgroundImage = 'none';
             }
-            renderTopPinnedGiftsPreview();
         }
 
         function showPage(pageId) {
@@ -2523,6 +2406,7 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 allAvailableGifts = await response.json();
 
+                // Add all custom gifts to the end of the list
                 for (const giftName in CUSTOM_GIFTS_DATA) {
                     const customGift = CUSTOM_GIFTS_DATA[giftName];
                     if (customGift && customGift.id) {
@@ -2603,7 +2487,7 @@
 
         function updateAllAnimationsState() {
             document.querySelectorAll('.lottie-animation-container').forEach(container => {
-                const parentCard = container.closest('[data-lottie-path], .pinned-gift-slot');
+                const parentCard = container.closest('[data-lottie-path]');
                 const modal = container.closest('.modal-overlay.active');
 
                 if (animationsEnabled) {
@@ -2618,7 +2502,7 @@
                              const gift = ownedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId) || currentlySortedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId);
                              if (gift?.collectible_data?.lottieModelPath) playLottieAnimation(container, gift.collectible_data.lottieModelPath, true);
                          }
-                    } else if (container.closest('#profile-floating-pinned-gifts')) { renderTopPinnedGiftsPreview(); }
+                    } else if (container.closest('#profile-top-pinned-gifts')) { renderTopPinnedGiftsPreview(); }
                 } else {
                     destroyLottieAnimation(container);
                     if (parentCard) {
@@ -2647,13 +2531,14 @@
                 return true;
             });
 
+            // Sort gifts for display: Pinned first (by order), then by date
             const sortedGifts = [...filteredGifts].sort((a, b) => {
                 const aIsPinned = a.is_pinned && a.pin_order != null;
                 const bIsPinned = b.is_pinned && b.pin_order != null;
                 if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
                 if (aIsPinned) return -1;
                 if (bIsPinned) return 1;
-                return new Date(b.acquired_date) - new Date(b.acquired_date);
+                return new Date(b.acquired_date) - new Date(a.acquired_date);
             });
 
             currentlySortedGifts = sortedGifts;
@@ -2695,10 +2580,6 @@
             card.dataset.pinned = gift.is_pinned;
 
             if (gift.is_hidden) card.classList.add('is-hidden');
-            
-            const bgPatternContainer = document.createElement('div');
-            bgPatternContainer.className = 'pattern-container';
-            card.appendChild(bgPatternContainer);
 
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
@@ -2718,11 +2599,10 @@
 
                 const labelDiv = document.createElement('div');
                 labelDiv.className = 'top-right-label';
-                labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
-                
-                if (cd.backdropColors) {
-                    const grad = `linear-gradient(45deg, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
-                    labelDiv.style.background = grad;
+                if (gift.is_pinned) {
+                    labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
+                } else if (cd.supply) {
+                    labelDiv.textContent = `1 of ${(cd.supply / 1000).toFixed(1)}K`;
                 }
                 card.appendChild(labelDiv);
 
@@ -2731,8 +2611,7 @@
                 else bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
                 card.appendChild(bgDiv);
 
-                renderAtmosphericPatterns(bgPatternContainer, cd.patternImage);
-
+                if (cd.patternImage) { const pOverlay = document.createElement('div'); pOverlay.className = 'gift-card-pattern-overlay'; pOverlay.style.backgroundImage = `url('${cd.patternImage}')`; card.appendChild(pOverlay); }
             } else {
                 staticImage.src = gift.original_image_url; staticImage.alt = gift.gift_name;
                 lottiePathForCard = gift.lottie_path;
@@ -2741,11 +2620,10 @@
             staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';};
             imageContainer.appendChild(lottieContainer); imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
-            
             if (gift.is_pinned && !selectionModeActive) {
-                const pinDiv = document.createElement('div');
-                pinDiv.className = 'pin-indicator';
+                const pinDiv = document.createElement('div'); pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG;
+                pinDiv.querySelector('svg').style.transform = 'rotate(25deg)';
                 card.appendChild(pinDiv);
             }
 
@@ -2768,27 +2646,16 @@
         }
 
         function renderTopPinnedGiftsPreview() {
-            // Clear all slots first
-            for (let i = 1; i <= 6; i++) {
-                const slot = document.getElementById(`pinned-gift-slot-${i}`);
-                if (slot) {
-                    destroyLottieAnimation(slot);
-                    slot.innerHTML = '';
-                    slot.onclick = null;
-                }
-            }
+            Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
+            profileTopPinnedGifts.innerHTML = '';
 
-            const pinnedGifts = ownedGifts
-                .filter(g => g.is_pinned && !g.is_hidden)
-                .sort((a, b) => a.pin_order - b.pin_order);
+            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden);
 
-            pinnedGifts.slice(0, 6).forEach((gift, index) => {
-                const slot = document.getElementById(`pinned-gift-slot-${index + 1}`);
-                if (!slot) return;
-                
-                slot.dataset.instanceId = gift.instance_id;
-                slot.addEventListener('click', () => openGiftDetailByInstanceId(gift.instance_id));
-                
+            pinnedGifts.slice(0, 7).forEach(gift => {
+                const container = document.createElement('div');
+                container.className = 'pinned-gift-item';
+                container.dataset.instanceId = gift.instance_id;
+                container.addEventListener('click', () => openGiftDetailByInstanceId(gift.instance_id));
                 let lottiePathForPinned = null, imageForPinned = gift.original_image_url;
                 if (gift.is_collectible && gift.collectible_data) {
                     lottiePathForPinned = gift.collectible_data.lottieModelPath;
@@ -2796,13 +2663,13 @@
                 } else if (gift.lottie_path) {
                     lottiePathForPinned = gift.lottie_path;
                 }
-
                 if (animationsEnabled && lottiePathForPinned) {
-                    slot.classList.add('lottie-animation-container');
-                    playLottieAnimation(slot, lottiePathForPinned, true);
+                    container.classList.add('lottie-animation-container');
+                    playLottieAnimation(container, lottiePathForPinned, true);
                 } else {
-                     slot.innerHTML = `<img src="${imageForPinned}" alt="${gift.gift_name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
+                     container.innerHTML = `<img src="${imageForPinned}" alt="${gift.gift_name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
                 }
+                profileTopPinnedGifts.appendChild(container);
             });
         }
         
@@ -2841,6 +2708,7 @@
 
             upgradeAllGiftsButton.classList.toggle('hidden', !showUpgradeAll);
             exitFilterModeButton.classList.toggle('hidden', !showFilterExit);
+            // Selection/reorder buttons are managed by their own entry/exit functions
 
             const isAnyButtonVisible = showUpgradeAll || showFilterExit || reorderModeActive || selectionModeActive;
             profileGiftsActionsWrapper.classList.toggle('hidden', !isAnyButtonVisible);
@@ -3082,7 +2950,7 @@
         }
         
         function openTelegramProfile(event, username) {
-            event.stopPropagation(); 
+            event.stopPropagation(); // Prevent parent click
             event.preventDefault();
             tg.openTelegramLink(`https://t.me/${username}`);
         }
@@ -3113,13 +2981,61 @@
                 }
             };
 
+            if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
+
             if (collectibleDisplayArea && cd.backdropColors) {
                 collectibleDisplayArea.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
             } else {
                 collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
-            
-            renderAtmosphericPatterns(patternContainerDynamic, cd.patternImage);
+
+            if (cd.patternImage && patternContainerDynamic) {
+                setTimeout(() => {
+                    const containerWidth = patternContainerDynamic.offsetWidth;
+                    const containerHeight = patternContainerDynamic.offsetHeight;
+                    const centerX = containerWidth / 2;
+                    const centerY = containerHeight / 2 - 30;
+
+                    const createPattern = (styles) => {
+                        const img = document.createElement('img');
+                        img.src = cd.patternImage;
+                        img.className = 'dynamic-pattern-instance';
+                        img.crossOrigin = 'Anonymous';
+                        const baseRotation = -25;
+                        img.style.transform = `translate(-50%, -50%) rotate(${baseRotation}deg) scale(${styles.scale || 0.9})`;
+                        img.style.left = `${styles.left}px`;
+                        img.style.top = `${styles.top}px`;
+                        patternContainerDynamic.appendChild(img);
+                    };
+
+                    const circleRadius = Math.min(containerWidth, containerHeight) / 3.2;
+                    const numCirclePatterns = 10;
+                    for (let i = 0; i < numCirclePatterns; i++) {
+                        const angle = (i / numCirclePatterns) * 2 * Math.PI;
+                        const x = centerX + circleRadius * Math.cos(angle);
+                        const y = centerY + circleRadius * Math.sin(angle);
+                        createPattern({ left: x, top: y, scale: 0.9 });
+                    }
+
+                    const leftRowStartX = containerWidth * 0.15;
+                    const leftRowStartY = containerHeight * 0.2;
+                    const leftRowYStep = containerHeight * 0.18;
+                    for (let i = 0; i < 4; i++) {
+                        const x = leftRowStartX - (i * 5);
+                        const y = leftRowStartY + (i * leftRowYStep);
+                        createPattern({ left: x, top: y, scale: 0.85 });
+                    }
+
+                    const rightRowStartX = containerWidth * 0.85;
+                    const rightRowStartY = containerHeight * 0.2;
+                    const rightRowYStep = containerHeight * 0.18;
+                    for (let i = 0; i < 4; i++) {
+                        const x = rightRowStartX + (i * 5);
+                        const y = rightRowStartY + (i * rightRowYStep);
+                        createPattern({ left: x, top: y, scale: 0.85 });
+                    }
+                }, 50);
+            }
 
             destroyLottieAnimation(modalLottieCollectibleModel);
             modalCollectibleModelImgStatic.style.display = 'block';
@@ -3543,8 +3459,9 @@
 
             try {
                 await updateCustomGiftsSetting(isEnabling);
-                await initializeTelegramUserAccount();
+                await initializeTelegramUserAccount(); // Refresh data to show/hide gifts
             } catch (error) {
+                // Revert toggle on failure
                 customGiftsEnabled = !isEnabling;
                 customGiftsToggle.checked = !isEnabling;
             }
@@ -3592,7 +3509,7 @@
             
             const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
             if (currentGift && currentGift.id) {
-                 selectCustomBaseGift(currentGift.id, currentGift.name, currentGift.originalImage, false);
+                 selectCustomBaseGift(currentGift.id, currentGift.name, currentGift.originalImage, false); // false to not reset parts
             } else {
                 populateBaseGiftOptions();
                 document.getElementById('custom-buy-base-gifts-grid').classList.remove('hidden');
@@ -3659,13 +3576,13 @@
         
         function editGiftInQueue(index) {
             if (currentlyEditingGiftIndex === index) return;
-            if (currentlyEditingGiftIndex > -1) {
-                giftCreationQueue[currentlyEditingGiftIndex].quantity = parseInt(customBuyQuantityInput.value, 10) || 1;
-            }
+            // First, save the quantity of the gift we are leaving
+            giftCreationQueue[currentlyEditingGiftIndex].quantity = parseInt(customBuyQuantityInput.value, 10) || 1;
             
             currentlyEditingGiftIndex = index;
             renderGiftQueue();
 
+            // Hide everything then repopulate based on saved state
             const allSections = document.querySelectorAll('#gift-config-area .filter-section');
             allSections.forEach(s => s.classList.add('hidden'));
 
@@ -3702,6 +3619,7 @@
             const customGiftInfo = CUSTOM_GIFTS_DATA[name];
             updateCurrentGiftInQueue({lottiePath: customGiftInfo ? null : `${CDN_BASE_URL}originals/${id}/Original.json`});
 
+            // Fetch parts if not cached
             if (!cachedCollectibleParts[id]) {
                  if (customGiftInfo) {
                     const backdropsSourceName = customGiftInfo.backdrops_source;
@@ -3726,8 +3644,10 @@
                 }
             }
 
+            // Populate options from cached data
             populatePartSelector(id, name);
             
+            // Auto-select a random pattern if not already set
             if (resetParts && cachedCollectibleParts[id].patterns.length > 0) {
                 const randomPattern = getRandomElement(cachedCollectibleParts[id].patterns);
                 if (randomPattern) {
@@ -3739,16 +3659,18 @@
         function populatePartSelector(id, name) {
             let { models, backdrops, patterns } = cachedCollectibleParts[id];
             
+            // Sort models by rarity
             models = [...models].sort((a, b) => (a.rarityPermille || 999) - (b.rarityPermille || 999));
             
+            // Sort backdrops with custom pinned order
             const pinnedBackdropNames = ['Black', 'Onyx Black', 'Midnight Blue', 'Electric Purple', 'Amber', 'Cyberpunk'];
             backdrops = [...backdrops].sort((a, b) => {
                 const aIndex = pinnedBackdropNames.indexOf(a.name);
                 const bIndex = pinnedBackdropNames.indexOf(b.name);
-                if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-                if (aIndex !== -1) return -1;
-                if (bIndex !== -1) return 1;
-                return a.name.localeCompare(b.name);
+                if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex; // both are pinned
+                if (aIndex !== -1) return -1; // only a is pinned
+                if (bIndex !== -1) return 1;  // only b is pinned
+                return a.name.localeCompare(b.name); // neither is pinned, sort alphabetically
             });
 
             const customData = CUSTOM_GIFTS_DATA[name];
@@ -3832,6 +3754,7 @@
                 closeModal(customBuyModal);
                 showPage('profile-page');
             } catch (error) {
+                // Error is shown by callBackend
             } finally {
                 cloneGiftButton.disabled = false;
                 cloneGiftButton.textContent = "Clone Gift";
@@ -3841,6 +3764,7 @@
         async function handleCustomBuyConfirm() {
             if (customBuyConfirmButton.disabled) return;
             
+            // Save quantity for the currently active gift config
             if (currentlyEditingGiftIndex > -1) {
                 giftCreationQueue[currentlyEditingGiftIndex].quantity = parseInt(customBuyQuantityInput.value, 10) || 1;
             }
@@ -3867,12 +3791,13 @@
                             lottie_path: giftConfig.lottiePath,
                         });
                         
-                        const upgradePayload = {
+                                                const upgradePayload = {
                             instance_id: newInstanceId,
                             custom_model: giftConfig.model,
                             custom_backdrop: giftConfig.backdrop,
                         };
                         
+                        // Only specify pattern if quantity is 1. Otherwise, let backend randomize.
                         if (giftConfig.quantity === 1) {
                             upgradePayload.custom_pattern = giftConfig.pattern;
                         }
@@ -3888,6 +3813,7 @@
                 showPage('profile-page');
 
             } catch (error) {
+                 // Error handled by callBackend
             } finally {
                 customBuyConfirmButton.disabled = false;
                 updateCreateButtonState();
@@ -4033,7 +3959,7 @@
             openModal(chancesModal); calculateAndDisplayChances();
 
             if (!cachedCollectibleParts[gift.gift_type_id]) {
-                await selectCustomBaseGift(gift.gift_type_id, gift.gift_name);
+                await selectCustomBaseGift(gift.gift_type_id, gift.gift_name); // Re-use this logic to fetch/load parts
             }
             chancesLoadingSpinner.classList.add('hidden');
             populateChancesOptions(gift.gift_type_id, gift.gift_name);
@@ -4087,7 +4013,7 @@
             const selectedParts = [];
 
             if (selectedChances.model) {
-                totalProbability *= ((selectedChances.model.rarityPermille || 1) / 1000);
+                totalProbability *= ((selectedChances.model.rarityPermille || 1) / 1000); // Permille is 1 in 1000
                 selectedParts.push(`Model: ${selectedChances.model.name}`);
             }
              if (selectedChances.backdrop) {
@@ -4444,20 +4370,24 @@
             exitReorderModeButton.classList.add('hidden');
             giftsGrid.classList.remove('reordering');
             
+            // Immediately apply the new sort order to the local array
             const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card[data-pinned="true"]')).map(el => el.dataset.instanceId);
             newOrderIds.forEach((id, index) => {
                 const gift = ownedGifts.find(g => g.instance_id === id);
                 if (gift) gift.pin_order = index;
             });
             
+            // Re-render based on the updated local array
             renderProfileGifts();
         
             try {
+                // Send the final, correct order to the backend
                 await callBackend('/api/gifts/reorder', 'POST', {
                     owner_id: currentAccountTgId,
                     ordered_instance_ids: newOrderIds
                 });
             } catch (error) {
+                // If backend fails, re-fetch from server to ensure consistency
                 await initializeTelegramUserAccount();
             }
         }
@@ -4629,15 +4559,18 @@
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert("Giveaway saved! Please return to your chat with the bot to complete the setup.");
             } catch (error) {
+                // Error handled by callBackend
             } finally {
                 confirmGiveawaySetupButton.disabled = false;
                 confirmGiveawaySetupButton.textContent = "Start Setup in Bot";
             }
         }
 
+        // --- Swipe Navigation Logic ---
         function handleModalSwipe(direction) {
             const currentInstanceId = collectibleDetailModal.dataset.instanceId;
             if (!currentInstanceId) return;
+
             const swipableGifts = currentlySortedGifts.filter(g => g.is_collectible);
             if (swipableGifts.length < 2) return;
 
@@ -4768,9 +4701,11 @@
                 const deltaX = touchEndX - touchStartX;
                 const currentPage = document.querySelector('.page.active');
                 
+                // Swipe from left edge to open sidebar
                 if (touchStartX < swipeEdgeThreshold && deltaX > swipeEdgeThreshold) { 
                     openSidebar(); 
                 }
+                // Swipe from right to open gift shop
                 else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold) {
                     showPage('buy-gifts-page');
                 }
