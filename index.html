@@ -203,34 +203,80 @@
             padding-top: 56px;
             background: var(--app-profile-gradient-fallback);
             transition: background 0.3s ease;
+            height: 250px; /* Give it a fixed height to contain absolute elements */
+            overflow: hidden; /* Hide overflow from absolutely positioned gifts */
         }
-        .profile-header-pattern-overlay {
+        /* New container for dynamic patterns from worn gift */
+        #profile-header-worn-pattern-container {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-repeat: repeat;
-            background-size: 30% auto;
-            opacity: 0.07;
-            pointer-events: none;
             z-index: 0;
+            pointer-events: none;
+        }
+        .profile-header-pattern-instance {
+             position: absolute;
+             will-change: transform;
+             opacity: 0.1;
+             width: 60px; /* Base size */
+             height: auto;
         }
         .profile-header-content-wrapper {
              position: relative; z-index: 1;
              padding: 0 15px;
+             height: 100%;
+             display: flex;
+             flex-direction: column;
+             justify-content: flex-end; /* Align content to the bottom */
         }
-        .profile-top-pinned-gifts {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            padding: 5px 0 8px 0;
-            min-height: 30px;
+
+        /* --- NEW PINNED GIFTS LAYOUT --- */
+        #profile-header-pinned-gifts-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 5;
+            pointer-events: none; /* Container doesn't block clicks */
         }
-        .profile-top-pinned-gifts .pinned-gift-item {
-            width: 30px; height: 30px;
-            border-radius: 8px;
-            background-color: rgba(0,0,0,0.1);
-            overflow: hidden;
-            cursor: pointer;
+        .pinned-gift-slot {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            pointer-events: all; /* Slots are clickable */
+            transition: transform 0.3s ease-out;
         }
+        .pinned-gift-slot img, .pinned-gift-slot .lottie-animation-container {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+        .pinned-gift-slot-1 { top: 75px; left: 20px; transform: rotate(-15deg); }
+        .pinned-gift-slot-2 { top: 25px; left: 50%; margin-left: -70px; transform: rotate(10deg) scale(0.9); }
+        .pinned-gift-slot-3 { top: 80px; left: 50%; margin-left: 20px; transform: rotate(-5deg); }
+        .pinned-gift-slot-4 { top: 40px; right: 70px; transform: rotate(15deg) scale(0.95); }
+        .pinned-gift-slot-5 { top: 100px; right: 20px; transform: rotate(20deg) scale(1.05); }
+        .pinned-gift-slot-6 { top: 105px; right: 50%; margin-right: -40px; transform: rotate(-20deg); }
+
+        /* --- NEW WORN GIFT BANNER --- */
+        #worn-gift-banner {
+            position: absolute;
+            top: 85px; /* Adjust as needed */
+            right: -10px; /* Start off-screen slightly */
+            z-index: 6;
+            background-color: rgba(30, 30, 30, 0.75);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            color: var(--tg-theme-text-color);
+            padding: 8px 16px;
+            border-radius: 18px;
+            font-size: 0.9em;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            white-space: nowrap;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        #worn-gift-banner.hidden {
+            opacity: 0;
+            transform: translateX(20px);
+            pointer-events: none;
+        }
+
         .profile-main-info {
             display: flex;
             align-items: center;
@@ -244,6 +290,7 @@
             object-fit: cover;
             border: 3px solid rgba(255,255,255,0.1);
             cursor: pointer;
+            position: relative; z-index: 2; /* Ensure avatar is above patterns */
         }
         .profile-name-status { display: flex; flex-direction: column; }
         .profile-name-status .name-line { display: flex; align-items: center; }
@@ -252,9 +299,14 @@
             color: var(--tg-theme-text-color);
         }
         #worn-gift-icon-container {
-            width: 24px; height: 24px; margin-left: 8px;
-            overflow: hidden;
+            width: 28px; /* Slightly larger */
+            height: 28px;
+            margin-left: 8px;
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #worn-gift-icon-container:hover {
+            transform: scale(1.1);
         }
         .profile-name-status p { font-size: 0.95em; color: var(--tg-theme-text-color); opacity: 0.7; margin-top: 3px; }
         .profile-name-status p.online { opacity: 1; color: var(--tg-theme-link-color); }
@@ -350,7 +402,6 @@
             flex-direction: column;
         }
 
-        /* NEW: Action bar is now a direct child of gifts-content */
         #gifts-content .profile-gifts-actions-wrapper {
             display: flex;
             align-items: center;
@@ -424,18 +475,22 @@
             transform: scale(1.05);
             opacity: 0.7;
         }
+        /* --- DYNAMIC PATTERN CONTAINERS --- */
         .gift-card-bg-pattern, .buy-gift-item-bg-pattern {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-size: cover; pointer-events: none; z-index: 0;
+            background-size: cover; z-index: 0;
         }
-        .gift-card-pattern-overlay, .buy-gift-item-pattern-overlay {
+        .gift-card-dynamic-patterns {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-repeat: repeat;
-            background-size: 30% auto;
-            background-position: center;
-            opacity: 0.1;
-            pointer-events: none; z-index: 1;
+            z-index: 1; pointer-events: none;
         }
+        .dynamic-pattern-instance {
+            position: absolute;
+            will-change: transform;
+            opacity: 0.1;
+        }
+        /* End dynamic pattern containers */
+
         .image-container {
             width: 70%; height: 70%;
             display: flex; align-items: center; justify-content: center;
@@ -455,36 +510,45 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Rotated Label - CORRECTED */
-        .gift-card .top-right-label {
+        /* --- NEW 3D BANNER --- */
+        .top-right-label {
             position: absolute;
-            top: 10px; /* Adjusted for visual balance */
-            right: -28px; /* Adjusted for visual balance */
+            top: 14px;
+            right: -24px;
             transform: rotate(45deg);
-            transform-origin: center;
-            background-color: rgba(0,0,0,0.35);
-            color: var(--tg-theme-text-color);
-            font-size: 0.65em;
-            padding: 1px 25px;
             z-index: 4;
-            font-weight: 500;
-            white-space: nowrap;
+            color: white;
+            padding: 2px 25px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+        }
+        .top-right-label::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            border-radius: 3px;
         }
 
-        .gift-card .pin-indicator {
-            position: absolute; top: 5px; left: 5px;
-            z-index: 3; display: flex; align-items: center; justify-content: center;
+        /* --- NEW PIN INDICATOR --- */
+        .pin-indicator {
+            position: absolute; top: 4px; left: 4px;
+            z-index: 3;
+            width: 24px; height: 24px;
+            opacity: 0.9;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
         }
-        .gift-card .pin-indicator svg { width: 18px; height: 18px; fill: var(--tg-theme-link-color); opacity: 0.8; }
 
         /* Selection Mode Checkbox */
         .gift-card .selection-checkbox {
-            position: absolute; top: 5px; right: 5px; /* Moved to right for consistency */
+            position: absolute; top: 5px; right: 5px;
             width: 22px; height: 22px;
             background-color: rgba(0, 0, 0, 0.4);
             border: 2px solid #fff;
             border-radius: 50%;
-            z-index: 5; /* Higher than label */
+            z-index: 5;
             display: flex; align-items: center; justify-content: center;
             transition: background-color 0.2s;
         }
@@ -639,7 +703,7 @@
         #collectible-detail-modal #collectible-menu-button svg { fill: white; }
 
         .collectible-display-area {
-            padding: 40px 0 20px 0; /* Adjusted padding */
+            padding: 40px 0 20px 0;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -652,14 +716,6 @@
             z-index: 1;
             pointer-events: none;
         }
-        .dynamic-pattern-instance {
-            position: absolute;
-            opacity: 0.1;
-            width: 40px;
-            height: auto;
-            will-change: transform;
-        }
-
         .modal-collectible-visual {
             width: 45%;
             max-width: 160px;
@@ -695,13 +751,13 @@
 
         .modal-action-buttons-row {
             display: flex; justify-content: space-around; gap: 10px;
-            padding: 20px; /* Moved padding here from display-area */
-            background-color: transparent; /* No longer has its own background */
-            position: relative; z-index: 2; /* Ensure buttons are on top */
+            padding: 20px;
+            background-color: transparent;
+            position: relative; z-index: 2;
         }
         .modal-action-buttons-row button {
             flex-grow: 1; padding: 10px 5px; font-size: 0.9em;
-            background-color: rgba(0,0,0,0.25); /* Dark, transparent background */
+            background-color: rgba(0,0,0,0.25);
             color: var(--tg-theme-text-color);
             border: none; border-radius: 8px;
             display: flex; flex-direction: column; align-items: center;
@@ -1080,9 +1136,12 @@
             </div>
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
-                    <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
+                    <div id="profile-header-worn-pattern-container"></div>
+                    <div id="profile-header-pinned-gifts-container"></div>
+                    <div id="worn-gift-banner" class="hidden">
+                        <span id="worn-gift-banner-text"></span>
+                    </div>
                     <div class="profile-header-content-wrapper">
-                        <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div>
                         <div id="profile-main-info-block" class="profile-main-info">
                             <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
                             <div class="profile-name-status">
@@ -1542,7 +1601,7 @@
         const MIN_SALE_PRICE = 125;
         const MAX_SALE_PRICE = 100000;
 
-        const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
+        const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="#ffffff"><path d="M15.285 4.129a.997.997 0 0 0-.999.086L6.5 9.754V15.5a2.5 2.5 0 0 0 4.341 1.756l.659.659A2.486 2.486 0 0 0 13.256 18a2.5 2.5 0 0 0 1.756-4.341l.659.659A2.486 2.486 0 0 0 15.75 12a2.5 2.5 0 0 0 1.756-4.341l.659.659a2.486 2.486 0 0 0 .079-.079A2.5 2.5 0 0 0 15.285 4.13zm-1.03 7.096a.5.5 0 0 1-.707 0l-1.06-1.061a.5.5 0 1 1 .707-.707l1.06 1.06a.5.5 0 0 1 0 .708z"/><path d="M15.5 12.75a.75.75 0 0 1-.75-.75V6.5a.75.75 0 0 1 1.5 0V12a.75.75 0 0 1-.75.75z"/><path d="M9.75 15.5a.75.75 0 0 1-.75-.75V9.76l5-3.333V12a.75.75 0 0 1-1.5 0V7.24l-4.25 2.833V14.75a.75.75 0 0 1-.75.75z"/></g></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
@@ -1700,7 +1759,11 @@
 
         const profilePage = document.getElementById('profile-page');
         const profileTopSection = document.getElementById('profile-top-section');
-        const profileHeaderPatternOverlay = document.getElementById('profile-header-pattern-overlay');
+        const profileHeaderWornPatternContainer = document.getElementById('profile-header-worn-pattern-container');
+        const profileHeaderPinnedGiftsContainer = document.getElementById('profile-header-pinned-gifts-container');
+        const wornGiftBanner = document.getElementById('worn-gift-banner');
+        const wornGiftBannerText = document.getElementById('worn-gift-banner-text');
+
         const profileAvatar = document.getElementById('profile-avatar');
         const avatarUploadInput = document.getElementById('avatar-upload-input');
         const profileName = document.getElementById('profile-name');
@@ -1712,7 +1775,6 @@
         const profileBio = document.getElementById('profile-bio');
         const profileUsername = document.getElementById('profile-username');
         const collectibleUsernamesContainer = document.getElementById('collectible-usernames-container');
-        const profileTopPinnedGifts = document.getElementById('profile-top-pinned-gifts');
 
         const giftsTabButton = document.getElementById('gifts-tab-button');
         const giftsTabPreviewContainer = document.getElementById('gifts-tab-preview-container');
@@ -1959,7 +2021,7 @@
         function playLottieAnimation(container, path, loop = true, isGridItem = false) {
             if (!animationsEnabled) {
                 destroyLottieAnimation(container);
-                const parentCard = container.closest('.gift-card, .buy-gift-item, .modal-collectible-visual');
+                const parentCard = container.closest('.gift-card, .buy-gift-item, .modal-collectible-visual, .pinned-gift-slot');
                 if (parentCard) {
                     const staticFallback = parentCard.querySelector('.static-image-fallback');
                     if(staticFallback) staticFallback.style.display = 'block';
@@ -2348,31 +2410,82 @@
             accountSidebar.classList.remove('active');
             sidebarOverlay.classList.remove('active');
         }
+        
+        // New helper function to create dynamic scattered patterns
+        function renderDynamicPatterns(container, patternUrl, count, options = {}) {
+            container.innerHTML = '';
+            if (!patternUrl) return;
+
+            const {
+                minScale = 0.5, maxScale = 1.2,
+                baseSize = 40,
+                areaWidth = container.offsetWidth,
+                areaHeight = container.offsetHeight
+            } = options;
+
+            const centerX = areaWidth / 2;
+            const centerY = areaHeight / 2;
+            const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+
+            for (let i = 0; i < count; i++) {
+                const img = document.createElement('img');
+                img.src = patternUrl;
+                img.className = 'dynamic-pattern-instance';
+                img.style.width = `${baseSize}px`;
+
+                const angle = Math.random() * 2 * Math.PI;
+                const radius = Math.random() * maxDist;
+                
+                const x = centerX + radius * Math.cos(angle) - (baseSize / 2);
+                const y = centerY + radius * Math.sin(angle) - (baseSize / 2);
+
+                const distFromCenter = Math.sqrt(Math.pow(x + (baseSize/2) - centerX, 2) + Math.pow(y + (baseSize/2) - centerY, 2));
+                const scale = maxScale - (distFromCenter / maxDist) * (maxScale - minScale);
+                
+                img.style.left = `${x}px`;
+                img.style.top = `${y}px`;
+                img.style.transform = `scale(${scale.toFixed(2)}) rotate(${Math.random() * 360}deg)`;
+                
+                container.appendChild(img);
+            }
+        }
 
         function applyWornGiftStyles() {
             const wornGift = ownedGifts.find(g => g.is_worn === true);
 
+            // Reset all elements first
             destroyLottieAnimation(wornGiftIconContainer);
+            wornGiftIconContainer.classList.add('hidden');
+            wornGiftBanner.classList.add('hidden');
+            profileHeaderWornPatternContainer.innerHTML = '';
+            profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
+
             if (wornGift && wornGift.is_collectible && wornGift.collectible_data) {
                 const cd = wornGift.collectible_data;
+                
+                // 1. Set background gradient
+                const colors = cd.backdropColors;
+                if (colors) {
+                    profileTopSection.style.background = `radial-gradient(circle at 50% 0%, ${colors.centerColor} 0%, ${colors.edgeColor} 100%)`;
+                }
+
+                // 2. Render atmospheric patterns
+                if (cd.patternImage) {
+                    renderDynamicPatterns(profileHeaderWornPatternContainer, cd.patternImage, 25, { baseSize: 60 });
+                }
+
+                // 3. Render the small icon next to the name
                 if (animationsEnabled && cd.lottieModelPath) {
                     playLottieAnimation(wornGiftIconContainer, cd.lottieModelPath, true);
                 } else if (cd.modelImage) {
                     wornGiftIconContainer.innerHTML = `<img src="${cd.modelImage}" style="width:100%; height:100%; object-fit:contain;">`;
                 }
                 wornGiftIconContainer.classList.remove('hidden');
-                const colors = cd.backdropColors;
-                if (colors) profileTopSection.style.background = `radial-gradient(circle at 50% 0%, ${colors.centerColor} 0%, ${colors.edgeColor} 100%)`;
-                else profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
-                if (cd.patternImage) {
-                    profileHeaderPatternOverlay.style.backgroundImage = `url('${cd.patternImage}')`;
-                    profileHeaderPatternOverlay.style.opacity = '0.07';
-                } else profileHeaderPatternOverlay.style.backgroundImage = 'none';
-            } else {
-                wornGiftIconContainer.classList.add('hidden');
-                wornGiftIconContainer.innerHTML = '';
-                profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
-                profileHeaderPatternOverlay.style.backgroundImage = 'none';
+
+                // 4. Render the large name/number banner
+                wornGiftBannerText.textContent = `${wornGift.gift_name} #${wornGift.collectible_number.toLocaleString()}`;
+                wornGiftBanner.classList.remove('hidden');
+
             }
         }
 
@@ -2502,7 +2615,9 @@
                              const gift = ownedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId) || currentlySortedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId);
                              if (gift?.collectible_data?.lottieModelPath) playLottieAnimation(container, gift.collectible_data.lottieModelPath, true);
                          }
-                    } else if (container.closest('#profile-top-pinned-gifts')) { renderTopPinnedGiftsPreview(); }
+                    } else if (container.closest('#profile-header-pinned-gifts-container')) {
+                         renderTopPinnedGiftsPreview();
+                    }
                 } else {
                     destroyLottieAnimation(container);
                     if (parentCard) {
@@ -2538,7 +2653,7 @@
                 if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
                 if (aIsPinned) return -1;
                 if (bIsPinned) return 1;
-                return new Date(b.acquired_date) - new Date(a.acquired_date);
+                return new Date(b.acquired_date) - new Date(b.acquired_date);
             });
 
             currentlySortedGifts = sortedGifts;
@@ -2597,33 +2712,53 @@
                 staticImage.alt = cd.model?.name || gift.gift_name;
                 lottiePathForCard = cd.lottieModelPath;
 
+                // Rotated 3D Number Banner
                 const labelDiv = document.createElement('div');
                 labelDiv.className = 'top-right-label';
-                if (gift.is_pinned) {
-                    labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
-                } else if (cd.supply) {
-                    labelDiv.textContent = `1 of ${(cd.supply / 1000).toFixed(1)}K`;
+                labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
+                if (cd.backdropColors) {
+                    // Create a subtle gradient for the banner based on backdrop
+                    labelDiv.style.setProperty('--banner-grad', `linear-gradient(135deg, ${cd.backdropColors.edgeColor}, ${cd.backdropColors.centerColor})`);
+                    labelDiv.querySelector('::before').style.background = 'var(--banner-grad)';
+                } else {
+                    labelDiv.querySelector('::before').style.background = 'var(--tg-theme-link-color)';
                 }
                 card.appendChild(labelDiv);
 
-                const bgDiv = document.createElement('div'); bgDiv.className = 'gift-card-bg-pattern';
-                if (cd.backdropColors) bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
-                else bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
+                // Background Gradient
+                const bgDiv = document.createElement('div');
+                bgDiv.className = 'gift-card-bg-pattern';
+                if (cd.backdropColors) {
+                    bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
+                } else {
+                    bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
+                }
                 card.appendChild(bgDiv);
+                
+                // Dynamic Patterns
+                const patternContainer = document.createElement('div');
+                patternContainer.className = 'gift-card-dynamic-patterns';
+                card.appendChild(patternContainer);
+                if (cd.patternImage) {
+                    renderDynamicPatterns(patternContainer, cd.patternImage, 15, { minScale: 0.3, maxScale: 1.0, baseSize: 30 });
+                }
 
-                if (cd.patternImage) { const pOverlay = document.createElement('div'); pOverlay.className = 'gift-card-pattern-overlay'; pOverlay.style.backgroundImage = `url('${cd.patternImage}')`; card.appendChild(pOverlay); }
             } else {
-                staticImage.src = gift.original_image_url; staticImage.alt = gift.gift_name;
+                staticImage.src = gift.original_image_url;
+                staticImage.alt = gift.gift_name;
                 lottiePathForCard = gift.lottie_path;
             }
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
             staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';};
-            imageContainer.appendChild(lottieContainer); imageContainer.appendChild(staticImage);
+            imageContainer.appendChild(lottieContainer);
+            imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
+            
+            // New Pin Indicator
             if (gift.is_pinned && !selectionModeActive) {
-                const pinDiv = document.createElement('div'); pinDiv.className = 'pin-indicator';
+                const pinDiv = document.createElement('div');
+                pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG;
-                pinDiv.querySelector('svg').style.transform = 'rotate(25deg)';
                 card.appendChild(pinDiv);
             }
 
@@ -2646,31 +2781,39 @@
         }
 
         function renderTopPinnedGiftsPreview() {
-            Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
-            profileTopPinnedGifts.innerHTML = '';
+            profileHeaderPinnedGiftsContainer.innerHTML = '';
+            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden).slice(0, 6);
 
-            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden);
+            for (let i = 0; i < 6; i++) {
+                const slot = document.createElement('div');
+                slot.className = `pinned-gift-slot pinned-gift-slot-${i + 1}`;
+                const gift = pinnedGifts[i];
 
-            pinnedGifts.slice(0, 7).forEach(gift => {
-                const container = document.createElement('div');
-                container.className = 'pinned-gift-item';
-                container.dataset.instanceId = gift.instance_id;
-                container.addEventListener('click', () => openGiftDetailByInstanceId(gift.instance_id));
-                let lottiePathForPinned = null, imageForPinned = gift.original_image_url;
-                if (gift.is_collectible && gift.collectible_data) {
-                    lottiePathForPinned = gift.collectible_data.lottieModelPath;
-                    imageForPinned = gift.collectible_data.modelImage || gift.original_image_url;
-                } else if (gift.lottie_path) {
-                    lottiePathForPinned = gift.lottie_path;
+                if (gift) {
+                    slot.dataset.instanceId = gift.instance_id;
+                    slot.addEventListener('click', () => openGiftDetailByInstanceId(gift.instance_id));
+                    
+                    let lottiePathForPinned = null;
+                    let imageForPinned = gift.original_image_url;
+                    
+                    if (gift.is_collectible && gift.collectible_data) {
+                        lottiePathForPinned = gift.collectible_data.lottieModelPath;
+                        imageForPinned = gift.collectible_data.modelImage || gift.original_image_url;
+                    } else if (gift.lottie_path) {
+                        lottiePathForPinned = gift.lottie_path;
+                    }
+                    
+                    if (animationsEnabled && lottiePathForPinned) {
+                        const lottieContainer = document.createElement('div');
+                        lottieContainer.className = 'lottie-animation-container';
+                        slot.appendChild(lottieContainer);
+                        playLottieAnimation(lottieContainer, lottiePathForPinned, true);
+                    } else {
+                        slot.innerHTML = `<img src="${imageForPinned}" alt="${gift.gift_name}" class="static-image-fallback" onerror="this.parentElement.innerHTML = '🎁'">`;
+                    }
                 }
-                if (animationsEnabled && lottiePathForPinned) {
-                    container.classList.add('lottie-animation-container');
-                    playLottieAnimation(container, lottiePathForPinned, true);
-                } else {
-                     container.innerHTML = `<img src="${imageForPinned}" alt="${gift.gift_name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
-                }
-                profileTopPinnedGifts.appendChild(container);
-            });
+                profileHeaderPinnedGiftsContainer.appendChild(slot);
+            }
         }
         
         function renderGiftsTabPreview() {
@@ -2989,52 +3132,8 @@
                 collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
 
-            if (cd.patternImage && patternContainerDynamic) {
-                setTimeout(() => {
-                    const containerWidth = patternContainerDynamic.offsetWidth;
-                    const containerHeight = patternContainerDynamic.offsetHeight;
-                    const centerX = containerWidth / 2;
-                    const centerY = containerHeight / 2 - 30;
-
-                    const createPattern = (styles) => {
-                        const img = document.createElement('img');
-                        img.src = cd.patternImage;
-                        img.className = 'dynamic-pattern-instance';
-                        img.crossOrigin = 'Anonymous';
-                        const baseRotation = -25;
-                        img.style.transform = `translate(-50%, -50%) rotate(${baseRotation}deg) scale(${styles.scale || 0.9})`;
-                        img.style.left = `${styles.left}px`;
-                        img.style.top = `${styles.top}px`;
-                        patternContainerDynamic.appendChild(img);
-                    };
-
-                    const circleRadius = Math.min(containerWidth, containerHeight) / 3.2;
-                    const numCirclePatterns = 10;
-                    for (let i = 0; i < numCirclePatterns; i++) {
-                        const angle = (i / numCirclePatterns) * 2 * Math.PI;
-                        const x = centerX + circleRadius * Math.cos(angle);
-                        const y = centerY + circleRadius * Math.sin(angle);
-                        createPattern({ left: x, top: y, scale: 0.9 });
-                    }
-
-                    const leftRowStartX = containerWidth * 0.15;
-                    const leftRowStartY = containerHeight * 0.2;
-                    const leftRowYStep = containerHeight * 0.18;
-                    for (let i = 0; i < 4; i++) {
-                        const x = leftRowStartX - (i * 5);
-                        const y = leftRowStartY + (i * leftRowYStep);
-                        createPattern({ left: x, top: y, scale: 0.85 });
-                    }
-
-                    const rightRowStartX = containerWidth * 0.85;
-                    const rightRowStartY = containerHeight * 0.2;
-                    const rightRowYStep = containerHeight * 0.18;
-                    for (let i = 0; i < 4; i++) {
-                        const x = rightRowStartX + (i * 5);
-                        const y = rightRowStartY + (i * rightRowYStep);
-                        createPattern({ left: x, top: y, scale: 0.85 });
-                    }
-                }, 50);
+            if (cd.patternImage) {
+                renderDynamicPatterns(patternContainerDynamic, cd.patternImage, 20, { baseSize: 50, areaWidth: 350, areaHeight: 350 });
             }
 
             destroyLottieAnimation(modalLottieCollectibleModel);
@@ -3115,7 +3214,7 @@
                 menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin';
                 menuPinAction.classList.toggle('disabled', !isOwner);
                 menuShareImageAction.classList.remove('hidden');
-                menuCopyLinkAction.classList.add('hidden');
+                menuCopyLinkAction.add('hidden');
                 menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
             }
 
@@ -4365,33 +4464,40 @@
 
         async function exitReorderMode() {
             reorderModeActive = false;
-            if (sortableInstance) sortableInstance.destroy();
-            sortableInstance = null;
+            if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
             exitReorderModeButton.classList.add('hidden');
             giftsGrid.classList.remove('reordering');
             
-            // Immediately apply the new sort order to the local array
+            // Immediately get the new visual order from the DOM
             const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card[data-pinned="true"]')).map(el => el.dataset.instanceId);
+            
+            // Update the local state to match the new order for an instant UI update
             newOrderIds.forEach((id, index) => {
                 const gift = ownedGifts.find(g => g.instance_id === id);
-                if (gift) gift.pin_order = index;
+                if (gift) {
+                    gift.pin_order = index;
+                }
             });
             
-            // Re-render based on the updated local array
+            // Re-render the gifts grid based on the updated local state
             renderProfileGifts();
         
             try {
-                // Send the final, correct order to the backend
+                // Send the final, correct order to the backend to persist the changes
                 await callBackend('/api/gifts/reorder', 'POST', {
                     owner_id: currentAccountTgId,
                     ordered_instance_ids: newOrderIds
                 });
             } catch (error) {
-                // If backend fails, re-fetch from server to ensure consistency
+                // If the backend call fails, refresh data from the server
+                // to revert to the last known correct state and avoid UI inconsistency.
                 await initializeTelegramUserAccount();
             }
         }
-
+        
         // --- Selection Mode Logic ---
         function enterSelectionMode(action) {
             closeModal(settingsModal);
@@ -4399,30 +4505,30 @@
             selectionModeActive = true;
             selectionAction = action;
             selectedGiftIds.clear();
-
+    
             exitSelectionModeButton.classList.remove('hidden');
             if (action === 'hide') hideSelectedGiftsButton.classList.remove('hidden');
             else if (action === 'transfer') transferSelectedGiftsButton.classList.remove('hidden');
             renderProfileGifts();
         }
-
+    
         function exitSelectionMode() {
             selectionModeActive = false;
             selectionAction = null;
             selectedGiftIds.clear();
-
+    
             exitSelectionModeButton.classList.add('hidden');
             hideSelectedGiftsButton.classList.add('hidden');
             transferSelectedGiftsButton.classList.add('hidden');
             updateActionToolbarVisibility();
-
+    
             renderProfileGifts();
         }
-
+    
         function toggleGiftSelection(instanceId) {
             const card = giftsGrid.querySelector(`.gift-card[data-instance-id="${instanceId}"]`);
             if (!card) return;
-
+    
             if (selectedGiftIds.has(instanceId)) {
                 selectedGiftIds.delete(instanceId);
                 card.classList.remove('selected');
@@ -4439,11 +4545,11 @@
                 transferSelectedGiftsButton.disabled = count === 0;
             }
         }
-
+    
         async function handleHideMultiple() {
             if (selectedGiftIds.size === 0) return;
             const idsToHide = Array.from(selectedGiftIds);
-
+    
             exitSelectionMode();
             tg.showConfirm(`Are you sure you want to hide ${idsToHide.length} selected gifts?`, async (confirmed) => {
                 if (confirmed) {
@@ -4453,7 +4559,7 @@
                     });
                     renderProfileGifts();
                     tg.HapticFeedback.notificationOccurred('success');
-
+    
                     try {
                         await callBackend('/api/gifts/batch_action', 'POST', {
                             action: 'hide',
@@ -4469,26 +4575,26 @@
                 }
             });
         }
-
+    
         function handleTransferMultiple() {
             if (selectedGiftIds.size === 0) return;
-
+    
             openModal(transferGiftModal);
             transferModalTitle.textContent = `Transfer ${selectedGiftIds.size} Gifts`;
             transferGiftImage.classList.add('hidden');
             transferGiftName.classList.add('hidden');
-
+    
             confirmTransferButton.onclick = async () => {
                  if (confirmTransferButton.disabled) return;
                  const receiverUsername = transferUsernameInput.value.trim();
                  const comment = transferCommentInput.value.trim();
                  const idsToTransfer = Array.from(selectedGiftIds);
-
+    
                  if (!receiverUsername) { transferStatusMessage.innerHTML = '<p style="color:red;">Please enter a username.</p>'; return; }
-
+    
                  confirmTransferButton.disabled = true;
                  confirmTransferButton.textContent = 'Transferring...';
-
+    
                  try {
                      await callBackend('/api/gifts/batch_action', 'POST', {
                          action: 'transfer',
@@ -4508,7 +4614,7 @@
                  }
             };
         }
-
+    
         // --- GIVEAWAY ---
         function openGiveawaySetupModal() {
             closeSidebar();
@@ -4518,13 +4624,13 @@
             giveawayGiftSelectionGrid.innerHTML = '';
             selectedGiveawayGifts.clear();
             confirmGiveawaySetupButton.disabled = true;
-
+    
             const collectibleGifts = ownedGifts.filter(g => g.is_collectible && !g.is_hidden);
             if (collectibleGifts.length === 0) {
                 giveawayGiftSelectionGrid.innerHTML = '<p class="empty-grid-message">You have no collectible gifts to give away.</p>';
                 return;
             }
-
+    
             collectibleGifts.forEach(gift => {
                 const card = createGiftCardDOM(gift);
                 card.onclick = () => {
@@ -4545,10 +4651,10 @@
         async function handleConfirmGiveawaySetup() {
             if (selectedGiveawayGifts.size === 0) return;
             const winnerRule = document.querySelector('input[name="winner-rule"]:checked').value;
-
+    
             confirmGiveawaySetupButton.disabled = true;
             confirmGiveawaySetupButton.textContent = "Initiating...";
-
+    
             try {
                 await callBackend('/api/giveaways/create', 'POST', {
                     creator_id: currentAccountTgId,
@@ -4565,41 +4671,41 @@
                 confirmGiveawaySetupButton.textContent = "Start Setup in Bot";
             }
         }
-
+    
         // --- Swipe Navigation Logic ---
         function handleModalSwipe(direction) {
             const currentInstanceId = collectibleDetailModal.dataset.instanceId;
             if (!currentInstanceId) return;
-
+    
             const swipableGifts = currentlySortedGifts.filter(g => g.is_collectible);
             if (swipableGifts.length < 2) return;
-
+    
             let currentIndex = swipableGifts.findIndex(g => g.instance_id === currentInstanceId);
             if (currentIndex === -1) return;
-
+    
             let nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
-
+    
             if (nextIndex >= swipableGifts.length) nextIndex = 0;
             if (nextIndex < 0) nextIndex = swipableGifts.length - 1;
-
+    
             const nextGift = swipableGifts[nextIndex];
             if (nextGift && nextGift.instance_id !== currentInstanceId) {
                 closeModal(collectibleDetailModal);
                 setTimeout(() => openGiftDetailByInstanceId(nextGift.instance_id), 50);
             }
         }
-
-
+    
+    
         function setupEventListeners() {
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
             postsTabButton.addEventListener('click', () => switchTab('posts'));
             archiveTabButton.addEventListener('click', () => switchTab('archive'));
-
+    
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
-
+    
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
             profileAvatar.addEventListener('contextmenu', (e) => { e.preventDefault(); if (viewingOwnProfile) avatarUploadInput.click(); });
-
+    
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) closeModal(modal);
@@ -4617,7 +4723,7 @@
             document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
-
+    
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
                 const giftInstanceId = collectibleDetailModal.dataset.instanceId;
@@ -4638,26 +4744,26 @@
                 currentLongPressGift = gift;
                 handleHideAction();
             });
-
+    
             menuPinAction.addEventListener('click', handlePinAction);
             menuHideAction.addEventListener('click', handleHideAction);
             menuCopyLinkAction.addEventListener('click', () => { if(currentLongPressGift) copyGiftLink(currentLongPressGift); });
             menuDeleteAction.addEventListener('click', handleDeleteAction);
             menuShareImageAction.addEventListener('click', handleShareImageAction);
             menuReorderAction.addEventListener('click', enterReorderMode);
-
+    
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
-
+    
             openFiltersButton.addEventListener('click', openFilterPopup);
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
             exitFilterModeButton.addEventListener('click', handleClearFilters);
             exitReorderModeButton.addEventListener('click', exitReorderMode);
-
+    
             exitSelectionModeButton.addEventListener('click', exitSelectionMode);
             hideSelectedGiftsButton.addEventListener('click', handleHideMultiple);
             transferSelectedGiftsButton.addEventListener('click', handleTransferMultiple);
-
+    
             settingsModal.querySelector('.modal-button.secondary')?.addEventListener('click', () => closeModal(settingsModal));
             animationToggle.addEventListener('change', handleAnimationToggle);
             customGiftsToggle.addEventListener('change', handleCustomGiftsToggle);
@@ -4666,38 +4772,38 @@
             transferMultipleButton.addEventListener('click', () => enterSelectionMode('transfer'));
             clearCurrentAccountDataButton.addEventListener('click', handleClearCurrentAccountData);
             clearAllAccountsDataButton.addEventListener('click', handleClearAllAccountsData);
-
+    
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             cloneGiftButton.addEventListener('click', handleCloneGift);
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
             document.querySelector('#buy-gifts-page .page-header h2').addEventListener('contextmenu', (e) => { e.preventDefault(); openCustomBuyModal(); });
-
+    
             sellPriceInput.addEventListener('input', updateSellPriceDetails);
             confirmSellButton.addEventListener('click', handleConfirmSell);
-
+    
             transferUsernameInput.addEventListener('input', () => { confirmTransferButton.disabled = transferUsernameInput.value.trim() === ''; });
             confirmTransferButton.addEventListener('click', handleConfirmTransfer);
-
+    
             avatarUploadInput.addEventListener('change', handleAvatarUpload);
-
+    
             wornGiftIconContainer.addEventListener('click', () => {
                 const wornGift = ownedGifts.find(g => g.is_worn);
                 if (wornGift) openGiftDetailByInstanceId(wornGift.instance_id);
             });
-
+    
             openNumbersButton.addEventListener('click', handleOpenNumbersModal);
             openUsernamesButton.addEventListener('click', handleOpenUsernamesModal);
             usernameSearchInput.addEventListener('input', (e) => populateUsernamesList(e.target.value));
-
+    
             createGiveawayButton.addEventListener('click', openGiveawaySetupModal);
             confirmGiveawaySetupButton.addEventListener('click', handleConfirmGiveawaySetup);
-
+    
             let touchStartX = 0; const swipeEdgeThreshold = 50;
-            appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+            appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches.screenX; }, { passive: true });
             appContainer.addEventListener('touchend', e => {
                 if (e.target.closest('.account-sidebar')) return;
-                const touchEndX = e.changedTouches[0].screenX;
+                const touchEndX = e.changedTouches.screenX;
                 const deltaX = touchEndX - touchStartX;
                 const currentPage = document.querySelector('.page.active');
                 
@@ -4710,17 +4816,17 @@
                     showPage('buy-gifts-page');
                 }
             }, { passive: true });
-
+    
             sidebarOverlay.addEventListener('click', closeSidebar);
             addAccountButton.addEventListener('click', handleAddAccount);
-
+    
             collectibleDetailModal.addEventListener('touchstart', (e) => {
-                modalSwipeState.startX = e.touches[0].clientX;
+                modalSwipeState.startX = e.touches.clientX;
                 modalSwipeState.isSwiping = true;
             }, { passive: true });
             collectibleDetailModal.addEventListener('touchend', (e) => {
                 if (!modalSwipeState.isSwiping) return;
-                const endX = e.changedTouches[0].clientX;
+                const endX = e.changedTouches.clientX;
                 const deltaX = endX - modalSwipeState.startX;
                 const swipeThreshold = 50;
                 if (Math.abs(deltaX) > swipeThreshold) {
@@ -4730,7 +4836,7 @@
                 modalSwipeState.isSwiping = false;
             }, { passive: true });
         }
-
+    
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
             initApp();
         } else {
@@ -4756,7 +4862,7 @@
                 tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
                 tg.SettingsButton = { isVisible: false, onClick: (cb) => {tg._settingsCb = cb}, show: () => console.log("Settings Button Show"), hide: () => console.log("Settings Button Hide") };
                 tg.BackButton = { isVisible: false, onClick: (cb) => {tg._backCb = cb}, offClick: (cb) => {}, show: () => console.log("Back button shown"), hide: () => console.log("Back button hidden") };
-
+    
                 initApp();
             });
         }
