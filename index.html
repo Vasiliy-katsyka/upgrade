@@ -350,45 +350,6 @@
             flex-direction: column;
         }
 
-        /* NEW: Collections Bar */
-        #collections-bar {
-            display: flex;
-            overflow-x: auto;
-            padding: 5px 15px 10px 15px;
-            background-color: var(--tg-theme-bg-color);
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* Firefox */
-        }
-        #collections-bar::-webkit-scrollbar { display: none; } /* Chrome, Safari */
-        .collection-tab {
-            background-color: var(--app-action-button-bg);
-            color: var(--tg-theme-text-color);
-            border: none;
-            padding: 6px 16px;
-            border-radius: 16px;
-            font-size: 0.9em;
-            font-weight: 500;
-            cursor: pointer;
-            margin-right: 8px;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-        }
-        .collection-tab.active {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-        }
-        .collection-tab.add-collection {
-            background-color: transparent;
-            border: 1px dashed var(--tg-theme-hint-color);
-            color: var(--tg-theme-hint-color);
-        }
-        .collection-tab svg {
-            width: 16px; height: 16px;
-            margin-right: 5px;
-            fill: currentColor;
-        }
-
         /* NEW: Action bar is now a direct child of gifts-content */
         #gifts-content .profile-gifts-actions-wrapper {
             display: flex;
@@ -433,8 +394,8 @@
             overflow-y: auto;
             background-color: var(--tg-theme-bg-color);
         }
-        .gifts-grid.reordering .gift-card {
-            cursor: grabbing !important;
+        .gifts-grid.reordering .gift-card[data-pinned="true"] {
+            cursor: grabbing;
         }
         .empty-grid-message {
             color: var(--tg-theme-hint-color); text-align: center;
@@ -1002,14 +963,14 @@
         }
 
         /* Collectible Numbers/Usernames Modal */
-        #numbers-modal .collectible-list, #usernames-modal .collectible-list, #add-to-collection-modal .collectible-list {
+        #numbers-modal .collectible-list, #usernames-modal .collectible-list {
             list-style: none;
             padding: 0;
             margin: 0;
             max-height: 50vh;
             overflow-y: auto;
         }
-        #numbers-modal .collectible-list-item, #usernames-modal .collectible-list-item, #add-to-collection-modal .collectible-list-item {
+        #numbers-modal .collectible-list-item, #usernames-modal .collectible-list-item {
             padding: 15px 20px;
             font-size: 1.1em;
             font-weight: 500;
@@ -1017,22 +978,16 @@
             cursor: pointer;
             color: var(--tg-theme-link-color);
             font-family: monospace;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
-        #usernames-modal .collectible-list-item, #add-to-collection-modal .collectible-list-item {
+        #usernames-modal .collectible-list-item {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             color: var(--tg-theme-text-color);
-        }
-        #add-to-collection-modal .collectible-list-item .check-icon {
-            color: var(--tg-theme-link-color);
         }
         #usernames-modal .collectible-list-item .at-symbol {
             color: var(--tg-theme-hint-color);
             margin-right: 2px;
         }
-        #numbers-modal .collectible-list-item:hover, #usernames-modal .collectible-list-item:hover, #add-to-collection-modal .collectible-list-item:hover {
+        #numbers-modal .collectible-list-item:hover, #usernames-modal .collectible-list-item:hover {
             background-color: rgba(255,255,255,0.05);
         }
         #usernames-modal .search-bar-container {
@@ -1097,44 +1052,6 @@
         }
         #giveaway-setup-modal .winner-rule-section input {
             margin-right: 10px;
-        }
-        /* NEW Giveaway by collection styles */
-        .giveaway-mode-selector {
-            display: flex;
-            background-color: var(--tg-theme-bg-color);
-            border-radius: 8px;
-            padding: 4px;
-            margin-bottom: 15px;
-        }
-        .giveaway-mode-selector button {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            background: none;
-            color: var(--tg-theme-hint-color);
-            border-radius: 6px;
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-        .giveaway-mode-selector button.active {
-            background-color: var(--app-action-button-bg);
-            color: var(--tg-theme-text-color);
-        }
-        #giveaway-collection-selection-list {
-            max-height: 40vh;
-            overflow-y: auto;
-        }
-        #giveaway-collection-selection-list .collectible-list-item {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-weight: 400;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            background-color: var(--tg-theme-bg-color);
-            border-bottom: none;
-        }
-        #giveaway-collection-selection-list .collectible-list-item.selected {
-             background-color: var(--tg-theme-link-color);
-             color: var(--tg-theme-button-text-color);
         }
     </style>
 </head>
@@ -1213,7 +1130,6 @@
                         <p class="empty-grid-message">Nothing to see here yet.</p>
                     </div>
                     <div id="gifts-content" class="tab-content active">
-                        <div id="collections-bar"></div>
                         <div id="profile-gifts-actions-wrapper" class="profile-gifts-actions-wrapper hidden">
                             <div class="profile-gifts-actions">
                                 <!-- Dynamic buttons will be prepended here by JS -->
@@ -1577,27 +1493,19 @@
             <div class="modal-content">
                 <div class="modal-header-bar"><h3>Create a Giveaway</h3></div>
                 <div class="modal-scrollable-content">
-                    <div class="giveaway-mode-selector">
-                        <button id="giveaway-mode-gifts" class="active">Select Gifts</button>
-                        <button id="giveaway-mode-collection">Select Collection</button>
+                    <h4>1. Select Gifts to Give Away</h4>
+                    <div id="giveaway-gift-selection-grid" class="selection-grid">
+                        <p class="empty-grid-message">You have no collectible gifts to give away.</p>
                     </div>
-                    <div id="giveaway-gifts-container">
-                         <h4>Select Gifts to Give Away</h4>
-                         <div id="giveaway-gift-selection-grid" class="selection-grid"></div>
-                    </div>
-                    <div id="giveaway-collection-container" class="hidden">
-                        <h4>Select a Collection to Give Away</h4>
-                        <div id="giveaway-collection-selection-list" class="collectible-list"></div>
-                    </div>
-                    <h4>Choose Winner Rule</h4>
+                    <h4>2. Choose Winner Rule</h4>
                     <div class="winner-rule-section">
                         <label>
                             <input type="radio" name="winner-rule" value="single" checked>
-                            One winner gets all prizes
+                            One winner gets all gifts
                         </label>
                         <label>
                             <input type="radio" name="winner-rule" value="multiple">
-                            One winner per prize
+                            One winner per gift
                         </label>
                     </div>
                 </div>
@@ -1608,38 +1516,16 @@
             </div>
         </div>
 
-        <div id="create-collection-modal" class="modal-overlay">
-            <div class="modal-content">
-                 <div class="modal-header-bar"><h3>Create New Collection</h3></div>
-                 <div class="modal-scrollable-content">
-                     <p style="text-align:center; color: var(--tg-theme-hint-color); margin-bottom: 15px;">Choose a name for your collection.</p>
-                     <input type="text" id="new-collection-name-input" placeholder="Title" maxlength="15" style="width:100%; padding: 12px; font-size:1.1em; border-radius:8px; border: 1px solid var(--tg-theme-bg-color); background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color);">
-                 </div>
-                 <div class="modal-buttons-footer">
-                    <button id="confirm-create-collection" class="modal-button" disabled>Create</button>
-                    <button id="cancel-create-collection" class="modal-button secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="add-to-collection-modal" class="modal-overlay">
-             <div class="modal-content">
-                 <div class="modal-header-bar"><h3>Add to Collection</h3></div>
-                 <div class="modal-scrollable-content" style="padding: 0;">
-                    <ul class="collectible-list" id="add-to-collection-list">
-                    </ul>
-                 </div>
-                 <div class="modal-buttons-footer">
-                    <button id="close-add-to-collection-modal" class="modal-button">Done</button>
-                </div>
-             </div>
-        </div>
-
     </div>
 
     <div id="long-press-menu" class="hidden">
         <ul>
-            <!-- Dynamic menu items will be added here -->
+            <li id="menu-reorder-action" class="hidden">Reorder</li>
+            <li id="menu-pin-action">Pin</li>
+            <li id="menu-hide-action">Hide</li>
+            <li id="menu-copy-link-action" class="hidden">Copy Link</li>
+            <li id="menu-share-image-action" class="hidden">Share Image</li>
+            <li id="menu-delete-action" class="danger">Delete</li>
         </ul>
     </div>
     <script>
@@ -1652,8 +1538,6 @@
         const STAR_ICON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png";
 
         const GIFT_LIMIT_PER_USER = 5000;
-        const MAX_COLLECTIONS_PER_USER = 100;
-        const MAX_COLLECTION_NAME_LENGTH = 15;
         const MAX_COLLECTIBLE_USERNAMES = 10;
         const MIN_SALE_PRICE = 125;
         const MAX_SALE_PRICE = 100000;
@@ -1663,7 +1547,6 @@
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
-        const FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>folder-multiple-image</title><path d="M22,16V4A2,2 0 0,0 20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16M11,12L13,14.46L15.46,11.2L19,16H9M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6Z" /></svg>`;
 
         // --- CUSTOM GIFT DATA ---
         const CUSTOM_GIFTS_DATA = {
@@ -1788,15 +1671,12 @@
         let currentAccountTgId = null;
 
         let ownedGifts = [];
-        let userCollections = [];
         let currentlySortedGifts = [];
         let viewingOwnProfile = true;
         let selectionModeActive = false;
         let selectionAction = null;
         let reorderModeActive = false;
         let selectedGiftIds = new Set();
-        
-        let activeCollectionId = 'all';
 
         let animationsEnabled = true;
         let showHiddenGifts = false;
@@ -1842,7 +1722,6 @@
         const postsContent = document.getElementById('posts-content');
         const archiveContent = document.getElementById('archive-content');
         
-        const collectionsBar = document.getElementById('collections-bar');
         const profileGiftsActionsWrapper = document.getElementById('profile-gifts-actions-wrapper');
         const profileGiftsActions = document.querySelector('.profile-gifts-actions');
         const upgradeAllGiftsButton = document.getElementById('upgrade-all-gifts-button');
@@ -1890,7 +1769,12 @@
         const cancelBuyMultipleButton = document.getElementById('cancel-buy-multiple');
 
         const longPressMenu = document.getElementById('long-press-menu');
-        const longPressMenuList = longPressMenu.querySelector('ul');
+        const menuReorderAction = document.getElementById('menu-reorder-action');
+        const menuPinAction = document.getElementById('menu-pin-action');
+        const menuHideAction = document.getElementById('menu-hide-action');
+        const menuCopyLinkAction = document.getElementById('menu-copy-link-action');
+        const menuDeleteAction = document.getElementById('menu-delete-action');
+        const menuShareImageAction = document.getElementById('menu-share-image-action');
 
         const filterPopup = document.getElementById('filter-popup');
         const filterModelsSection = document.getElementById('filter-models-section');
@@ -1977,20 +1861,6 @@
         const giveawaySetupModal = document.getElementById('giveaway-setup-modal');
         const giveawayGiftSelectionGrid = document.getElementById('giveaway-gift-selection-grid');
         const confirmGiveawaySetupButton = document.getElementById('confirm-giveaway-setup');
-        const giveawayModeGiftsBtn = document.getElementById('giveaway-mode-gifts');
-        const giveawayModeCollectionBtn = document.getElementById('giveaway-mode-collection');
-        const giveawayGiftsContainer = document.getElementById('giveaway-gifts-container');
-        const giveawayCollectionContainer = document.getElementById('giveaway-collection-container');
-        const giveawayCollectionSelectionList = document.getElementById('giveaway-collection-selection-list');
-        
-        const createCollectionModal = document.getElementById('create-collection-modal');
-        const newCollectionNameInput = document.getElementById('new-collection-name-input');
-        const confirmCreateCollectionBtn = document.getElementById('confirm-create-collection');
-        const cancelCreateCollectionBtn = document.getElementById('cancel-create-collection');
-        
-        const addToCollectionModal = document.getElementById('add-to-collection-modal');
-        const addToCollectionList = document.getElementById('add-to-collection-list');
-        const closeAddToCollectionModalBtn = document.getElementById('close-add-to-collection-modal');
 
         const exitFilterModeButton = document.createElement('button');
         exitFilterModeButton.id = 'exit-filter-mode-button';
@@ -2036,13 +1906,10 @@
         let tapCount = 0;
         let currentGiftToSell = null;
         let currentGiftToTransfer = null;
-        let currentGiftForCollections = null;
         let longPressAvatarTimer;
         let sortableInstance = null;
         let modalSwipeState = { startX: 0, isSwiping: false };
         let selectedGiveawayGifts = new Set();
-        let selectedGiveawayCollection = null;
-        let currentGiveawayMode = 'gifts';
 
         // --- API Utility Function ---
         async function callBackend(endpoint, method = 'GET', data = null, params = {}) {
@@ -2181,9 +2048,6 @@
                     } else {
                          tg.showAlert("Invalid gift format in deep link.");
                     }
-                } else if (startAppParam.match(/^user(\w+)C-(\d+)$/)) {
-                    const [, username, collectionId] = startAppParam.match(/^user(\w+)C-(\d+)$/);
-                    await displayUserProfile(username, parseInt(collectionId, 10));
                 }
             } else {
                 await initializeTelegramUserAccount();
@@ -2202,7 +2066,6 @@
         async function initializeTelegramUserAccount() {
             manageBackButton(false);
             viewingOwnProfile = true;
-            activeCollectionId = 'all';
             const user = tg.initDataUnsafe?.user;
             let tg_id = user?.id;
 
@@ -2230,7 +2093,6 @@
 
                 currentAccountTgId = accountData.tg_id;
                 ownedGifts = accountData.owned_gifts || [];
-                userCollections = accountData.collections || [];
                 customGiftsEnabled = accountData.custom_gifts_enabled || false;
 
                 let existingAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
@@ -2261,13 +2123,10 @@
             }
         }
 
-        async function displayUserProfile(username, collectionIdToOpen = null) {
+        async function displayUserProfile(username) {
              const ownAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
              if (ownAccount && ownAccount.username && ownAccount.username.toLowerCase() === username.toLowerCase()) {
                  await initializeTelegramUserAccount();
-                 if (collectionIdToOpen) {
-                     setActiveCollection(collectionIdToOpen);
-                 }
                  return;
              }
 
@@ -2275,7 +2134,6 @@
              try {
                 const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
                 ownedGifts = profileData.owned_gifts || [];
-                userCollections = profileData.collections || [];
 
                 profileName.textContent = profileData.full_name || 'User';
                 profileAvatar.src = profileData.avatar_url || '';
@@ -2301,7 +2159,6 @@
                 profileBio.onclick = null;
                 profileAvatar.style.cursor = 'default';
 
-                activeCollectionId = collectionIdToOpen || 'all';
                 renderAll();
             } catch (error) {
                 console.error("Error fetching user profile:", error);
@@ -2453,7 +2310,6 @@
                 loadUserData();
             }
             renderAccountsList();
-            renderCollectionsBar();
             animationToggle.checked = animationsEnabled;
             showHiddenToggle.checked = showHiddenGifts;
             customGiftsToggle.checked = customGiftsEnabled;
@@ -2663,15 +2519,7 @@
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
 
-            let baseGifts = showHiddenGifts ? ownedGifts : ownedGifts.filter(g => !g.is_hidden);
-            
-            if (activeCollectionId !== 'all') {
-                const collection = userCollections.find(c => c.id === activeCollectionId);
-                if (collection) {
-                    const giftIdsInCollection = new Set(collection.ordered_instance_ids);
-                    baseGifts = baseGifts.filter(g => giftIdsInCollection.has(g.instance_id));
-                }
-            }
+            const baseGifts = showHiddenGifts ? ownedGifts : ownedGifts.filter(g => !g.is_hidden);
 
             const filteredGifts = baseGifts.filter(gift => {
                 if (activeFilters.collection && gift.gift_type_id !== activeFilters.collection) return false;
@@ -2682,23 +2530,16 @@
                 } else if (activeFilters.model || activeFilters.backdrop || activeFilters.pattern) return false;
                 return true;
             });
-            
-            let sortedGifts;
-            if (activeCollectionId !== 'all') {
-                const collection = userCollections.find(c => c.id === activeCollectionId);
-                const orderMap = new Map(collection.ordered_instance_ids.map((id, index) => [id, index]));
-                sortedGifts = [...filteredGifts].sort((a, b) => (orderMap.get(a.instance_id) ?? Infinity) - (orderMap.get(b.instance_id) ?? Infinity));
-            } else {
-                 sortedGifts = [...filteredGifts].sort((a, b) => {
-                    const aIsPinned = a.is_pinned && a.pin_order != null;
-                    const bIsPinned = b.is_pinned && b.pin_order != null;
-                    if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
-                    if (aIsPinned) return -1;
-                    if (bIsPinned) return 1;
-                    return new Date(b.acquired_date) - new Date(a.acquired_date);
-                });
-            }
 
+            // Sort gifts for display: Pinned first (by order), then by date
+            const sortedGifts = [...filteredGifts].sort((a, b) => {
+                const aIsPinned = a.is_pinned && a.pin_order != null;
+                const bIsPinned = b.is_pinned && b.pin_order != null;
+                if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
+                if (aIsPinned) return -1;
+                if (bIsPinned) return 1;
+                return new Date(b.acquired_date) - new Date(a.acquired_date);
+            });
 
             currentlySortedGifts = sortedGifts;
 
@@ -2711,13 +2552,9 @@
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
                 let emptyMessage = "You don't have any gifts yet.";
                 if (ownedGifts.length > 0) {
-                    if (activeCollectionId !== 'all') {
-                        emptyMessage = "This collection is empty. Long press a gift to add it.";
-                    } else {
-                        emptyMessage = "No gifts match the selected filters.";
-                        if (!showHiddenGifts && ownedGifts.some(g => g.is_hidden)) {
-                            emptyMessage += " Some gifts might be hidden.";
-                        }
+                    emptyMessage = "No gifts match the selected filters.";
+                    if (!showHiddenGifts && ownedGifts.some(g => g.is_hidden)) {
+                        emptyMessage += " Some gifts might be hidden.";
                     }
                 } else if (!viewingOwnProfile) {
                      emptyMessage = "This user hasn't received any gifts yet."
@@ -2783,7 +2620,7 @@
             staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';};
             imageContainer.appendChild(lottieContainer); imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
-            if (gift.is_pinned && !selectionModeActive && activeCollectionId === 'all') {
+            if (gift.is_pinned && !selectionModeActive) {
                 const pinDiv = document.createElement('div'); pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG;
                 pinDiv.querySelector('svg').style.transform = 'rotate(25deg)';
@@ -2799,12 +2636,7 @@
                 }
                 card.onclick = () => toggleGiftSelection(gift.instance_id);
             } else if (reorderModeActive) {
-                const isPinnedReorder = reorderModeActive && activeCollectionId === 'all';
-                const isCollectionReorder = reorderModeActive && activeCollectionId !== 'all';
-
-                if (isPinnedReorder) card.style.cursor = gift.is_pinned ? 'grab' : 'default';
-                else if (isCollectionReorder) card.style.cursor = 'grab';
-                else card.style.cursor = 'default';
+                card.style.cursor = gift.is_pinned ? 'grab' : 'default';
             } else {
                 card.onclick = () => openGiftDetailByInstanceId(gift.instance_id);
                 if (viewingOwnProfile) setupLongPress(card, gift);
@@ -2871,7 +2703,7 @@
             const hasNonCollectible = ownedGifts.some(g => !g.is_collectible);
             const hasActiveFilter = Object.values(activeFilters).some(f => f !== null);
 
-            const showUpgradeAll = hasNonCollectible && viewingOwnProfile && !reorderModeActive && !selectionModeActive && activeCollectionId === 'all';
+            const showUpgradeAll = hasNonCollectible && viewingOwnProfile && !reorderModeActive && !selectionModeActive;
             const showFilterExit = hasActiveFilter && !reorderModeActive && !selectionModeActive;
 
             upgradeAllGiftsButton.classList.toggle('hidden', !showUpgradeAll);
@@ -3059,8 +2891,6 @@
                 populateCollectibleDetailModal(data);
             } else if (modalElement.id === 'giveaway-setup-modal') {
                  populateGiveawaySetupModal();
-            } else if (modalElement.id === 'add-to-collection-modal' && data) {
-                populateAddToCollectionModal(data);
             }
 
             modalElement.classList.add('active');
@@ -3080,10 +2910,7 @@
                 if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
             }
             if (modalElement.id === 'custom-buy-modal') giftCreationQueue = [];
-            if (modalElement.id === 'giveaway-setup-modal') {
-                 selectedGiveawayGifts.clear();
-                 selectedGiveawayCollection = null;
-            }
+            if (modalElement.id === 'giveaway-setup-modal') selectedGiveawayGifts.clear();
         }
 
         function populateGiftDetailModal(gift) {
@@ -3274,32 +3101,27 @@
         }
         function openLongPressMenu(gift, eventCoords) {
             currentLongPressGift = gift;
-            longPressMenuList.innerHTML = ''; // Clear previous items
 
             const isOwner = (gift.owner_id === currentAccountTgId);
 
-            const createMenuItem = (id, text, action, options = {}) => {
-                const li = document.createElement('li');
-                li.id = id;
-                li.textContent = text;
-                if (options.className) li.className = options.className;
-                if (options.disabled) li.classList.add('disabled');
-                else li.addEventListener('click', action);
-                return li;
-            };
-
-            if (gift.is_collectible) {
-                longPressMenuList.appendChild(createMenuItem('menu-add-to-collection-action', 'Add to Collection', () => openAddToCollectionModal(gift), { disabled: !isOwner }));
+            if (!gift.is_collectible) {
+                menuPinAction.textContent = 'Pin (Collectibles only)';
+                menuPinAction.classList.add('disabled');
+                menuShareImageAction.classList.add('hidden');
+                menuCopyLinkAction.classList.add('hidden');
+                menuReorderAction.classList.add('hidden');
+            } else {
                 const isPinned = gift.is_pinned;
-                longPressMenuList.appendChild(createMenuItem('menu-pin-action', isPinned ? 'Unpin' : 'Pin', handlePinAction, { disabled: !isOwner }));
-                longPressMenuList.appendChild(createMenuItem('menu-reorder-action', 'Reorder', enterReorderMode, { disabled: !isOwner }));
+                menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin';
+                menuPinAction.classList.toggle('disabled', !isOwner);
+                menuShareImageAction.classList.remove('hidden');
+                menuCopyLinkAction.classList.add('hidden');
+                menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
             }
 
-            longPressMenuList.appendChild(createMenuItem('menu-hide-action', gift.is_hidden ? 'Unhide' : 'Hide', handleHideAction, { disabled: !isOwner }));
-            if (gift.is_collectible) {
-                longPressMenuList.appendChild(createMenuItem('menu-share-image-action', 'Share Image', handleShareImageAction));
-            }
-            longPressMenuList.appendChild(createMenuItem('menu-delete-action', 'Delete', handleDeleteAction, { className: 'danger', disabled: !isOwner }));
+            menuHideAction.textContent = gift.is_hidden ? 'Unhide' : 'Hide';
+            menuHideAction.classList.toggle('disabled', !isOwner);
+            menuDeleteAction.classList.toggle('disabled', !isOwner);
 
             longPressMenu.style.top = `${Math.min(eventCoords.clientY, window.innerHeight - longPressMenu.offsetHeight - 10)}px`;
             longPressMenu.style.left = `${Math.min(eventCoords.clientX, window.innerWidth - longPressMenu.offsetWidth - 10)}px`;
@@ -3309,28 +3131,20 @@
 
         function openCollectibleMenu(gift, eventCoords) {
             currentLongPressGift = gift;
-            longPressMenuList.innerHTML = '';
             const isOwner = (gift.owner_id === currentAccountTgId);
 
-            const createMenuItem = (id, text, action, options = {}) => {
-                const li = document.createElement('li');
-                li.id = id;
-                li.textContent = text;
-                if (options.className) li.className = options.className;
-                if (options.disabled) li.classList.add('disabled');
-                else li.addEventListener('click', action);
-                return li;
-            };
-            
             if (!gift.is_collectible) return;
 
-            longPressMenuList.appendChild(createMenuItem('menu-add-to-collection-action', 'Add to Collection', () => openAddToCollectionModal(gift), { disabled: !isOwner }));
             const isPinned = gift.is_pinned;
-            longPressMenuList.appendChild(createMenuItem('menu-pin-action', isPinned ? 'Unpin' : 'Pin', handlePinAction, { disabled: !isOwner }));
-            longPressMenuList.appendChild(createMenuItem('menu-reorder-action', 'Reorder', enterReorderMode, { disabled: !isOwner }));
-            longPressMenuList.appendChild(createMenuItem('menu-hide-action', gift.is_hidden ? 'Unhide' : 'Hide', handleHideAction, { disabled: !isOwner }));
-            longPressMenuList.appendChild(createMenuItem('menu-share-image-action', 'Share Image', handleShareImageAction));
-            longPressMenuList.appendChild(createMenuItem('menu-delete-action', 'Delete', handleDeleteAction, { className: 'danger', disabled: !isOwner }));
+            menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin';
+            menuPinAction.classList.toggle('disabled', !isOwner);
+
+            menuHideAction.textContent = gift.is_hidden ? 'Unhide' : 'Hide';
+            menuHideAction.classList.toggle('disabled', !isOwner);
+            menuDeleteAction.classList.toggle('disabled', !isOwner);
+            menuShareImageAction.classList.remove('hidden');
+            menuCopyLinkAction.classList.add('hidden');
+            menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
 
             const menuWidth = longPressMenu.offsetWidth || 220;
             const menuHeight = longPressMenu.offsetHeight || 150;
@@ -4532,23 +4346,6 @@
             });
             longPressMenu.classList.add('hidden');
         }
-        
-        function copyCollectionLink(collectionId) {
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            if (!currentAccount || !currentAccount.username) {
-                tg.showAlert('Cannot create link: current user has no username.');
-                return;
-            }
-            const link = `https://t.me/upgradeDemoBot/upgrade?startapp=user${currentAccount.username}C-${collectionId}`;
-            navigator.clipboard.writeText(link).then(() => {
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert('Link to collection copied!');
-            }, () => {
-                tg.HapticFeedback.notificationOccurred('error');
-                tg.showAlert('Failed to copy link.');
-            });
-        }
-
 
         // --- Reorder Logic ---
         function enterReorderMode() {
@@ -4557,18 +4354,13 @@
             longPressMenu.classList.add('hidden');
             exitReorderModeButton.classList.remove('hidden');
             giftsGrid.classList.add('reordering');
-            updateActionToolbarVisibility();
             renderProfileGifts();
-            
-            let sortableConfig = {
-                animation: 150
-            };
-            if (activeCollectionId === 'all') {
-                sortableConfig.filter = '.gift-card:not([data-pinned="true"])';
-                sortableConfig.preventOnFilter = true;
-            }
 
-            sortableInstance = new Sortable(giftsGrid, sortableConfig);
+            sortableInstance = new Sortable(giftsGrid, {
+                animation: 150,
+                filter: '.gift-card:not([data-pinned="true"])',
+                preventOnFilter: true
+            });
         }
 
         async function exitReorderMode() {
@@ -4578,32 +4370,26 @@
             exitReorderModeButton.classList.add('hidden');
             giftsGrid.classList.remove('reordering');
             
-            if (activeCollectionId === 'all') {
-                const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card[data-pinned="true"]')).map(el => el.dataset.instanceId);
-                newOrderIds.forEach((id, index) => {
-                    const gift = ownedGifts.find(g => g.instance_id === id);
-                    if (gift) gift.pin_order = index;
-                });
-                try {
-                    await callBackend('/api/gifts/reorder', 'POST', {
-                        owner_id: currentAccountTgId,
-                        ordered_instance_ids: newOrderIds
-                    });
-                } catch(e) { await initializeTelegramUserAccount(); }
-            } else {
-                 const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card')).map(el => el.dataset.instanceId);
-                 const collection = userCollections.find(c => c.id === activeCollectionId);
-                 if (collection) collection.ordered_instance_ids = newOrderIds;
-                 try {
-                     await callBackend('/api/collections/reorder_in_collection', 'POST', {
-                         owner_id: currentAccountTgId,
-                         collection_id: activeCollectionId,
-                         ordered_instance_ids: newOrderIds
-                     });
-                 } catch(e) { await initializeTelegramUserAccount(); }
-            }
-        
+            // Immediately apply the new sort order to the local array
+            const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card[data-pinned="true"]')).map(el => el.dataset.instanceId);
+            newOrderIds.forEach((id, index) => {
+                const gift = ownedGifts.find(g => g.instance_id === id);
+                if (gift) gift.pin_order = index;
+            });
+            
+            // Re-render based on the updated local array
             renderProfileGifts();
+        
+            try {
+                // Send the final, correct order to the backend
+                await callBackend('/api/gifts/reorder', 'POST', {
+                    owner_id: currentAccountTgId,
+                    ordered_instance_ids: newOrderIds
+                });
+            } catch (error) {
+                // If backend fails, re-fetch from server to ensure consistency
+                await initializeTelegramUserAccount();
+            }
         }
 
         // --- Selection Mode Logic ---
@@ -4617,7 +4403,6 @@
             exitSelectionModeButton.classList.remove('hidden');
             if (action === 'hide') hideSelectedGiftsButton.classList.remove('hidden');
             else if (action === 'transfer') transferSelectedGiftsButton.classList.remove('hidden');
-            updateActionToolbarVisibility();
             renderProfileGifts();
         }
 
@@ -4732,78 +4517,33 @@
         function populateGiveawaySetupModal() {
             giveawayGiftSelectionGrid.innerHTML = '';
             selectedGiveawayGifts.clear();
-            selectedGiveawayCollection = null;
             confirmGiveawaySetupButton.disabled = true;
-            
-            setGiveawayMode('gifts');
 
             const collectibleGifts = ownedGifts.filter(g => g.is_collectible && !g.is_hidden);
             if (collectibleGifts.length === 0) {
                 giveawayGiftSelectionGrid.innerHTML = '<p class="empty-grid-message">You have no collectible gifts to give away.</p>';
-            } else {
-                collectibleGifts.forEach(gift => {
-                    const card = createGiftCardDOM(gift);
-                    card.onclick = () => {
-                        const id = gift.instance_id;
-                        if (selectedGiveawayGifts.has(id)) {
-                            selectedGiveawayGifts.delete(id);
-                            card.classList.remove('selected');
-                        } else {
-                            selectedGiveawayGifts.add(id);
-                            card.classList.add('selected');
-                        }
-                        confirmGiveawaySetupButton.disabled = selectedGiveawayGifts.size === 0;
-                    };
-                    giveawayGiftSelectionGrid.appendChild(card);
-                    observeLottieElement(card);
-                });
-            }
-            
-            giveawayCollectionSelectionList.innerHTML = '';
-            if (userCollections.length === 0) {
-                 giveawayCollectionSelectionList.innerHTML = '<p class="empty-grid-message">You have no collections.</p>';
-            } else {
-                userCollections.forEach(collection => {
-                    const li = document.createElement('li');
-                    li.className = 'collectible-list-item';
-                    li.textContent = collection.name;
-                    li.dataset.collectionId = collection.id;
-                    li.onclick = () => {
-                        selectedGiveawayCollection = collection;
-                        Array.from(giveawayCollectionSelectionList.children).forEach(el => el.classList.remove('selected'));
-                        li.classList.add('selected');
-                        confirmGiveawaySetupButton.disabled = false;
-                    };
-                    giveawayCollectionSelectionList.appendChild(li);
-                });
-            }
-        }
-        
-        function setGiveawayMode(mode) {
-            currentGiveawayMode = mode;
-            selectedGiveawayGifts.clear();
-            selectedGiveawayCollection = null;
-            confirmGiveawaySetupButton.disabled = true;
-
-            giveawayModeGiftsBtn.classList.toggle('active', mode === 'gifts');
-            giveawayModeCollectionBtn.classList.toggle('active', mode === 'collection');
-            giveawayGiftsContainer.classList.toggle('hidden', mode !== 'gifts');
-            giveawayCollectionContainer.classList.toggle('hidden', mode !== 'collection');
-            if(mode === 'gifts') populateGiveawaySetupModal(); // re-render cards to clear selections
-        }
-
-        async function handleConfirmGiveawaySetup() {
-            let giftIds = [];
-            if (currentGiveawayMode === 'gifts') {
-                if (selectedGiveawayGifts.size === 0) return;
-                giftIds = Array.from(selectedGiveawayGifts);
-            } else if (currentGiveawayMode === 'collection') {
-                if (!selectedGiveawayCollection) return;
-                giftIds = selectedGiveawayCollection.ordered_instance_ids;
-            } else {
                 return;
             }
-            
+
+            collectibleGifts.forEach(gift => {
+                const card = createGiftCardDOM(gift);
+                card.onclick = () => {
+                    const id = gift.instance_id;
+                    if (selectedGiveawayGifts.has(id)) {
+                        selectedGiveawayGifts.delete(id);
+                        card.classList.remove('selected');
+                    } else {
+                        selectedGiveawayGifts.add(id);
+                        card.classList.add('selected');
+                    }
+                    confirmGiveawaySetupButton.disabled = selectedGiveawayGifts.size === 0;
+                };
+                giveawayGiftSelectionGrid.appendChild(card);
+                observeLottieElement(card);
+            });
+        }
+        async function handleConfirmGiveawaySetup() {
+            if (selectedGiveawayGifts.size === 0) return;
             const winnerRule = document.querySelector('input[name="winner-rule"]:checked').value;
 
             confirmGiveawaySetupButton.disabled = true;
@@ -4812,7 +4552,7 @@
             try {
                 await callBackend('/api/giveaways/create', 'POST', {
                     creator_id: currentAccountTgId,
-                    gift_instance_ids: giftIds,
+                    gift_instance_ids: Array.from(selectedGiveawayGifts),
                     winner_rule: winnerRule
                 });
                 closeModal(giveawaySetupModal);
@@ -4877,8 +4617,6 @@
             document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
-            cancelCreateCollectionBtn.addEventListener('click', () => closeModal(createCollectionModal));
-            closeAddToCollectionModalBtn.addEventListener('click', () => closeModal(addToCollectionModal));
 
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
@@ -4900,6 +4638,13 @@
                 currentLongPressGift = gift;
                 handleHideAction();
             });
+
+            menuPinAction.addEventListener('click', handlePinAction);
+            menuHideAction.addEventListener('click', handleHideAction);
+            menuCopyLinkAction.addEventListener('click', () => { if(currentLongPressGift) copyGiftLink(currentLongPressGift); });
+            menuDeleteAction.addEventListener('click', handleDeleteAction);
+            menuShareImageAction.addEventListener('click', handleShareImageAction);
+            menuReorderAction.addEventListener('click', enterReorderMode);
 
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
 
@@ -4947,13 +4692,6 @@
 
             createGiveawayButton.addEventListener('click', openGiveawaySetupModal);
             confirmGiveawaySetupButton.addEventListener('click', handleConfirmGiveawaySetup);
-            giveawayModeGiftsBtn.addEventListener('click', () => setGiveawayMode('gifts'));
-            giveawayModeCollectionBtn.addEventListener('click', () => setGiveawayMode('collection'));
-
-            newCollectionNameInput.addEventListener('input', () => {
-                confirmCreateCollectionBtn.disabled = newCollectionNameInput.value.trim().length === 0;
-            });
-            confirmCreateCollectionBtn.addEventListener('click', handleCreateCollection);
 
             let touchStartX = 0; const swipeEdgeThreshold = 50;
             appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
@@ -5024,5 +4762,4 @@
         }
     </script>
 </body>
-</html>
-```
+    </html>
