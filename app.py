@@ -34,7 +34,8 @@ if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
     raise ValueError("Missing required environment variables: DATABASE_URL and/or TELEGRAM_BOT_TOKEN")
 
 GIFT_LIMIT_PER_USER = 5000
-MAX_COLLECTIONS_PER_USER = 9
+MAX_COLLECTIONS_PER_USER = 100
+MAX_COLLECTION_NAME_LENGTH = 15
 MAX_COLLECTIBLE_USERNAMES = 10
 MIN_SALE_PRICE = 125
 MAX_SALE_PRICE = 100000
@@ -1438,10 +1439,14 @@ def create_giveaway():
 def create_collection():
     data = request.get_json()
     owner_id = data.get('owner_id')
-    name = data.get('name')
+    name = data.get('name', '').strip()
+
     if not all([owner_id, name]):
         return jsonify({"error": "owner_id and name are required."}), 400
     
+    if len(name) > MAX_COLLECTION_NAME_LENGTH:
+        return jsonify({"error": f"Collection name cannot exceed {MAX_COLLECTION_NAME_LENGTH} characters."}), 400
+
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database failed"}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -1531,7 +1536,6 @@ def reorder_in_collection():
             return jsonify({"error": "An internal server error occurred."}), 500
         finally:
             conn.close()
-
 
 # --- STATS ENDPOINT ---
 def get_rarity_tier(model_permille, backdrop_permille, pattern_permille):
