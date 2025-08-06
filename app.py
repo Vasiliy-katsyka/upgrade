@@ -34,8 +34,7 @@ if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
     raise ValueError("Missing required environment variables: DATABASE_URL and/or TELEGRAM_BOT_TOKEN")
 
 GIFT_LIMIT_PER_USER = 5000
-MAX_COLLECTIONS_PER_USER = 100
-MAX_COLLECTION_NAME_LENGTH = 15
+MAX_COLLECTIONS_PER_USER = 9
 MAX_COLLECTIBLE_USERNAMES = 10
 MIN_SALE_PRICE = 125
 MAX_SALE_PRICE = 100000
@@ -50,6 +49,13 @@ GIVEAWAY_UPDATE_THROTTLE_SECONDS = 30
 
 collectible_parts_cache = {}
 CACHE_DURATION_SECONDS = 3600  # Cache for 1 hour
+
+# --- INLINE BOT CACHE ---
+# A simple in-memory cache for pending inline actions
+# Key: result_id (str), Value: dict of action details
+# In a production app, this should be Redis or a similar external cache.
+inline_cache = {}
+
 
 # --- CUSTOM GIFT DATA ---
 CUSTOM_GIFTS_DATA = {
@@ -407,6 +413,22 @@ def answer_callback_query(callback_query_id, text=None, show_alert=False):
     except requests.RequestException as e:
         app.logger.error(f"Failed to answer callback query {callback_query_id}: {e}")
 
+def answer_inline_query(inline_query_id, results, cache_time=300):
+    url = f"{TELEGRAM_API_URL}/answerInlineQuery"
+    payload = {
+        'inline_query_id': inline_query_id,
+        'results': json.dumps(results),
+        'cache_time': cache_time,
+        'is_personal': True
+    }
+    try:
+        response = requests.post(url, json=payload, timeout=5)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to answer inline query {inline_query_id}: {e}")
+        return None
+
 def set_webhook():
     webhook_endpoint = f"{WEBHOOK_URL}/webhook"
     url = f"{TELEGRAM_API_URL}/setWebhook?url={webhook_endpoint}"
@@ -529,7 +551,7 @@ def normalize_and_build_clone_url(input_str):
         
     return None
 
-# --- WEBHOOK & GIVEAWAY BOT LOGIC ---
+# --- WEBHOOK & BOT LOGIC ---
 
 def update_giveaway_message(giveaway_id):
     conn = get_db_connection()
@@ -613,6 +635,17 @@ def webhook_handler():
     if not conn: return jsonify({"status": "error", "message": "db connection failed"}), 500
 
     try:
+        if "inline_query" in update:
+            # Inline queries are handled without a persistent DB connection here
+            # The handlers will manage their own connections
+            handle_inline_query(update["inline_query"])
+            return jsonify({"status": "ok"}), 200
+
+        if "chosen_inline_result" in update:
+            # Chosen results are also handled separately
+            handle_chosen_inline_result(update["chosen_inline_result"])
+            return jsonify({"status": "ok"}), 200
+
         with conn.cursor(cursor_factory=DictCursor) as cur:
             if "callback_query" in update:
                 callback_query = update["callback_query"]
@@ -706,6 +739,286 @@ def webhook_handler():
 
     return jsonify({"status": "ok"}), 200
 
+# --- INLINE BOT HANDLERS ---
+def handle_inline_query(inline_query):
+    query_id = inline_query['id']
+    from_user = inline_query['from']
+    query_str = inline_query['query'].strip()
+
+    parts = query_str.split(' ', 2)
+    command = parts[0].lower() if parts else ""
+    
+    results = []
+    
+    if command == "send" and len(parts) == 3:
+        results = handle_inline_send(from_user, parts[1], parts[2])
+    elif command == "createandsend" and len(parts) == 3:
+        results = handle_inline_create_and_send(from_user, parts[1], parts[2])
+    elif command == "image" and len(parts) == 2:
+        results = handle_inline_image(from_user, parts[1])
+    elif command == "createimage" and len(parts) == 2:
+        results = handle_inline_create_image(from_user, parts[1])
+    else:
+        results = [
+            {"type": "article", "id": "help_send", "title": "Send a gift", "description": "e.g., send durov PlushPepe-1", "input_message_content": {"message_text": "Usage: @upgradeDemoBot send <recipient> <GiftName-Number>"}},
+            {"type": "article", "id": "help_create_send", "title": "Create and send a gift", "description": "e.g., createAndSend durov Dildo,She Wants,Cosmic,Common", "input_message_content": {"message_text": "Usage: @upgradeDemoBot createAndSend <recipient> <Name,Model,Backdrop,Pattern>"}},
+            {"type": "article", "id": "help_image", "title": "Get gift image", "description": "e.g., image PlushPepe-1", "input_message_content": {"message_text": "Usage: @upgradeDemoBot image <GiftName-Number>"}},
+            {"type": "article", "id": "help_create_image", "title": "Create gift image", "description": "e.g., createImage Dildo,She Wants,Cosmic,Common", "input_message_content": {"message_text": "Usage: @upgradeDemoBot createImage <Name,Model,Backdrop,Pattern>"}}
+        ]
+        
+    answer_inline_query(query_id, results, cache_time=10)
+
+def handle_chosen_inline_result(chosen_result):
+    result_id = chosen_result['result_id']
+    from_user = chosen_result['from']
+    
+    action_details = inline_cache.pop(result_id, None)
+    if not action_details:
+        return
+
+    if from_user['id'] != action_details['sender_id']:
+        return
+
+    if action_details['action'] == 'send':
+        _execute_gift_transfer(
+            sender_id=action_details['sender_id'], sender_username=action_details['sender_username'],
+            receiver_id=action_details['receiver_id'], receiver_username=action_details['recipient_username'],
+            instance_id=action_details['instance_id'], gift_name=action_details['gift_name'],
+            gift_number=action_details['gift_number'], gift_type_id=action_details['gift_type_id'],
+            comment="Sent via inline command."
+        )
+    elif action_details['action'] == 'create_and_send':
+        _execute_create_and_send(
+            sender_id=action_details['sender_id'], sender_username=action_details['sender_username'],
+            receiver_id=action_details['receiver_id'], receiver_username=action_details['recipient_username'],
+            gift_name=action_details['gift_name'], model_name=action_details['model_name'],
+            backdrop_name=action_details['backdrop_name'], pattern_name=action_details['pattern_name'],
+            comment="Created and sent via inline command."
+        )
+
+def handle_inline_send(from_user, recipient_username, gift_str):
+    conn = get_db_connection()
+    if not conn: return []
+    
+    results = []
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            sender_id = from_user['id']
+            cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (sender_id,))
+            sender = cur.fetchone()
+            if not sender: return []
+
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (recipient_username,))
+            recipient = cur.fetchone()
+            if not recipient: return [{"type": "article", "id": "error_recipient", "title": f"Error: User @{recipient_username} not found", "input_message_content": {"message_text": f"Could not find user @{recipient_username}."}}]
+            recipient_id = recipient['tg_id']
+
+            match = re.match(r'^(.+?)-(\d+)$', gift_str)
+            if not match: return [{"type": "article", "id": "error_gift_format", "title": "Error: Invalid gift format", "description": "Use format like: PlushPepe-1", "input_message_content": {"message_text": "Invalid gift format."}}]
+            
+            gift_name, collectible_number = match.group(1).strip(), int(match.group(2))
+
+            cur.execute("SELECT instance_id, gift_type_id, collectible_data FROM gifts WHERE owner_id = %s AND gift_name = %s AND collectible_number = %s AND is_collectible = TRUE;", (sender_id, gift_name, collectible_number))
+            gift = cur.fetchone()
+
+            if not gift: return [{"type": "article", "id": "error_gift_not_found", "title": "Error: Gift not found in your collection", "description": f"You do not own {gift_name} #{collectible_number}", "input_message_content": {"message_text": "Could not find this gift in your collection."}}]
+
+            result_id = str(uuid.uuid4())
+            inline_cache[result_id] = {"action": "send", "sender_id": sender_id, "sender_username": sender['username'], "receiver_id": recipient_id, "recipient_username": recipient_username, "instance_id": gift['instance_id'], "gift_name": gift_name, "gift_number": collectible_number, "gift_type_id": gift['gift_type_id']}
+            
+            cd = gift.get('collectible_data', {})
+            thumb_url = cd.get('modelImage') if isinstance(cd, dict) else ''
+
+            results.append({"type": "article", "id": result_id, "title": f"Send {gift_name} #{collectible_number} to @{recipient_username}", "description": "Click here to confirm and send the gift.", "thumb_url": thumb_url, "input_message_content": {"message_text": f"Preparing to send {gift_name} #{collectible_number} to @{recipient_username}..."}})
+    except Exception as e:
+        app.logger.error(f"Error in handle_inline_send: {e}", exc_info=True)
+    finally:
+        if conn: conn.close()
+    return results
+
+def handle_inline_create_and_send(from_user, recipient_username, gift_components_str):
+    parts = [p.strip() for p in gift_components_str.split(',', 3)]
+    if len(parts) < 3: return [{"type": "article", "id": "error_create_format", "title": "Error: Invalid format", "description": "Use: Name,Model,Backdrop,Pattern", "input_message_content": {"message_text": "Invalid format."}}]
+
+    gift_name, model_name, backdrop_name = parts[0], parts[1], parts[2]
+    pattern_name = parts[3] if len(parts) > 3 and parts[3] else None
+    
+    conn = get_db_connection()
+    if not conn: return []
+    
+    results = []
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            sender_id = from_user['id']
+            cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (sender_id,))
+            sender = cur.fetchone()
+            if not sender: return []
+            
+            cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (recipient_username,))
+            recipient = cur.fetchone()
+            if not recipient: return []
+            recipient_id = recipient['tg_id']
+
+            if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, sender_id): return [{"type": "article", "id": "error_custom_disabled", "title": "Error: Custom Gifts are disabled", "input_message_content": {"message_text": "You must enable Custom Gifts in settings."}}]
+            
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (recipient_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return [{"type": "article", "id": "error_limit_reached", "title": f"Error: @{recipient_username}'s gift box is full", "input_message_content": {"message_text": f"Recipient's inventory is full."}}]
+            
+            result_id = str(uuid.uuid4())
+            inline_cache[result_id] = {"action": "create_and_send", "sender_id": sender_id, "sender_username": sender['username'], "recipient_id": recipient_id, "recipient_username": recipient_username, "gift_name": gift_name, "model_name": model_name, "backdrop_name": backdrop_name, "pattern_name": pattern_name}
+
+            results.append({"type": "article", "id": result_id, "title": f"Create & Send {gift_name} to @{recipient_username}", "description": f"Model: {model_name}, Backdrop: {backdrop_name}, Pattern: {pattern_name or 'Random'}", "input_message_content": {"message_text": f"Preparing to create and send a custom {gift_name} to @{recipient_username}..."}})
+    except Exception as e:
+        app.logger.error(f"Error in handle_inline_create_and_send: {e}", exc_info=True)
+    finally:
+        if conn: conn.close()
+    return results
+
+def handle_inline_image(from_user, gift_str):
+    conn = get_db_connection()
+    if not conn: return []
+    
+    results = []
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            match = re.match(r'^(.+?)-(\d+)$', gift_str)
+            if not match: return []
+            
+            gift_name, collectible_number = match.group(1).strip(), int(match.group(2))
+            
+            cur.execute("SELECT g.collectible_data, a.username as owner_username FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE g.gift_name = %s AND g.collectible_number = %s AND g.is_collectible = TRUE;", (gift_name, collectible_number))
+            gift = cur.fetchone()
+
+            if not gift or not isinstance(gift.get('collectible_data'), dict): return []
+            
+            cd = gift['collectible_data']
+            model_img = cd.get('modelImage')
+            if not model_img: return []
+                
+            caption = (f"<b>{gift_name} #{collectible_number}</b>\n\n"
+                       f"<b>Model:</b> {cd.get('model', {}).get('name', 'N/A')}\n"
+                       f"<b>Backdrop:</b> {cd.get('backdrop', {}).get('name', 'N/A')}\n"
+                       f"<b>Symbol:</b> {cd.get('pattern', {}).get('name', 'N/A')}\n"
+                       f"<b>Owner:</b> @{gift['owner_username']}")
+
+            results.append({"type": "photo", "id": str(uuid.uuid4()), "photo_url": model_img, "thumb_url": model_img, "caption": caption, "parse_mode": "HTML"})
+    except Exception as e:
+        app.logger.error(f"Error in handle_inline_image: {e}", exc_info=True)
+    finally:
+        if conn: conn.close()
+    return results
+
+def handle_inline_create_image(from_user, gift_components_str):
+    parts = [p.strip() for p in gift_components_str.split(',', 3)]
+    if len(parts) < 3: return []
+    
+    gift_name, model_name, backdrop_name = parts[0], parts[1], parts[2]
+    pattern_name = parts[3] if len(parts) > 3 and parts[3] else "Random"
+    
+    try:
+        all_parts_data = fetch_collectible_parts(gift_name)
+        selected_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
+        if not selected_model: return []
+
+        model_img = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
+
+        caption = (f"<b>Custom Gift Preview: {gift_name}</b>\n\n"
+                   f"<b>Model:</b> {model_name}\n"
+                   f"<b>Backdrop:</b> {backdrop_name}\n"
+                   f"<b>Symbol:</b> {pattern_name}")
+        
+        return [{"type": "photo", "id": str(uuid.uuid4()), "photo_url": model_img, "thumb_url": model_img, "caption": caption, "parse_mode": "HTML"}]
+    except Exception as e:
+        app.logger.error(f"Error in handle_inline_create_image: {e}", exc_info=True)
+        return []
+
+def _execute_gift_transfer(sender_id, sender_username, receiver_id, receiver_username, instance_id, gift_name, gift_number, gift_type_id, comment):
+    conn = get_db_connection()
+    if not conn: return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM gifts WHERE instance_id = %s AND owner_id = %s;", (instance_id, sender_id))
+            if not cur.fetchone():
+                send_telegram_message(sender_id, "Transfer failed: You no longer own this gift.")
+                return
+
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                send_telegram_message(sender_id, f"Transfer failed: Receiver @{receiver_username}'s gift box is full.")
+                return
+
+            cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
+            cur.execute("UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;", (receiver_id, instance_id))
+            conn.commit()
+
+            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{gift_number}"
+            link_text = f"<b>{gift_name} #{gift_number:,}</b>"
+            
+            sender_text = f'You successfully sent {link_text} to @{receiver_username}.'
+            send_telegram_message(sender_id, sender_text)
+            
+            receiver_text = f'You have received {link_text} from @{sender_username}!'
+            if comment: receiver_text += f'\n\n<i>{comment}</i>'
+            receiver_markup = {"inline_keyboard": [[{"text": "Check Out Gift", "url": deep_link}]]}
+            send_telegram_message(receiver_id, receiver_text, receiver_markup)
+    except Exception as e:
+        app.logger.error(f"Error in _execute_gift_transfer: {e}", exc_info=True)
+        send_telegram_message(sender_id, "An unexpected error occurred during the transfer.")
+    finally:
+        if conn: conn.close()
+
+def _execute_create_and_send(sender_id, sender_username, receiver_id, receiver_username, gift_name, model_name, backdrop_name, pattern_name, comment):
+    conn = get_db_connection()
+    if not conn: return
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, sender_id):
+                send_telegram_message(sender_id, "Action failed: You have disabled Custom Gifts.")
+                return
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                send_telegram_message(sender_id, f"Action failed: Receiver @{receiver_username}'s gift box is now full.")
+                return
+
+            all_parts_data = fetch_collectible_parts(gift_name)
+            selected_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
+            selected_backdrop = next((b for b in all_parts_data.get('backdrops', []) if b['name'] == backdrop_name), None)
+            selected_pattern = next((p for p in all_parts_data.get('patterns', []) if p['name'] == pattern_name), None) if pattern_name else select_weighted_random(all_parts_data.get('patterns', []))
+
+            if not all([selected_model, selected_backdrop, selected_pattern]):
+                send_telegram_message(sender_id, f"Could not create gift. Invalid components specified.")
+                return
+
+            gift_type_id = CUSTOM_GIFTS_DATA.get(gift_name, {}).get('id', 'generated_gift')
+            cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
+            next_number = cur.fetchone()[0]
+            new_instance_id = str(uuid.uuid4())
+            
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+            model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
+            lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
+            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+            
+            collectible_data = {"model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern, "modelImage": model_image_url, "lottieModelPath": lottie_model_path, "patternImage": pattern_image_url, "backdropColors": selected_backdrop.get('hex'), "supply": random.randint(2000, 10000), "author": get_gift_author(gift_name)}
+            
+            cur.execute("INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number) VALUES (%s, %s, %s, %s, TRUE, %s, %s);", (new_instance_id, receiver_id, gift_type_id, gift_name, json.dumps(collectible_data), next_number))
+            conn.commit()
+            
+            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_type_id}-{next_number}"
+            link_text = f"<b>{gift_name} #{next_number:,}</b>"
+            
+            sender_text = f'You successfully created and sent {link_text} to @{receiver_username}.'
+            send_telegram_message(sender_id, sender_text)
+            
+            receiver_text = f'You have received a new gift, {link_text}, from @{sender_username}!'
+            if comment: receiver_text += f'\n\n<i>{comment}</i>'
+            receiver_markup = {"inline_keyboard": [[{"text": "Check Out Gift", "url": deep_link}]]}
+            send_telegram_message(receiver_id, receiver_text, receiver_markup)
+    except Exception as e:
+        app.logger.error(f"Error in _execute_create_and_send: {e}", exc_info=True)
+        send_telegram_message(sender_id, "An unexpected error occurred while creating the gift.")
+    finally:
+        if conn: conn.close()
 
 # --- API ENDPOINTS ---
 
@@ -1439,14 +1752,10 @@ def create_giveaway():
 def create_collection():
     data = request.get_json()
     owner_id = data.get('owner_id')
-    name = data.get('name', '').strip()
-
+    name = data.get('name')
     if not all([owner_id, name]):
         return jsonify({"error": "owner_id and name are required."}), 400
     
-    if len(name) > MAX_COLLECTION_NAME_LENGTH:
-        return jsonify({"error": f"Collection name cannot exceed {MAX_COLLECTION_NAME_LENGTH} characters."}), 400
-
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database failed"}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -1536,6 +1845,7 @@ def reorder_in_collection():
             return jsonify({"error": "An internal server error occurred."}), 500
         finally:
             conn.close()
+
 
 # --- STATS ENDPOINT ---
 def get_rarity_tier(model_permille, backdrop_permille, pattern_permille):
