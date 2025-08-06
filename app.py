@@ -2420,6 +2420,65 @@ def create_and_transfer_custom_gift():
         finally:
             conn.close()
 
+@app.route('/api/user_data/<string:username>', methods=['GET'])
+def get_user_data_by_username(username):
+    # 1. Authentication
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({"error": "Authorization header is missing or invalid"}), 401
+    
+    token = auth_header.split(' ')[1]
+    if not token or token != TRANSFER_API_KEY:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # 2. Database connection and data fetching
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed."}), 500
+
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Fetch user profile
+            cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number, created_at FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
+            user_profile = cur.fetchone()
+
+            if not user_profile:
+                return jsonify({"error": "User profile not found."}), 404
+
+            user_id = user_profile['tg_id']
+
+            # Fetch all gifts for the user, including hidden ones
+            cur.execute("""
+                SELECT * FROM gifts WHERE owner_id = %s
+                ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
+            """, (user_id,))
+            
+            gifts = []
+            for row in cur.fetchall():
+                gift_dict = dict(row)
+                # Ensure collectible_data is a dictionary, not a string
+                if gift_dict.get('collectible_data') and isinstance(gift_dict.get('collectible_data'), str):
+                    try:
+                        gift_dict['collectible_data'] = json.loads(gift_dict['collectible_data'])
+                    except json.JSONDecodeError:
+                        app.logger.warning(f"Could not parse collectible_data for gift {gift_dict['instance_id']}")
+                        gift_dict['collectible_data'] = None
+                gifts.append(gift_dict)
+
+            # Construct the final response
+            response_data = {
+                "profile": dict(user_profile),
+                "gifts": gifts
+            }
+            return jsonify(response_data), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching user data for {username}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn:
+            conn.close()
+
 # --- APP STARTUP ---
 if __name__ != '__main__':
     gunicorn_logger = logging.getLogger('gunicorn.error')
