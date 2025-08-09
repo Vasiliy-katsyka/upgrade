@@ -36,11 +36,11 @@
             --app-profile-gradient-fallback: var(--tg-theme-secondary-bg-color);
             --app-clear-data-color: #ff3b30;
 
-            /* Custom markdown colors */
-            --markdown-red-demonic: #ff4141;
-            --markdown-pink: #ff80ab;
-            --markdown-green: #4caf50;
-            --markdown-blue: #2196f3;
+            /* Wall Colors */
+            --app-wall-demonic-red: #ff3b30;
+            --app-wall-pink: #ff80ab;
+            --app-wall-green: #4caf50;
+            --app-wall-blue: #2196f3;
         }
 
         * {
@@ -181,7 +181,6 @@
         .page-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             padding: 10px 15px;
             background-color: var(--tg-theme-secondary-bg-color);
             min-height: 56px;
@@ -196,16 +195,6 @@
         .page-header h2 {
             font-size: 1.15em;
             color: var(--tg-theme-text-color);
-            font-weight: 500;
-        }
-        .page-header .header-button {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            padding: 8px 18px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            cursor: pointer;
             font-weight: 500;
         }
 
@@ -316,7 +305,6 @@
             cursor: pointer;
         }
 
-
         .profile-tabs-content {
             flex-grow: 1;
             display: flex;
@@ -361,12 +349,74 @@
         .tab-content {
             display: none;
             flex-grow: 1;
-            position: relative;
         }
         .tab-content.active {
             display: flex;
             flex-direction: column;
         }
+        
+        /* Posts / Wall Styles */
+        #posts-content {
+            padding: 10px 15px;
+            overflow-y: auto;
+        }
+        .post-card {
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        .post-content {
+            font-size: 1em;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .post-content .text-demonic {
+            color: var(--app-wall-demonic-red);
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .post-content .text-pink { color: var(--app-wall-pink); }
+        .post-content .text-green { color: var(--app-wall-green); }
+        .post-content .text-blue { color: var(--app-wall-blue); }
+        .post-content a.gift-link, .post-content a.user-link {
+            color: var(--tg-theme-link-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .post-content a.gift-link:hover, .post-content a.user-link:hover {
+            text-decoration: underline;
+        }
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            font-size: 0.8em;
+            color: var(--tg-theme-hint-color);
+        }
+        
+        .new-post-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 300;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 999;
+        }
+        /* End Wall Styles */
 
         /* NEW: Action bar is now a direct child of gifts-content */
         #gifts-content .profile-gifts-actions-wrapper {
@@ -402,6 +452,21 @@
             font-weight: 500;
             margin-right: 10px;
         }
+        
+        #buy-gifts-page .buy-gifts-header-actions {
+            display: flex;
+            width: 100%;
+            justify-content: flex-end;
+        }
+        
+        #buy-gifts-page .buy-gifts-header-actions .action-button {
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none; padding: 8px 18px;
+            border-radius: 20px; font-size: 0.9em; cursor: pointer;
+            font-weight: 500;
+        }
+
 
         .gifts-grid {
             display: grid;
@@ -418,7 +483,6 @@
         .empty-grid-message {
             color: var(--tg-theme-hint-color); text-align: center;
             padding: 30px 40px; font-size: 0.95em; line-height: 1.5; width: 100%;
-            display: flex; align-items: center; justify-content: center; flex-grow: 1;
         }
 
         .gift-card, .buy-gift-item {
@@ -609,7 +673,9 @@
         .modal-button.secondary {
             background-color: var(--app-action-button-bg);
             color: var(--tg-theme-link-color);
-            margin-top: 0;
+        }
+        .modal-buttons-footer .modal-button.secondary {
+             margin-top: 0; /* Override default */
         }
         .modal-button:disabled {
             background-color: var(--tg-theme-hint-color);
@@ -640,15 +706,6 @@
         #gift-detail-modal .modal-info-table .info-row:not(:last-child) { margin-bottom: 2px; }
         #gift-detail-modal .modal-info-table .info-label { color: var(--tg-theme-text-color); }
         #gift-detail-modal .modal-info-table .info-value { color: var(--tg-theme-hint-color); }
-        #gift-detail-modal .info-value-with-action { display: flex; align-items: center; }
-        #gift-detail-modal .info-value-with-action span { margin-right: 10px; color: var(--tg-theme-hint-color); }
-        #gift-detail-modal .button-link-styled {
-            background: none; border: none;
-            color: var(--tg-theme-link-color);
-            font-size: 0.95em; font-weight: 500;
-            padding: 5px; cursor: pointer;
-        }
-        #gift-detail-modal .button-link-styled:disabled { color: var(--tg-theme-hint-color); }
 
         /* === COLLECTIBLE MODAL REDESIGN === */
         #collectible-detail-modal .modal-content { padding-top: 0; overflow: hidden; }
@@ -1048,12 +1105,12 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
             gap: 8px;
-            max-height: 30vh;
+            max-height: 25vh;
             overflow-y: auto;
             padding: 10px;
             background-color: var(--tg-theme-bg-color);
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         #giveaway-setup-modal .selection-grid .gift-card {
              border: 2px solid transparent;
@@ -1061,10 +1118,13 @@
         #giveaway-setup-modal .selection-grid .gift-card.selected {
             border-color: var(--tg-theme-link-color);
         }
-        #giveaway-setup-modal .setup-section {
-            margin-top: 15px;
+        #giveaway-setup-modal .giveaway-section {
+            margin-bottom: 15px;
         }
-        #giveaway-setup-modal .setup-section label {
+        #giveaway-setup-modal .giveaway-section h4 {
+             font-size: 1em; font-weight: 500; margin-bottom: 10px;
+        }
+        #giveaway-setup-modal .giveaway-section label {
             display: block;
             padding: 12px;
             background-color: var(--tg-theme-bg-color);
@@ -1072,137 +1132,56 @@
             margin-bottom: 8px;
             cursor: pointer;
         }
-        #giveaway-setup-modal .setup-section input[type="radio"] {
+        #giveaway-setup-modal .giveaway-section input[type="radio"] {
             margin-right: 10px;
         }
-        #giveaway-setup-modal .setup-section textarea {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--tg-theme-bg-color);
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-size: 0.95em;
-            resize: vertical;
-            min-height: 60px;
+        #giveaway-setup-modal .giveaway-section textarea {
+             width: 100%;
+             padding: 10px;
+             background-color: var(--tg-theme-bg-color);
+             border: 1px solid var(--tg-theme-hint-color);
+             border-radius: 8px;
+             color: var(--tg-theme-text-color);
+             font-size: 0.95em;
+             resize: vertical;
+             min-height: 60px;
         }
-        #giveaway-setup-modal .instruction-text {
-            font-size: 0.85em;
-            color: var(--tg-theme-hint-color);
-            margin-top: 5px;
+        #giveaway-setup-modal .info-text {
+            font-size: 0.85em; color: var(--tg-theme-hint-color); margin-top: 5px;
         }
         
-        /* --- WALL FEATURE STYLES --- */
-        #profile-page {
-            position: relative;
-        }
-        #new-post-fab {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border-radius: 50%;
-            border: none;
-            font-size: 32px;
-            line-height: 56px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            cursor: pointer;
-            z-index: 50; /* Above tab content */
-        }
-        #wall-content {
-            padding: 10px;
-            overflow-y: auto;
-        }
-        .wall-post-card {
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-        .wall-post-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .wall-post-header img {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            margin-right: 12px;
-        }
-        .wall-post-header .name-date .name {
-            font-weight: 500;
-        }
-        .wall-post-header .name-date .date {
-            font-size: 0.8em;
-            color: var(--tg-theme-hint-color);
-        }
-        .wall-post-content {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.5;
-        }
-        .wall-post-footer {
-            margin-top: 15px;
-            display: flex;
-            align-items: center;
-            font-size: 0.85em;
-            color: var(--tg-theme-hint-color);
-        }
-        .wall-post-footer svg {
-            width: 16px; height: 16px;
-            margin-right: 5px;
-            fill: currentColor;
-        }
-        /* Custom Markdown Styles */
-        .wall-post-content b { font-weight: 600; }
-        .wall-post-content .md-demonic { color: var(--markdown-red-demonic); font-size: 1.2em; font-weight: 600; }
-        .wall-post-content .md-pink { color: var(--markdown-pink); }
-        .wall-post-content .md-green { color: var(--markdown-green); }
-        .wall-post-content .md-blue { color: var(--markdown-blue); }
-        .wall-post-content .gift-link, .wall-post-content .user-link {
-            color: var(--tg-theme-link-color);
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .wall-post-content .gift-link:hover, .wall-post-content .user-link:hover {
-            text-decoration: underline;
-        }
-        /* New Post Modal */
-        #new-post-modal textarea {
+        /* New Post Modal Styles */
+        #new-post-modal #new-post-content {
             width: 100%;
-            min-height: 120px;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--tg-theme-bg-color);
+            height: 150px;
+            padding: 10px;
             background-color: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
+            border: 1px solid var(--tg-theme-hint-color);
+            border-radius: 8px;
             font-size: 1em;
             resize: vertical;
+            margin-bottom: 15px;
         }
-        #new-post-modal .markdown-help {
-            margin-top: 15px;
+        #new-post-modal #formatting-help {
             font-size: 0.9em;
             color: var(--tg-theme-hint-color);
+            background-color: var(--tg-theme-bg-color);
+            padding: 10px;
+            border-radius: 8px;
         }
-        #new-post-modal .markdown-help summary {
-            cursor: pointer;
+        #new-post-modal #formatting-help-toggle {
             color: var(--tg-theme-link-color);
+            cursor: pointer;
+            display: block;
+            margin-bottom: 10px;
         }
-        #new-post-modal .markdown-help ul {
-            list-style: none;
-            padding-left: 10px;
-            margin-top: 8px;
+        #new-post-modal #formatting-help-content {
+             line-height: 1.6;
         }
-        #new-post-modal .markdown-help li {
-            margin-bottom: 4px;
-        }
-        #new-post-modal .markdown-help code {
-            background-color: rgba(255,255,255,0.1);
-            padding: 2px 5px;
+        #new-post-modal #formatting-help-content code {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 4px;
             border-radius: 4px;
         }
     </style>
@@ -1227,9 +1206,7 @@
     <div class="app-container">
         <div id="profile-page" class="page active">
              <input type="file" id="avatar-upload-input" class="hidden" accept="image/*">
-             <div class="page-header">
-                <!-- Back button now handled by TG WebApp API -->
-            </div>
+             <div class="page-header"></div>
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
                     <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
@@ -1268,14 +1245,15 @@
                 </div>
                 <div class="profile-tabs-content">
                     <div class="profile-tabs">
-                        <button id="wall-tab-button">Wall</button>
+                        <button id="posts-tab-button">Wall</button>
                         <button id="buy-gifts-tab-button">Buy Gifts</button>
                         <button class="active" id="gifts-tab-button">
                             Gifts
                             <span class="gift-preview-container" id="gifts-tab-preview-container"></span>
                         </button>
                     </div>
-                    <div id="wall-content" class="tab-content">
+                    <div id="posts-content" class="tab-content">
+                        <!-- Posts will be rendered here by JS -->
                         <p class="empty-grid-message">Nothing to see here yet.</p>
                     </div>
                     <div id="gifts-content" class="tab-content active">
@@ -1291,13 +1269,15 @@
                     </div>
                 </div>
             </div>
-            <button id="new-post-fab" class="hidden">+</button>
+            <button id="new-post-fab" class="new-post-fab hidden">+</button>
         </div>
 
         <div id="buy-gifts-page" class="page">
             <div class="page-header">
-                <h2>Gift Shop</h2>
-                <button id="customize-gift-button" class="header-button">Customize</button>
+                 <h2>Gift Shop</h2>
+                 <div class="buy-gifts-header-actions">
+                    <button id="customize-gift-button" class="action-button">Customize</button>
+                 </div>
             </div>
             <div id="buy-gifts-grid" class="gifts-grid">
                 <div class="spinner" id="buy-gifts-loading-spinner"></div>
@@ -1320,8 +1300,8 @@
                     <div id="modal-gift-info" class="modal-info-table"></div>
                 </div>
                 <div class="modal-buttons-footer">
-                    <button id="upgrade-gift-detail-modal" class="modal-button">✨ Upgrade</button>
-                    <button id="close-gift-detail-modal" class="modal-button secondary">Close</button>
+                    <button id="upgrade-gift-detail-modal-button" class="modal-button">✨ Upgrade</button>
+                    <button id="close-gift-detail-modal-button" class="modal-button secondary">Close</button>
                 </div>
             </div>
         </div>
@@ -1329,7 +1309,6 @@
         <div id="collectible-detail-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-scrollable-content">
-                    <!-- Collectible Display Area - Redesigned -->
                     <div class="collectible-display-area">
                         <button class="menu-button" id="collectible-menu-button">⋮</button>
                         <div id="pattern-container-dynamic"></div>
@@ -1345,7 +1324,6 @@
                             <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Transfer</span></button>
                         </div>
                     </div>
-
                     <div class="collectible-info-section">
                         <div id="modal-collectible-info-table" class="modal-info-table"></div>
                     </div>
@@ -1645,21 +1623,27 @@
             <div class="modal-content">
                 <div class="modal-header-bar"><h3>Create a Giveaway</h3></div>
                 <div class="modal-scrollable-content">
-                    <div class="setup-section">
+                    <div class="giveaway-section">
                         <h4>1. Select Gifts to Give Away</h4>
                         <div id="giveaway-gift-selection-grid" class="selection-grid">
                             <p class="empty-grid-message">You have no collectible gifts to give away.</p>
                         </div>
                     </div>
-                    <div class="setup-section">
+                    <div class="giveaway-section">
                         <h4>2. Channels to Subscribe (optional)</h4>
-                        <textarea id="giveaway-channels-input" placeholder="e.g. @channel1, @channel2"></textarea>
-                        <p class="instruction-text">For this to work, you must add @upgradeDemoBot as an admin to these channels.</p>
+                        <textarea id="giveaway-channels-input" placeholder="e.g., @channel1, @channel2"></textarea>
+                        <p class="info-text">Bot must be an admin in these channels for the check to work.</p>
                     </div>
-                    <div class="setup-section">
+                    <div class="giveaway-section">
                         <h4>3. Choose Winner Rule</h4>
-                        <label><input type="radio" name="winner-rule" value="single" checked> One winner gets all gifts</label>
-                        <label><input type="radio" name="winner-rule" value="multiple"> One winner per gift</label>
+                        <label>
+                            <input type="radio" name="winner-rule" value="single" checked>
+                            One winner gets all gifts
+                        </label>
+                        <label>
+                            <input type="radio" name="winner-rule" value="multiple">
+                            One winner per gift
+                        </label>
                     </div>
                 </div>
                 <div class="modal-buttons-footer">
@@ -1674,35 +1658,22 @@
                 <div class="modal-header-bar"><h3>New Post</h3></div>
                 <div class="modal-scrollable-content">
                     <textarea id="new-post-content" placeholder="Enter content..."></textarea>
-                    <details class="markdown-help">
-                        <summary>Formatting Help</summary>
-                        <ul>
-                            <li><code>*bold text*</code> &rarr; <b>bold text</b></li>
-                            <li><code>&amp;demonic&amp;</code> &rarr; <span class="md-demonic">demonic</span></li>
-                            <li><code>♡pink♡</code> &rarr; <span class="md-pink">pink</span></li>
-                            <li><code>$green$</code> &rarr; <span class="md-green">green</span></li>
-                            <li><code>%blue%</code> &rarr; <span class="md-blue">blue</span></li>
-                            <li><code>@username</code> &rarr; <a href="#" class="user-link">@username</a></li>
-                            <li><code>GiftName-123</code> &rarr; <a href="#" class="gift-link">GiftName-123</a></li>
-                        </ul>
-                    </details>
+                    <div id="formatting-help">
+                        <span id="formatting-help-toggle">Show Formatting Help ▼</span>
+                        <div id="formatting-help-content" class="hidden">
+                            <code>*word*</code> - <b>Bold</b><br>
+                            <code>&word&</code> - <span class="text-demonic" style="font-weight:600;font-size:1.1em;">Bigger & Red</span><br>
+                            <code>♡word♡</code> - <span class="text-pink">Pink</span><br>
+                            <code>$word$</code> - <span class="text-green">Green</span><br>
+                            <code>%word%</code> - <span class="text-blue">Blue</span><br>
+                            <code>@username</code> - Links to profile<br>
+                            <code>GiftName-123</code> - Links to gift
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-buttons-footer">
                     <button id="submit-new-post-button" class="modal-button">Submit</button>
                     <button id="cancel-new-post-button" class="modal-button secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
-        
-        <div id="subscription-check-modal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header-bar"><h3>Subscription Required</h3></div>
-                <div class="modal-scrollable-content" style="text-align: center;">
-                    <p style="margin-bottom: 20px;">To use the gift customization feature, please subscribe to @CompactTelegram first.</p>
-                </div>
-                <div class="modal-buttons-footer">
-                    <button id="subscribe-channel-button" class="modal-button">Subscribe</button>
-                    <button id="cancel-subscribe-button" class="modal-button secondary">Cancel</button>
                 </div>
             </div>
         </div>
@@ -1727,7 +1698,6 @@
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
         const STAR_ICON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png";
-        const REQUIRED_CHANNEL_FOR_CUSTOMIZE = "CompactTelegram";
 
         const GIFT_LIMIT_PER_USER = 5000;
         const MAX_COLLECTIBLE_USERNAMES = 10;
@@ -1739,7 +1709,6 @@
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
-        const EYE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>eye</title><path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" /></svg>`;
 
         // --- CUSTOM GIFT DATA ---
         const CUSTOM_GIFTS_DATA = {
@@ -1864,13 +1833,13 @@
         let currentAccountTgId = null;
 
         let ownedGifts = [];
+        let profilePosts = [];
         let currentlySortedGifts = [];
         let viewingOwnProfile = true;
         let selectionModeActive = false;
         let selectionAction = null;
         let reorderModeActive = false;
         let selectedGiftIds = new Set();
-        let userPosts = [];
 
         let animationsEnabled = true;
         let showHiddenGifts = false;
@@ -1907,14 +1876,14 @@
         const profileUsername = document.getElementById('profile-username');
         const collectibleUsernamesContainer = document.getElementById('collectible-usernames-container');
         const profileTopPinnedGifts = document.getElementById('profile-top-pinned-gifts');
-        const newPostFab = document.getElementById('new-post-fab');
 
         const giftsTabButton = document.getElementById('gifts-tab-button');
         const giftsTabPreviewContainer = document.getElementById('gifts-tab-preview-container');
-        const wallTabButton = document.getElementById('wall-tab-button');
+        const postsTabButton = document.getElementById('posts-tab-button');
         const buyGiftsTabButton = document.getElementById('buy-gifts-tab-button');
         const giftsContent = document.getElementById('gifts-content');
-        const wallContent = document.getElementById('wall-content');
+        const postsContent = document.getElementById('posts-content');
+        const newPostFab = document.getElementById('new-post-fab');
         
         const profileGiftsActionsWrapper = document.getElementById('profile-gifts-actions-wrapper');
         const profileGiftsActions = document.querySelector('.profile-gifts-actions');
@@ -1923,9 +1892,9 @@
         const giftsLoadingSpinner = document.getElementById('gifts-loading-spinner');
 
         const buyGiftsPage = document.getElementById('buy-gifts-page');
+        const customizeGiftButton = document.getElementById('customize-gift-button');
         const buyGiftsGrid = document.getElementById('buy-gifts-grid');
         const buyGiftsLoadingSpinner = document.getElementById('buy-gifts-loading-spinner');
-        const customizeGiftButton = document.getElementById('customize-gift-button');
 
         const giftDetailModal = document.getElementById('gift-detail-modal');
         const modalGiftName = document.getElementById('modal-gift-name');
@@ -1934,8 +1903,8 @@
         const modalGiftDescription1 = document.getElementById('modal-gift-description1');
         const modalGiftDescription2 = document.getElementById('modal-gift-description2');
         const modalGiftInfo = document.getElementById('modal-gift-info');
-        const upgradeGiftDetailModalButton = document.getElementById('upgrade-gift-detail-modal');
-        const closeGiftDetailModalButton = document.getElementById('close-gift-detail-modal');
+        const upgradeGiftDetailModalButton = document.getElementById('upgrade-gift-detail-modal-button');
+        const closeGiftDetailModalButton = document.getElementById('close-gift-detail-modal-button');
 
         const collectibleDetailModal = document.getElementById('collectible-detail-modal');
         const collectibleDisplayArea = collectibleDetailModal.querySelector('.collectible-display-area');
@@ -2063,11 +2032,6 @@
         const newPostContent = document.getElementById('new-post-content');
         const submitNewPostButton = document.getElementById('submit-new-post-button');
 
-        const subscriptionCheckModal = document.getElementById('subscription-check-modal');
-        const subscribeChannelButton = document.getElementById('subscribe-channel-button');
-        const cancelSubscribeButton = document.getElementById('cancel-subscribe-button');
-
-
         const exitFilterModeButton = document.createElement('button');
         exitFilterModeButton.id = 'exit-filter-mode-button';
         exitFilterModeButton.className = 'action-button hidden';
@@ -2098,20 +2062,11 @@
         hideSelectedGiftsButton.textContent = 'Hide';
         profileGiftsActions.prepend(hideSelectedGiftsButton);
 
-        const coolNumbers = [
-            "+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", 
-            "+888 7777 7777", "+888 0707 6969", "+888 0123 4567", "+888 9876 5432",
-            "+888 2468 1357", "+888 5555 5555", "+888 1000 0001", "+888 0808 0808"
-        ];
-        const coolUsernames = [
-            "durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", 
-            "gift", "star", "diamond", "anonymous", "market", "bank", "news", "pessi", 
-            "penaldo", "god", "satan", "ceo", "bitcoin", "nft", "ton", "dragon", "lambo"
-        ];
+        const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", "+888 7777 7777", "+888 0707 6969", "+888 1337 1337", "+888 2024 2025", "+888 1000 0001", "+888 0808 0808"];
+        const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous", "market", "bank", "news", "pessi", "penaldo", "token", "exchange", "ceo", "founder", "investor"];
 
         let currentGiftToBuyMultiple = null;
         let lottieIntersectionObserver;
-        let postIntersectionObserver;
         
         let giftCreationQueue = [];
         let currentlyEditingGiftIndex = -1;
@@ -2125,7 +2080,6 @@
         let sortableInstance = null;
         let modalSwipeState = { startX: 0, isSwiping: false };
         let selectedGiveawayGifts = new Set();
-        let viewedPostIds = new Set();
 
         // --- API Utility Function ---
         async function callBackend(endpoint, method = 'GET', data = null, params = {}) {
@@ -2168,8 +2122,8 @@
         function formatRarity(permille) {
             if (!permille) return 'N/A';
             const percentage = permille / 10;
-            const oneInX = Math.round(1000 / percentage);
-            return `${percentage}% <span class="one-in-x">(1 of ${oneInX.toLocaleString('en-US')})</span>`;
+            const oneInX = Math.round(1000 / permille); // Correct calculation
+            return `${percentage.toFixed(1)}% <span class="one-in-x">(1 of ${oneInX.toLocaleString('en-US')})</span>`;
         }
 
         function playLottieAnimation(container, path, loop = true, isGridItem = false) {
@@ -2236,7 +2190,6 @@
         async function initApp() {
             tg.ready(); tg.expand();
             initLottieObserver();
-            initPostObserver();
 
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
@@ -2283,7 +2236,6 @@
         async function initializeTelegramUserAccount() {
             manageBackButton(false);
             viewingOwnProfile = true;
-            newPostFab.classList.remove('hidden');
             const user = tg.initDataUnsafe?.user;
             let tg_id = user?.id;
 
@@ -2311,7 +2263,7 @@
 
                 currentAccountTgId = accountData.tg_id;
                 ownedGifts = accountData.owned_gifts || [];
-                userPosts = accountData.posts || [];
+                profilePosts = accountData.posts || [];
                 customGiftsEnabled = accountData.custom_gifts_enabled || false;
 
                 let existingAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
@@ -2350,11 +2302,10 @@
              }
 
              viewingOwnProfile = false;
-             newPostFab.classList.add('hidden');
              try {
                 const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
                 ownedGifts = profileData.owned_gifts || [];
-                userPosts = profileData.posts || [];
+                profilePosts = profileData.posts || [];
 
                 profileName.textContent = profileData.full_name || 'User';
                 profileAvatar.src = profileData.avatar_url || '';
@@ -2370,7 +2321,6 @@
                     collectibleUsernamesContainer.appendChild(alsoSpan);
                     profileData.collectible_usernames.forEach(uname => {
                         const unameSpan = document.createElement('span'); unameSpan.className = 'collectible-username-span'; unameSpan.textContent = `@${uname}`;
-                        unameSpan.addEventListener('click', () => displayUserProfile(uname));
                         collectibleUsernamesContainer.appendChild(unameSpan);
                     });
                 }
@@ -2461,7 +2411,6 @@
                 });
             }
 
-            // Update sidebar header
             sidebarCurrentAvatar.src = account.avatar_url;
             sidebarCurrentName.textContent = account.full_name;
         }
@@ -2535,7 +2484,7 @@
             customGiftsToggle.checked = customGiftsEnabled;
             applyWornGiftStyles();
             renderProfileGifts();
-            renderWall();
+            renderPosts();
         }
 
         function renderAccountsList() {
@@ -2603,10 +2552,8 @@
             if(pageId === 'buy-gifts-page') {
                 renderAvailableGifts();
                 manageBackButton(true, () => showPage('profile-page'));
-            } else if (pageId === 'profile-page') {
-                manageBackButton(false); // Let other functions handle it for profile (e.g., sidebar)
             } else {
-                manageBackButton(true, () => showPage('profile-page'));
+                manageBackButton(false);
             }
         }
 
@@ -2629,7 +2576,6 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 allAvailableGifts = await response.json();
 
-                // Add all custom gifts to the end of the list
                 for (const giftName in CUSTOM_GIFTS_DATA) {
                     const customGift = CUSTOM_GIFTS_DATA[giftName];
                     if (customGift && customGift.id) {
@@ -2754,16 +2700,12 @@
                 return true;
             });
 
-            // NEW SORTING LOGIC: Pinned first (by pin_order), then by acquired_date
             const sortedGifts = [...filteredGifts].sort((a, b) => {
                 const aIsPinned = a.is_pinned && a.pin_order != null;
                 const bIsPinned = b.is_pinned && b.pin_order != null;
-                
-                if (aIsPinned && !bIsPinned) return -1;
-                if (!aIsPinned && bIsPinned) return 1;
                 if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
-
-                // For unpinned items, sort by acquired_date descending
+                if (aIsPinned) return -1;
+                if (bIsPinned) return 1;
                 return new Date(b.acquired_date) - new Date(a.acquired_date);
             });
 
@@ -2775,7 +2717,7 @@
             }
 
             if (currentlySortedGifts.length === 0) {
-                giftsGrid.style.display = 'flex';
+                giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
                 let emptyMessage = "You don't have any gifts yet.";
                 if (ownedGifts.length > 0) {
                     emptyMessage = "No gifts match the selected filters.";
@@ -2785,7 +2727,7 @@
                 } else if (!viewingOwnProfile) {
                      emptyMessage = "This user hasn't received any gifts yet."
                 }
-                giftsGrid.innerHTML = `<p class="empty-grid-message">${emptyMessage}</p>`;
+                giftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">${emptyMessage}</p>`;
             } else {
                 giftsGrid.style.display = 'grid';
                 currentlySortedGifts.forEach(gift => {
@@ -2875,7 +2817,8 @@
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
             profileTopPinnedGifts.innerHTML = '';
 
-            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden);
+            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden)
+                                          .sort((a,b) => a.pin_order - b.pin_order);
 
             pinnedGifts.slice(0, 7).forEach(gift => {
                 const container = document.createElement('div');
@@ -3041,8 +2984,7 @@
             }
         }
 
-        async function handleSingleGiftUpgradeFromModal() {
-            const instanceId = giftDetailModal.dataset.instanceId;
+        async function handleSingleGiftUpgradeFromModal(instanceId) {
             const gift = ownedGifts.find(g => g.instance_id === instanceId);
             if (!gift || gift.is_collectible) return;
 
@@ -3059,13 +3001,13 @@
                 if (result.status === 'success') {
                     renderProfileGifts();
                     tg.HapticFeedback.notificationOccurred('success');
-                    setTimeout(() => { closeModal(giftDetailModal); openGiftDetailByInstanceId(gift.instance_id); }, 1200);
+                    closeModal(giftDetailModal);
+                    openGiftDetailByInstanceId(gift.instance_id);
                 } else if (result.status === 'failed') {
-                     tg.showAlert("Upgrade failed.");
+                    // Error is handled by callBackend
                 }
             } catch (error) {
                 console.error("Error during single gift upgrade:", error);
-                 tg.showAlert("An error occurred during upgrade.");
             } finally {
                 upgradeGiftDetailModalButton.textContent = '✨ Upgrade';
                 upgradeGiftDetailModalButton.disabled = false;
@@ -3157,6 +3099,7 @@
                 <div class="info-row"><span class="info-label">Price</span><span class="info-value">Free</span></div>
                 <div class="info-row"><span class="info-label">Availability</span><span class="info-value">Limited</span></div>`;
             
+            upgradeGiftDetailModalButton.dataset.instanceId = gift.instance_id;
             upgradeGiftDetailModalButton.disabled = gift.owner_id !== currentAccountTgId;
         }
         
@@ -3202,6 +3145,7 @@
 
             if (cd.patternImage && patternContainerDynamic) {
                 setTimeout(() => {
+                    if(!patternContainerDynamic) return;
                     const containerWidth = patternContainerDynamic.offsetWidth;
                     const containerHeight = patternContainerDynamic.offsetHeight;
                     const centerX = containerWidth / 2;
@@ -3401,20 +3345,13 @@
             longPressMenu.classList.add('hidden');
 
             giftToUpdate.is_pinned = !isCurrentlyPinned;
-            // When pinning, give it the highest pin_order
-            if (giftToUpdate.is_pinned) {
-                const maxPinOrder = Math.max(-1, ...ownedGifts.filter(g => g.is_pinned && g.pin_order != null).map(g => g.pin_order));
-                giftToUpdate.pin_order = maxPinOrder + 1;
-            } else {
-                giftToUpdate.pin_order = null;
-            }
-
             renderProfileGifts();
             tg.HapticFeedback.impactOccurred(isCurrentlyPinned ? 'light' : 'medium');
 
             callBackend(`/api/gifts/${giftInstanceId}`, 'PUT', { action: 'pin', value: !isCurrentlyPinned })
-                .catch(async (error) => {
-                    await initializeTelegramUserAccount(); // Re-sync with server on failure
+                .catch(error => {
+                    giftToUpdate.is_pinned = isCurrentlyPinned;
+                    renderProfileGifts();
                 });
 
             currentLongPressGift = null;
@@ -3445,8 +3382,9 @@
             tg.HapticFeedback.impactOccurred('light');
 
             callBackend(`/api/gifts/${giftToUpdate.instance_id}`, 'PUT', { action: 'hide', value: !isCurrentlyHidden })
-                .catch(async (error) => {
-                    await initializeTelegramUserAccount(); // Re-sync with server on failure
+                .catch(error => {
+                    giftToUpdate.is_hidden = isCurrentlyHidden;
+                    renderProfileGifts();
                 });
             currentLongPressGift = null;
         }
@@ -3528,8 +3466,11 @@
             tg.HapticFeedback.impactOccurred('light');
 
             callBackend(`/api/gifts/${currentModalInstanceId}`, 'PUT', { action: 'wear', value: !isCurrentlyWorn })
-                .catch(async (error) => {
-                    await initializeTelegramUserAccount(); // Re-sync with server
+                .catch(error => {
+                    giftToUpdate.is_worn = isCurrentlyWorn;
+                    if(previouslyWornGift) previouslyWornGift.is_worn = true;
+                    collectibleActionWear.querySelector('.text').textContent = isCurrentlyWorn ? 'Take Off' : 'Wear';
+                    applyWornGiftStyles();
                 });
         }
         
@@ -3673,9 +3614,8 @@
 
             try {
                 await updateCustomGiftsSetting(isEnabling);
-                await initializeTelegramUserAccount(); // Refresh data to show/hide gifts
+                await initializeTelegramUserAccount(); 
             } catch (error) {
-                // Revert toggle on failure
                 customGiftsEnabled = !isEnabling;
                 customGiftsToggle.checked = !isEnabling;
             }
@@ -3689,38 +3629,31 @@
         }
 
         // --- CUSTOM BUY & CLONE ---
-        async function handleCustomizeButtonClick() {
-            customizeGiftButton.disabled = true;
+        async function openCustomBuyModal() {
             try {
-                const response = await callBackend('/api/customization/check_access', 'GET', null, { user_id: currentAccountTgId });
-                if (response.access) {
-                    openCustomBuyModal();
+                const res = await callBackend('/api/customization/check_access', 'GET', null, { user_id: currentAccountTgId });
+                if (res.access) {
+                    if (!customGiftsEnabled) {
+                        tg.showAlert("Please enable Custom Gifts in settings first.");
+                        return;
+                    }
+                    giftCreationQueue = [];
+                    currentlyEditingGiftIndex = -1;
+                    addGiftToQueue();
+                    cloneUrlInput.value = '';
+                    advancedSettingsContainer.classList.add('hidden');
+                    populateBaseGiftOptions();
+                    openModal(customBuyModal);
                 } else {
-                    openModal(subscriptionCheckModal);
+                    tg.showConfirm("To use this feature, please subscribe to @CompactTelegram first.", (confirmed) => {
+                        if (confirmed) {
+                            tg.openTelegramLink("https://t.me/CompactTelegram");
+                        }
+                    });
                 }
             } catch (error) {
-                console.error("Failed to check subscription:", error);
-                tg.showAlert("Could not check subscription status. Please try again.");
-            } finally {
-                customizeGiftButton.disabled = false;
+                tg.showAlert("Could not check access. Please try again.");
             }
-        }
-
-        function openCustomBuyModal() {
-            if (!customGiftsEnabled) {
-                tg.showAlert("Please enable Custom Gifts in settings to create or clone gifts.");
-                return;
-            }
-            
-            giftCreationQueue = [];
-            currentlyEditingGiftIndex = -1;
-            addGiftToQueue();
-            
-            cloneUrlInput.value = '';
-            advancedSettingsContainer.classList.add('hidden');
-            
-            populateBaseGiftOptions();
-            openModal(customBuyModal);
         }
 
         function addGiftToQueue() {
@@ -3740,7 +3673,7 @@
             
             const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
             if (currentGift && currentGift.id) {
-                 selectCustomBaseGift(currentGift.id, currentGift.name, currentGift.originalImage, false); // false to not reset parts
+                 selectCustomBaseGift(currentGift.id, currentGift.name, currentGift.originalImage, false); 
             } else {
                 populateBaseGiftOptions();
                 document.getElementById('custom-buy-base-gifts-grid').classList.remove('hidden');
@@ -3807,13 +3740,11 @@
         
         function editGiftInQueue(index) {
             if (currentlyEditingGiftIndex === index) return;
-            // First, save the quantity of the gift we are leaving
             giftCreationQueue[currentlyEditingGiftIndex].quantity = parseInt(customBuyQuantityInput.value, 10) || 1;
             
             currentlyEditingGiftIndex = index;
             renderGiftQueue();
 
-            // Hide everything then repopulate based on saved state
             const allSections = document.querySelectorAll('#gift-config-area .filter-section');
             allSections.forEach(s => s.classList.add('hidden'));
 
@@ -3850,7 +3781,6 @@
             const customGiftInfo = CUSTOM_GIFTS_DATA[name];
             updateCurrentGiftInQueue({lottiePath: customGiftInfo ? null : `${CDN_BASE_URL}originals/${id}/Original.json`});
 
-            // Fetch parts if not cached
             if (!cachedCollectibleParts[id]) {
                  if (customGiftInfo) {
                     const backdropsSourceName = customGiftInfo.backdrops_source;
@@ -3875,10 +3805,8 @@
                 }
             }
 
-            // Populate options from cached data
             populatePartSelector(id, name);
             
-            // Auto-select a random pattern if not already set
             if (resetParts && cachedCollectibleParts[id].patterns.length > 0) {
                 const randomPattern = getRandomElement(cachedCollectibleParts[id].patterns);
                 if (randomPattern) {
@@ -3898,7 +3826,7 @@
                 const bIndex = pinnedBackdropNames.indexOf(b.name);
                 if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
                 if (aIndex !== -1) return -1;
-                if (bIndex !== -1) return 1;
+                if (bIndex !== -1) return 1; 
                 return a.name.localeCompare(b.name);
             });
 
@@ -3980,7 +3908,7 @@
                 await initializeTelegramUserAccount();
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert("Gift cloned successfully!");
-                closeModal(customBuyModal); 
+                closeModal(customBuyModal);
                 showPage('profile-page');
             } catch (error) {
                 // Error is shown by callBackend
@@ -4038,10 +3966,8 @@
                 tg.showAlert(`${totalToCreate} gift(s) created successfully!`);
                 closeModal(customBuyModal); 
                 showPage('profile-page');
-                switchTab('gifts');
 
             } catch (error) {
-                 // Error handled by callBackend
             } finally {
                 customBuyConfirmButton.disabled = false;
                 updateCreateButtonState();
@@ -4187,7 +4113,7 @@
             openModal(chancesModal); calculateAndDisplayChances();
 
             if (!cachedCollectibleParts[gift.gift_type_id]) {
-                await selectCustomBaseGift(gift.gift_type_id, gift.gift_name); // Re-use this logic to fetch/load parts
+                await selectCustomBaseGift(gift.gift_type_id, gift.gift_name);
             }
             chancesLoadingSpinner.classList.add('hidden');
             populateChancesOptions(gift.gift_type_id, gift.gift_name);
@@ -4241,7 +4167,7 @@
             const selectedParts = [];
 
             if (selectedChances.model) {
-                totalProbability *= ((selectedChances.model.rarityPermille || 1) / 1000); // Permille is 1 in 1000
+                totalProbability *= ((selectedChances.model.rarityPermille || 1) / 1000);
                 selectedParts.push(`Model: ${selectedChances.model.name}`);
             }
              if (selectedChances.backdrop) {
@@ -4382,9 +4308,10 @@
             }).then(() => {
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert(`Gift transferred to @${receiverUsername}!`);
-            }).catch(async (error) => {
+            }).catch(error => {
                 tg.HapticFeedback.notificationOccurred('error');
-                await initializeTelegramUserAccount(); // Re-sync on failure
+                ownedGifts.splice(giftIndex, 0, removedGift);
+                renderProfileGifts();
             });
         }
 
@@ -4476,7 +4403,7 @@
 
         async function buyUsername(username) {
             const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            if (!currentAccount || currentAccount.collectible_usernames.length >= MAX_COLLECTIBLE_USERNAMES) {
+            if (!currentAccount || (currentAccount.collectible_usernames && currentAccount.collectible_usernames.length >= MAX_COLLECTIBLE_USERNAMES)) {
                 tg.showAlert(`Username limit reached (${MAX_COLLECTIBLE_USERNAMES}).`);
                 return;
             }
@@ -4545,15 +4472,21 @@
         }
 
         function switchTab(tabName) {
-            [giftsTabButton, wallTabButton, buyGiftsTabButton].forEach(btn => btn.classList.remove('active'));
-            [giftsContent, wallContent].forEach(content => content.classList.remove('active'));
+            [giftsTabButton, postsTabButton, buyGiftsTabButton].forEach(btn => btn.classList.remove('active'));
+            [giftsContent, postsContent].forEach(content => content.classList.remove('active'));
+            newPostFab.classList.add('hidden');
 
             if (tabName === 'gifts') {
                 giftsTabButton.classList.add('active');
                 giftsContent.classList.add('active');
-            } else if (tabName === 'wall') {
-                wallTabButton.classList.add('active');
-                wallContent.classList.add('active');
+            } else if (tabName === 'posts') {
+                postsTabButton.classList.add('active');
+                postsContent.classList.add('active');
+                if (viewingOwnProfile) newPostFab.classList.remove('hidden');
+            } else if (tabName === 'buy-gifts') {
+                buyGiftsTabButton.classList.add('active');
+                giftsContent.classList.add('active'); // Keep gifts visible as a base
+                showPage('buy-gifts-page');
             }
         }
 
@@ -4594,24 +4527,20 @@
             exitReorderModeButton.classList.add('hidden');
             giftsGrid.classList.remove('reordering');
             
-            // Immediately apply the new sort order to the local array
             const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card[data-pinned="true"]')).map(el => el.dataset.instanceId);
             newOrderIds.forEach((id, index) => {
                 const gift = ownedGifts.find(g => g.instance_id === id);
                 if (gift) gift.pin_order = index;
             });
             
-            // Re-render based on the updated local array
             renderProfileGifts();
         
             try {
-                // Send the final, correct order to the backend
                 await callBackend('/api/gifts/reorder', 'POST', {
                     owner_id: currentAccountTgId,
                     ordered_instance_ids: newOrderIds
                 });
             } catch (error) {
-                // If backend fails, re-fetch from server to ensure consistency
                 await initializeTelegramUserAccount();
             }
         }
@@ -4671,6 +4600,13 @@
             exitSelectionMode();
             tg.showConfirm(`Are you sure you want to hide ${idsToHide.length} selected gifts?`, async (confirmed) => {
                 if (confirmed) {
+                    const originalGifts = JSON.parse(JSON.stringify(ownedGifts));
+                    ownedGifts.forEach(g => {
+                        if (idsToHide.includes(g.instance_id)) g.is_hidden = true;
+                    });
+                    renderProfileGifts();
+                    tg.HapticFeedback.notificationOccurred('success');
+
                     try {
                         await callBackend('/api/gifts/batch_action', 'POST', {
                             action: 'hide',
@@ -4678,10 +4614,10 @@
                             owner_id: currentAccountTgId
                         });
                         await initializeTelegramUserAccount();
-                        tg.HapticFeedback.notificationOccurred('success');
                     } catch (error) {
-                         tg.HapticFeedback.notificationOccurred('error');
-                         await initializeTelegramUserAccount(); // Re-sync on failure
+                        tg.HapticFeedback.notificationOccurred('error');
+                        ownedGifts = originalGifts;
+                        renderProfileGifts();
                     }
                 }
             });
@@ -4719,7 +4655,6 @@
                      await initializeTelegramUserAccount();
                  } catch (error) {
                      console.error(error);
-                     await initializeTelegramUserAccount(); // Re-sync on failure
                  } finally {
                      closeModal(transferGiftModal);
                      exitSelectionMode();
@@ -4734,8 +4669,8 @@
         }
         function populateGiveawaySetupModal() {
             giveawayGiftSelectionGrid.innerHTML = '';
-            selectedGiveawayGifts.clear();
             giveawayChannelsInput.value = '';
+            selectedGiveawayGifts.clear();
             confirmGiveawaySetupButton.disabled = true;
 
             const collectibleGifts = ownedGifts.filter(g => g.is_collectible && !g.is_hidden);
@@ -4780,127 +4715,9 @@
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert("Giveaway saved! Please return to your chat with the bot to complete the setup.");
             } catch (error) {
-                // Error handled by callBackend
             } finally {
                 confirmGiveawaySetupButton.disabled = false;
                 confirmGiveawaySetupButton.textContent = "Start Setup in Bot";
-            }
-        }
-        
-        // --- WALL (POSTS) LOGIC ---
-        function renderWall() {
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            if (!currentAccount && !viewingOwnProfile) return;
-            const ownerAvatar = viewingOwnProfile ? currentAccount.avatar_url : profileAvatar.src;
-            const ownerName = viewingOwnProfile ? currentAccount.full_name : profileName.textContent;
-            
-            wallContent.innerHTML = '';
-            if (userPosts.length === 0) {
-                wallContent.innerHTML = `<p class="empty-grid-message">Nothing to see here yet.</p>`;
-                return;
-            }
-            
-            userPosts.forEach(post => {
-                const postCard = document.createElement('div');
-                postCard.className = 'wall-post-card';
-                postCard.dataset.postId = post.id;
-                
-                const date = new Date(post.created_at).toLocaleString('en-US', {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
-
-                postCard.innerHTML = `
-                    <div class="wall-post-header">
-                        <img src="${ownerAvatar}" alt="Avatar">
-                        <div class="name-date">
-                            <div class="name">${ownerName}</div>
-                            <div class="date">${date}</div>
-                        </div>
-                    </div>
-                    <div class="wall-post-content">${parseWallContent(post.content)}</div>
-                    <div class="wall-post-footer">
-                        ${EYE_ICON_SVG}
-                        <span>${post.views}</span>
-                    </div>
-                `;
-                wallContent.appendChild(postCard);
-                observePostElement(postCard);
-            });
-        }
-        
-        function parseWallContent(text) {
-            let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            // Bold
-            html = html.replace(/\*(.*?)\*/g, '<b>$1</b>');
-            // Demonic Red
-            html = html.replace(/&(.*?)&/g, '<span class="md-demonic">$1</span>');
-            // Pink
-            html = html.replace(/♡(.*?)♡/g, '<span class="md-pink">$1</span>');
-            // Green
-            html = html.replace(/\$(.*?)\$/g, '<span class="md-green">$1</span>');
-            // Blue
-            html = html.replace(/%(.*?)%/g, '<span class="md-blue">$1</span>');
-            // User Link
-            html = html.replace(/@([a-zA-Z0-9_]{5,32})/g, '<a href="#" class="user-link" data-username="$1">@$1</a>');
-            // Gift Link (e.g., PlushPepe-123)
-            html = html.replace(/([a-zA-Z\s'']+)-(\d+)/g, (match, name, number) => {
-                const giftTypeId = name.trim().replace(/\s/g, '');
-                return `<a href="#" class="gift-link" data-gift-type-id="${giftTypeId}" data-collectible-number="${number}">${name.trim()}-${number}</a>`;
-            });
-            return html;
-        }
-
-        function initPostObserver() {
-            postIntersectionObserver = new IntersectionObserver(handlePostIntersection, {
-                root: null, threshold: 0.5
-            });
-        }
-
-        function observePostElement(element) {
-            if (postIntersectionObserver) {
-                postIntersectionObserver.observe(element);
-            }
-        }
-
-        function handlePostIntersection(entries, observer) {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const postId = entry.target.dataset.postId;
-                    if (!viewedPostIds.has(postId)) {
-                        viewedPostIds.add(postId);
-                        observer.unobserve(entry.target);
-                        callBackend(`/api/posts/${postId}/view`, 'POST').catch(err => {
-                            // If it fails, remove from viewed so it can be tried again
-                            viewedPostIds.delete(postId);
-                        });
-                    }
-                }
-            });
-        }
-        
-        function openNewPostModal() {
-            newPostContent.value = '';
-            openModal(newPostModal);
-        }
-
-        async function handleNewPostSubmit() {
-            const content = newPostContent.value.trim();
-            if (!content) return;
-            submitNewPostButton.disabled = true;
-            submitNewPostButton.textContent = 'Submitting...';
-            try {
-                const newPost = await callBackend('/api/posts', 'POST', {
-                    owner_id: currentAccountTgId,
-                    content: content
-                });
-                userPosts.unshift(newPost); // Add to the top of the list
-                renderWall();
-                closeModal(newPostModal);
-            } catch (error) {
-                console.error("Failed to submit post:", error);
-            } finally {
-                submitNewPostButton.disabled = false;
-                submitNewPostButton.textContent = 'Submit';
             }
         }
 
@@ -4926,45 +4743,140 @@
                 setTimeout(() => openGiftDetailByInstanceId(nextGift.instance_id), 50);
             }
         }
+        
+        // --- Wall/Posts Logic ---
+        function renderPosts() {
+            postsContent.innerHTML = '';
+            if (profilePosts.length === 0) {
+                postsContent.innerHTML = `<p class="empty-grid-message">${viewingOwnProfile ? 'Your wall is empty.' : 'This user has no posts.'}</p>`;
+                return;
+            }
+            profilePosts.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.innerHTML = `
+                    <div class="post-content">${parsePostContent(post.content)}</div>
+                    <div class="post-footer">
+                        <span>${new Date(post.created_at).toLocaleString()}</span>
+                        <span>👁️ ${post.views}</span>
+                    </div>
+                `;
+                postsContent.appendChild(card);
+                // Increment view count, but not for own posts
+                if (!viewingOwnProfile) {
+                    callBackend(`/api/posts/${post.id}/view`, 'POST');
+                }
+            });
+        }
+        
+        function parsePostContent(content) {
+            let html = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            // Bold
+            html = html.replace(/\*(.*?)\*/g, '<b>$1</b>');
+            // Demonic Red
+            html = html.replace(/&(.*?)&/g, '<span class="text-demonic">$1</span>');
+            // Pink
+            html = html.replace(/♡(.*?)♡/g, '<span class="text-pink">$1</span>');
+            // Green
+            html = html.replace(/\$(.*?)\$/g, '<span class="text-green">$1</span>');
+            // Blue
+            html = html.replace(/%(.*?)%/g, '<span class="text-blue">$1</span>');
+            // Username
+            html = html.replace(/@([a-zA-Z0-9_]{5,32})/g, '<a href="#" class="user-link" data-username="$1">@$1</a>');
+            // Gift Name and Number
+            html = html.replace(/([A-Za-z\s']{3,20})-([0-9]{1,6})/g, (match, name, number) => {
+                const giftId = `${name.replace(/\s/g, '')}-${number}`;
+                return `<a href="#" class="gift-link" data-gift-id="${giftId}">${match}</a>`;
+            });
+
+            return html;
+        }
+
+        function handleWallClick(e) {
+            const userLink = e.target.closest('.user-link');
+            if (userLink) {
+                e.preventDefault();
+                displayUserProfile(userLink.dataset.username);
+                return;
+            }
+            const giftLink = e.target.closest('.gift-link');
+            if (giftLink) {
+                e.preventDefault();
+                const [giftName, giftNumber] = giftLink.dataset.giftId.split('-');
+                if (giftName && giftNumber) {
+                     displayDeepLinkedGift(giftName, parseInt(giftNumber));
+                }
+            }
+        }
+        
+        async function handleNewPostSubmit() {
+            const content = newPostContent.value.trim();
+            if (!content) {
+                tg.showAlert("Post content cannot be empty.");
+                return;
+            }
+            submitNewPostButton.disabled = true;
+            submitNewPostButton.textContent = "Posting...";
+
+            try {
+                const newPost = await callBackend('/api/posts', 'POST', {
+                    owner_id: currentAccountTgId,
+                    content: content
+                });
+                profilePosts.unshift(newPost); // Add to top
+                renderPosts();
+                closeModal(newPostModal);
+            } catch (error) {
+                 // Error handled by callBackend
+            } finally {
+                submitNewPostButton.disabled = false;
+                submitNewPostButton.textContent = "Submit";
+                newPostContent.value = '';
+            }
+        }
 
 
         function setupEventListeners() {
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
-            wallTabButton.addEventListener('click', () => switchTab('wall'));
-            buyGiftsTabButton.addEventListener('click', () => showPage('buy-gifts-page'));
+            postsTabButton.addEventListener('click', () => switchTab('posts'));
+            buyGiftsTabButton.addEventListener('click', () => switchTab('buy-gifts'));
+            postsContent.addEventListener('click', handleWallClick);
+            newPostFab.addEventListener('click', () => openModal(newPostModal));
 
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
 
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
             profileAvatar.addEventListener('contextmenu', (e) => { e.preventDefault(); if (viewingOwnProfile) avatarUploadInput.click(); });
-            
-            newPostFab.addEventListener('click', openNewPostModal);
 
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) closeModal(modal);
                 });
             });
-            upgradeGiftDetailModalButton.addEventListener('click', handleSingleGiftUpgradeFromModal);
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
-            closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
-            cancelUnpinModal.addEventListener('click', () => closeModal(tooManyPinsModal));
-            cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            closeChancesModalButton.addEventListener('click', () => closeModal(chancesModal));
-            closeGeneratedImageModalButton.addEventListener('click', () => closeModal(generatedImageModal));
-            cancelSellButton.addEventListener('click', () => closeModal(sellGiftModal));
-            cancelTransferButton.addEventListener('click', () => closeModal(transferGiftModal));
-            closeNumbersModalButton.addEventListener('click', () => closeModal(numbersModal));
-            closeUsernamesModalButton.addEventListener('click', () => closeModal(usernamesModal));
-            cancelGiveawaySetupButton.addEventListener('click', () => closeModal(giveawaySetupModal));
-            customBuyCancelButton.addEventListener('click', () => closeModal(customBuyModal));
-            document.getElementById('cancel-new-post-button').addEventListener('click', () => closeModal(newPostModal));
+            upgradeGiftDetailModalButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
 
-            customizeGiftButton.addEventListener('click', handleCustomizeButtonClick);
-            subscribeChannelButton.addEventListener('click', () => {
-                tg.openTelegramLink(`https://t.me/${REQUIRED_CHANNEL_FOR_CUSTOMIZE}`);
+            document.getElementById('close-collectible-detail-modal').addEventListener('click', () => closeModal(collectibleDetailModal));
+            document.getElementById('cancel-unpin-modal').addEventListener('click', () => closeModal(tooManyPinsModal));
+            document.getElementById('cancel-buy-multiple').addEventListener('click', () => closeModal(buyMultipleModal));
+            document.getElementById('close-chances-modal').addEventListener('click', () => closeModal(chancesModal));
+            document.getElementById('close-generated-image-modal').addEventListener('click', () => closeModal(generatedImageModal));
+            document.getElementById('cancel-sell-button').addEventListener('click', () => closeModal(sellGiftModal));
+            document.getElementById('cancel-transfer-button').addEventListener('click', () => closeModal(transferGiftModal));
+            document.getElementById('close-numbers-modal').addEventListener('click', () => closeModal(numbersModal));
+            document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
+            document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
+            document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
+            
+            submitNewPostButton.addEventListener('click', handleNewPostSubmit);
+            document.getElementById('cancel-new-post-button').addEventListener('click', () => closeModal(newPostModal));
+            document.getElementById('formatting-help-toggle').addEventListener('click', (e) => {
+                const content = document.getElementById('formatting-help-content');
+                content.classList.toggle('hidden');
+                e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
             });
-            cancelSubscribeButton.addEventListener('click', () => closeModal(subscriptionCheckModal));
+
 
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
@@ -5015,12 +4927,11 @@
             clearCurrentAccountDataButton.addEventListener('click', handleClearCurrentAccountData);
             clearAllAccountsDataButton.addEventListener('click', handleClearAllAccountsData);
 
+            customizeGiftButton.addEventListener('click', openCustomBuyModal);
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             cloneGiftButton.addEventListener('click', handleCloneGift);
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
-            
-            submitNewPostButton.addEventListener('click', handleNewPostSubmit);
 
             sellPriceInput.addEventListener('input', updateSellPriceDetails);
             confirmSellButton.addEventListener('click', handleConfirmSell);
@@ -5053,20 +4964,13 @@
                 if (touchStartX < swipeEdgeThreshold && deltaX > swipeEdgeThreshold) { 
                     openSidebar(); 
                 }
+                else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold) {
+                    switchTab('buy-gifts');
+                }
             }, { passive: true });
 
             sidebarOverlay.addEventListener('click', closeSidebar);
             addAccountButton.addEventListener('click', handleAddAccount);
-            
-            wallContent.addEventListener('click', (e) => {
-                if (e.target.classList.contains('user-link')) {
-                    e.preventDefault();
-                    displayUserProfile(e.target.dataset.username);
-                } else if (e.target.classList.contains('gift-link')) {
-                    e.preventDefault();
-                    displayDeepLinkedGift(e.target.dataset.giftTypeId, parseInt(e.target.dataset.collectibleNumber, 10));
-                }
-            });
 
             collectibleDetailModal.addEventListener('touchstart', (e) => {
                 modalSwipeState.startX = e.touches[0].clientX;
@@ -5100,7 +5004,7 @@
                     }
                 };
                 tg.themeParams = {};
-                tg.showAlert = (message) => alert(message);
+                tg.showAlert = (message, callback) => { alert(message); if (callback) callback(); };
                 tg.showConfirm = (message, callback) => callback(confirm(message));
                 tg.HapticFeedback = {
                     impactOccurred: (style) => console.log(`Haptic: ${style}`),
@@ -5116,4 +5020,5 @@
         }
     </script>
 </body>
-    </html>
+</html>
+```
