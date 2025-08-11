@@ -4286,33 +4286,23 @@
             // --- End Asynchronous UI Update ---
 
             try {
-                const upgradePromises = allTempGifts.map(async ({ tempGift, config }) => {
-                    const newInstanceId = generateUniqueId();
-                    await callBackend('/api/gifts', 'POST', {
-                        instance_id: newInstanceId,
+                const creationPromises = allTempGifts.map(({ tempGift, config }) => {
+                    const payload = {
                         owner_id: tempGift.owner_id,
-                        gift_type_id: tempGift.gift_type_id,
-                        gift_name: tempGift.gift_name,
-                        original_image_url: tempGift.original_image_url,
-                        lottie_path: tempGift.lottie_path,
-                    });
-                    
-                    const upgradePayload = {
-                        instance_id: newInstanceId,
+                        gift_name: config.name,
+                        gift_type_id: config.id,
                         custom_model: config.model,
                         custom_backdrop: config.backdrop,
                     };
-                    
                     if (config.customPatternBase64) {
-                        upgradePayload.custom_pattern_base64 = config.customPatternBase64;
+                        payload.custom_pattern_base64 = config.customPatternBase64;
                     } else {
-                        upgradePayload.custom_pattern = config.pattern;
+                        payload.custom_pattern = config.pattern;
                     }
-
-                    return callBackend('/api/gifts/upgrade', 'POST', upgradePayload);
+                    return callBackend('/api/gifts/create_collectible', 'POST', payload);
                 });
                 
-                await Promise.all(upgradePromises);
+                await Promise.all(creationPromises);
                 await initializeTelegramUserAccount(); // Final sync
                 tg.showAlert(`${totalToCreate} gift(s) created successfully!`);
 
