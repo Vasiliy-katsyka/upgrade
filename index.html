@@ -1864,7 +1864,7 @@
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
         const STAR_ICON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png";
-        const LOADING_ANIMATION_URL = "https://cdn.changes.tg/gifts/models/Jolly%20Chimp/Toddler.tgs"; // Using .tgs directly with lottie might not work, assuming it's a JSON/Lottie file URL
+        const LOADING_ANIMATION_URL = "https://cdn.changes.tg/gifts/models/Jolly%20Chimp/lottie/Toddler.json"; // Using .tgs directly with lottie might not work, assuming it's a JSON/Lottie file URL
 
         const GIFT_LIMIT_PER_USER = 5000;
         const MAX_COLLECTIBLE_USERNAMES = 10;
@@ -2290,54 +2290,62 @@
         }
 
         async function initApp() {
-            tg.ready(); tg.expand();
-            
-            // Play loading animation
+            tg.ready();
+            tg.expand();
+
             playLottieAnimation(loadingAnimationContainer, LOADING_ANIMATION_URL, true);
-
             initLottieObserver();
-
+            
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
 
-            loadClientSideState();
-            
-            if (fullscreenEnabled && tg.requestFullscreen) {
-                tg.requestFullscreen();
-            }
+            try {
+                loadClientSideState();
 
-            const startAppParam = tg.initDataUnsafe?.start_param;
-            if (startAppParam) {
-                await initializeTelegramUserAccount();
-                if (startAppParam.startsWith('user')) {
-                    const identifier = startAppParam.substring(4);
-                    await displayUserProfile(identifier);
-                } else if (startAppParam.startsWith('gift')) {
-                    const giftString = startAppParam.substring(4);
-                    const [giftTypeId, collectibleNumberStr] = giftString.split('-');
-                    const collectibleNumber = parseInt(collectibleNumberStr, 10);
-                    if (giftTypeId && !isNaN(collectibleNumber)) {
-                        await displayDeepLinkedGift(giftTypeId, collectibleNumber);
-                    } else {
-                        tg.showAlert("Invalid gift format in deep link.");
-                    }
+                if (fullscreenEnabled && tg.requestFullscreen) {
+                    tg.requestFullscreen();
                 }
-            } else {
-                await initializeTelegramUserAccount();
+
+                const startAppParam = tg.initDataUnsafe?.start_param;
+                if (startAppParam) {
+                    await initializeTelegramUserAccount();
+                    if (startAppParam.startsWith('user')) {
+                        const identifier = startAppParam.substring(4);
+                        await displayUserProfile(identifier);
+                    } else if (startAppParam.startsWith('gift')) {
+                        const giftString = startAppParam.substring(4);
+                        const [giftTypeId, collectibleNumberStr] = giftString.split('-');
+                        const collectibleNumber = parseInt(collectibleNumberStr, 10);
+                        if (giftTypeId && !isNaN(collectibleNumber)) {
+                            await displayDeepLinkedGift(giftTypeId, collectibleNumber);
+                        } else {
+                            tg.showAlert("Invalid gift format in deep link.");
+                        }
+                    }
+                } else {
+                    await initializeTelegramUserAccount();
+                }
+
+                applyTheme(tg.themeParams);
+                tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
+                tg.SettingsButton.show();
+                tg.SettingsButton.onClick(openSettingsModal);
+
+                setupEventListeners();
+                await fetchGiftPrices();
+                await fetchAvailableGifts();
+
+            } catch (error) {
+                console.error("A critical error occurred during app initialization:", error);
+                tg.showAlert("Failed to load app data. Please try again later.");
+            } finally {
+                // This block will ALWAYS run, ensuring the loading screen is hidden.
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                }, 500); // A small delay to prevent a jarring flash
             }
-
-            applyTheme(tg.themeParams);
-            tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
-            tg.SettingsButton.show();
-            tg.SettingsButton.onClick(openSettingsModal);
-
-            setupEventListeners();
-            await fetchGiftPrices();
-            await fetchAvailableGifts();
-            
-            loadingOverlay.classList.add('hidden');
         }
 
         async function initializeTelegramUserAccount() {
