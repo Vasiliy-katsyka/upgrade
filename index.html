@@ -5058,47 +5058,47 @@
             });
         }
 
+        
         function setupEventListeners() {
+            // Main navigation
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
             postsTabButton.addEventListener('click', () => switchTab('posts'));
             buyGiftsTabButton.addEventListener('click', () => switchTab('buy-gifts'));
             postsContent.addEventListener('click', handleWallClick);
             newPostFab.addEventListener('click', () => openModal(newPostModal));
 
+            // Profile actions
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
-
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
             profileAvatar.addEventListener('contextmenu', (e) => { e.preventDefault(); if (viewingOwnProfile) avatarUploadInput.click(); });
+            avatarUploadInput.addEventListener('change', handleAvatarUpload);
+            wornGiftIconContainer.addEventListener('click', () => {
+                const wornGift = ownedGifts.find(g => g.is_worn);
+                if (wornGift) openGiftDetailByInstanceId(wornGift.instance_id);
+            });
 
+            // Modal close buttons
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) closeModal(modal);
                 });
             });
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
-            upgradeGiftDetailModalButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
-
-            document.getElementById('close-collectible-detail-modal').addEventListener('click', () => closeModal(collectibleDetailModal));
-            document.getElementById('cancel-unpin-modal').addEventListener('click', () => closeModal(tooManyPinsModal));
-            document.getElementById('cancel-buy-multiple').addEventListener('click', () => closeModal(buyMultipleModal));
-            document.getElementById('close-chances-modal').addEventListener('click', () => closeModal(chancesModal));
-            document.getElementById('close-generated-image-modal').addEventListener('click', () => closeModal(generatedImageModal));
-            document.getElementById('cancel-sell-button').addEventListener('click', () => closeModal(sellGiftModal));
-            document.getElementById('cancel-transfer-button').addEventListener('click', () => closeModal(transferGiftModal));
+            closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
+            cancelUnpinModal.addEventListener('click', () => closeModal(tooManyPinsModal));
+            cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
+            closeChancesModal.addEventListener('click', () => closeModal(chancesModal));
+            closeGeneratedImageModal.addEventListener('click', () => closeModal(generatedImageModal));
+            cancelSellButton.addEventListener('click', () => closeModal(sellGiftModal));
+            cancelTransferButton.addEventListener('click', () => closeModal(transferGiftModal));
             document.getElementById('close-numbers-modal').addEventListener('click', () => closeModal(numbersModal));
             document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
-            
-            submitNewPostButton.addEventListener('click', handleNewPostSubmit);
             document.getElementById('cancel-new-post-button').addEventListener('click', () => closeModal(newPostModal));
-            document.getElementById('formatting-help-toggle').addEventListener('click', (e) => {
-                const content = document.getElementById('formatting-help-content');
-                content.classList.toggle('hidden');
-                e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
-            });
-
-
+            
+            // Modal action buttons
+            upgradeGiftDetailModalButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
                 const giftInstanceId = collectibleDetailModal.dataset.instanceId;
@@ -5119,7 +5119,13 @@
                 currentLongPressGift = gift;
                 handleHideAction();
             });
+            confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
+            sellPriceInput.addEventListener('input', updateSellPriceDetails);
+            confirmSellButton.addEventListener('click', handleConfirmSell);
+            transferUsernameInput.addEventListener('input', () => { confirmTransferButton.disabled = transferUsernameInput.value.trim() === ''; });
+            confirmTransferButton.addEventListener('click', handleConfirmTransfer);
 
+            // Long-press context menu
             menuPinAction.addEventListener('click', handlePinAction);
             menuHideAction.addEventListener('click', handleHideAction);
             menuCopyLinkAction.addEventListener('click', () => { if(currentLongPressGift) copyGiftLink(currentLongPressGift); });
@@ -5127,19 +5133,17 @@
             menuShareImageAction.addEventListener('click', handleShareImageAction);
             menuReorderAction.addEventListener('click', enterReorderMode);
 
-            confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
-
+            // Filters & Selection
             openFiltersButton.addEventListener('click', openFilterPopup);
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
             exitFilterModeButton.addEventListener('click', handleClearFilters);
             exitReorderModeButton.addEventListener('click', exitReorderMode);
-
             exitSelectionModeButton.addEventListener('click', exitSelectionMode);
             hideSelectedGiftsButton.addEventListener('click', handleHideMultiple);
             transferSelectedGiftsButton.addEventListener('click', handleTransferMultiple);
 
-            settingsModal.querySelector('.modal-button.secondary')?.addEventListener('click', () => closeModal(settingsModal));
+            // Settings Modal
             fullscreenToggle.addEventListener('change', handleFullscreenToggle);
             animationToggle.addEventListener('change', handleAnimationToggle);
             customGiftsToggle.addEventListener('change', handleCustomGiftsToggle);
@@ -5149,7 +5153,8 @@
             termsOfServiceButton.addEventListener('click', () => tg.openLink('https://telegra.ph/Terms-of-Use-for-Gift-Upgrade-Demo-08-10'));
             clearCurrentAccountDataButton.addEventListener('click', handleClearCurrentAccountData);
             clearAllAccountsDataButton.addEventListener('click', handleClearAllAccountsData);
-
+            
+            // Custom Buy Modal
             customizeGiftButton.addEventListener('click', openCustomBuyModal);
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             cloneGiftButton.addEventListener('click', handleCloneGift);
@@ -5157,33 +5162,33 @@
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
             customPatternUploadInput.addEventListener('change', handleCustomPatternUpload);
 
-            sellPriceInput.addEventListener('input', updateSellPriceDetails);
-            confirmSellButton.addEventListener('click', handleConfirmSell);
-
-            transferUsernameInput.addEventListener('input', () => { confirmTransferButton.disabled = transferUsernameInput.value.trim() === ''; });
-            confirmTransferButton.addEventListener('click', handleConfirmTransfer);
-
-            avatarUploadInput.addEventListener('change', handleAvatarUpload);
-
-            wornGiftIconContainer.addEventListener('click', () => {
-                const wornGift = ownedGifts.find(g => g.is_worn);
-                if (wornGift) openGiftDetailByInstanceId(wornGift.instance_id);
-            });
-
+            // Collectibles (Numbers/Usernames)
             openNumbersButton.addEventListener('click', handleOpenNumbersModal);
             openUsernamesButton.addEventListener('click', handleOpenUsernamesModal);
             usernameSearchInput.addEventListener('input', (e) => populateUsernamesList(e.target.value));
-            
+
+            // Giveaway
+            createGiveawayButton.addEventListener('click', openGiveawaySetupModal);
+            confirmGiveawaySetupButton.addEventListener('click', handleConfirmGiveawaySetup);
+
+            // New Post
+            submitNewPostButton.addEventListener('click', handleNewPostSubmit);
+            document.getElementById('formatting-help-toggle').addEventListener('click', (e) => {
+                const content = document.getElementById('formatting-help-content');
+                content.classList.toggle('hidden');
+                e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
+            });
+
+            // Sidebar
             sidebarSearchInput.addEventListener('input', (e) => {
                 clearTimeout(searchDebounceTimer);
                 searchDebounceTimer = setTimeout(() => handleSidebarSearch(e.target.value), 300);
             });
-
-            createGiveawayButton.addEventListener('click', openGiveawaySetupModal);
-            confirmGiveawaySetupButton.addEventListener('click', handleConfirmGiveawaySetup);
-            
+            sidebarOverlay.addEventListener('click', closeSidebar);
+            addAccountButton.addEventListener('click', () => handleAddAccount());
             adminLoginButton.addEventListener('click', handleAdminLogin);
 
+            // Swipes & gestures
             let touchStartX = 0; const swipeEdgeThreshold = 50;
             appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
             appContainer.addEventListener('touchend', e => {
@@ -5200,9 +5205,6 @@
                     switchTab('buy-gifts');
                 }
             }, { passive: true });
-
-            sidebarOverlay.addEventListener('click', closeSidebar);
-            addAccountButton.addEventListener('click', () => handleAddAccount());
 
             collectibleDetailModal.addEventListener('touchstart', (e) => {
                 modalSwipeState.startX = e.touches[0].clientX;
@@ -5222,6 +5224,7 @@
             
             imagePreviewOverlay.addEventListener('click', () => imagePreviewOverlay.classList.remove('active'));
         }
+        
 
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
             initApp();
