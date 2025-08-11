@@ -3365,7 +3365,11 @@
         function openModal(modalElement, data = null) {
             if (!modalElement) return;
 
-            if(data) modalElement.dataset.instanceId = data.instance_id;
+            // This is the main fix. It ensures that for any modal,
+            // we try to get a unique identifier (instance_id for gifts, tg_id for users).
+            if (data) {
+                modalElement.dataset.instanceId = data.instance_id || data.tg_id;
+            }
 
             if (modalElement.id === 'gift-detail-modal' && data) {
                 populateGiftDetailModal(data);
@@ -3374,7 +3378,7 @@
             } else if (modalElement.id === 'giveaway-setup-modal') {
                  populateGiveawaySetupModal();
             } else if (modalElement.id === 'subscription-modal' && data) {
-                loadSubscriptionState(data.tg_id);
+                 loadSubscriptionState(data.tg_id);
             } else if (modalElement.id === 'reaction-users-modal' && data) {
                 populateReactionUsersModal(data.postId, data.emoji);
             }
@@ -4215,33 +4219,6 @@
             customBuyConfirmButton.textContent = `Create ${total > 1 ? `${total} Gifts` : 'Gift'}`;
         }
 
-        async function handleCloneGift() {
-            const userInput = cloneUrlInput.value.trim();
-            if (!userInput) { tg.showAlert("Please provide a link or gift name and number."); return; }
-            if (ownedGifts.length >= GIFT_LIMIT_PER_USER) {
-                tg.showAlert(`Cannot clone gift. Your inventory is full.`);
-                return;
-            }
-            cloneGiftButton.disabled = true;
-            cloneGiftButton.textContent = "Cloning...";
-            try {
-                const clonedGift = await callBackend('/api/gifts/clone', 'POST', {
-                    url: userInput,
-                    owner_id: currentAccountTgId
-                });
-                ownedGifts.unshift(clonedGift);
-                renderProfileGifts();
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert("Gift cloned successfully!");
-                closeModal(customBuyModal);
-                showPage('profile-page');
-            } catch (error) {
-                 // Error is shown by callBackend
-            } finally {
-                cloneGiftButton.disabled = false;
-                cloneGiftButton.textContent = "Clone Gift";
-            }
-        }
         
         async function handleCustomBuyConfirm() {
             if (customBuyConfirmButton.disabled) return;
@@ -4258,9 +4235,8 @@
 
             customBuyConfirmButton.disabled = true;
             customBuyConfirmButton.textContent = 'Creating...';
-            closeModal(customBuyModal); 
+            closeModal(customBuyModal);
 
-            // --- Asynchronous UI Update ---
             const allTempGifts = [];
             giftCreationQueue.forEach(giftConfig => {
                 for (let i = 0; i < giftConfig.quantity; i++) {
@@ -4283,11 +4259,15 @@
             renderProfileGifts();
             showPage('profile-page');
             tg.HapticFeedback.notificationOccurred('success');
-            // --- End Asynchronous UI Update ---
 
-            try {
-                const upgradePromises = allTempGifts.map(async ({ tempGift, config }) => {
+            let successCount = 0;
+            let failureCount = 0;
+
+            for (const { tempGift, config } of allTempGifts) {
+                try {
                     const newInstanceId = generateUniqueId();
+                    
+                    // Step 1: Create the base gift
                     await callBackend('/api/gifts', 'POST', {
                         instance_id: newInstanceId,
                         owner_id: tempGift.owner_id,
@@ -4296,7 +4276,8 @@
                         original_image_url: tempGift.original_image_url,
                         lottie_path: tempGift.lottie_path,
                     });
-                    
+
+                    // Step 2: Upgrade the gift to collectible with custom parts
                     const upgradePayload = {
                         instance_id: newInstanceId,
                         custom_model: config.model,
@@ -4309,18 +4290,28 @@
                         upgradePayload.custom_pattern = config.pattern;
                     }
 
-                    return callBackend('/api/gifts/upgrade', 'POST', upgradePayload);
-                });
-                
-                await Promise.all(upgradePromises);
-                await initializeTelegramUserAccount(); // Final sync
-                tg.showAlert(`${totalToCreate} gift(s) created successfully!`);
-
-            } catch (error) {
-                tg.showAlert('An error occurred while creating gifts. Your inventory will be re-synced.');
-                await initializeTelegramUserAccount();
+                    await callBackend('/api/gifts/upgrade', 'POST', upgradePayload);
+                    successCount++;
+                } catch (error) {
+                    failureCount++;
+                    // This is the crucial fix: remove the failed temporary gift from the array
+                    const indexToRemove = ownedGifts.findIndex(g => g.instance_id === tempGift.instance_id);
+                    if (indexToRemove > -1) {
+                        ownedGifts.splice(indexToRemove, 1);
+                    }
+                }
             }
-        }
+
+            // Finally, re-render and re-sync with the backend for a consistent state
+            renderProfileGifts(); 
+            await initializeTelegramUserAccount();
+
+            if (failureCount > 0) {
+                tg.showAlert(`${successCount} gift(s) created successfully. ${failureCount} failed.`);
+            } else {
+                tg.showAlert(`${successCount} gift(s) created successfully!`);
+            }
+                }
 
         function handleCustomPatternUpload(event) {
             const file = event.target.files[0];
