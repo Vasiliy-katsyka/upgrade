@@ -240,7 +240,7 @@ def init_db():
                 );
             """)
             
-            # Posts table (for Wall feature)
+            # --- FIX: ADDED MISSING TABLES FOR POSTS, REACTIONS, AND SUBSCRIPTIONS ---
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
                     id SERIAL PRIMARY KEY,
@@ -251,8 +251,7 @@ def init_db():
                 );
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_posts_owner_id ON posts (owner_id);")
-            
-            # Post Reactions table
+
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS post_reactions (
                     id SERIAL PRIMARY KEY,
@@ -265,7 +264,6 @@ def init_db():
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_post_reactions_post_id ON post_reactions (post_id);")
 
-            # User Subscriptions table (for notifications)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS user_subscriptions (
                     id SERIAL PRIMARY KEY,
@@ -277,6 +275,7 @@ def init_db():
                 );
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_subscriptions_target ON user_subscriptions (target_user_id, notification_type);")
+            # --- END OF FIX ---
 
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS giveaways (
@@ -358,7 +357,6 @@ def init_db():
         if conn: conn.rollback()
     finally:
         if conn: put_db_connection(conn)
-
 
 # --- UTILITY & HELPER FUNCTIONS ---
 def is_custom_gift(gift_name):
