@@ -60,6 +60,21 @@
             overflow-x: hidden;
         }
 
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--tg-theme-bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+        #loading-screen h1 { font-size: 1.5em; margin-bottom: 8px; }
+        #loading-screen p { font-size: 1em; color: var(--tg-theme-hint-color); margin-bottom: 20px; }
+
         .app-container {
             max-width: 600px;
             margin: 0 auto;
@@ -102,6 +117,14 @@
         .sidebar-header .name {
             font-size: 1.1em;
             font-weight: 500;
+        }
+        .sidebar-search-container {
+            padding: 10px 15px;
+        }
+        .sidebar-search-container input {
+            width: 100%; padding: 10px; border-radius: 8px;
+            border: none; background-color: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color); font-size: 1em;
         }
         .accounts-list {
             list-style: none;
@@ -181,11 +204,20 @@
         .page-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 10px 15px;
             background-color: var(--tg-theme-secondary-bg-color);
             min-height: 56px;
             position: sticky; top: 0; z-index: 10;
         }
+        .page-header .header-title { flex-grow: 1; }
+        .page-header .header-actions button {
+            background: none; border: none; padding: 5px; cursor: pointer;
+        }
+        .page-header .header-actions button svg {
+            width: 24px; height: 24px; fill: var(--tg-theme-hint-color);
+        }
+
         #profile-page > .page-header {
             background-color: transparent;
             position: absolute;
@@ -365,12 +397,19 @@
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 12px;
+            position: relative;
         }
+        .post-menu-button {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; padding: 5px; cursor: pointer;
+        }
+        .post-menu-button svg { fill: var(--tg-theme-hint-color); width: 20px; height: 20px; }
         .post-content {
             font-size: 1em;
             line-height: 1.5;
             white-space: pre-wrap;
             word-wrap: break-word;
+            padding-right: 30px; /* Space for menu button */
         }
         .post-content .text-demonic {
             color: var(--app-wall-demonic-red);
@@ -388,14 +427,39 @@
         .post-content a.gift-link:hover, .post-content a.user-link:hover {
             text-decoration: underline;
         }
+        .post-reactions-container {
+            margin-top: 12px;
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .reaction-chip {
+            background-color: rgba(0,0,0,0.2);
+            padding: 4px 10px; border-radius: 16px;
+            font-size: 0.9em; display: flex; align-items: center;
+            cursor: pointer;
+        }
+        .reaction-chip .emoji { margin-right: 4px; }
         .post-footer {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end; /* Align to right */
             align-items: center;
             margin-top: 12px;
             font-size: 0.8em;
             color: var(--tg-theme-hint-color);
         }
+        #reaction-popup {
+            position: fixed;
+            background-color: var(--tg-theme-secondary-bg-color);
+            padding: 8px; border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex; gap: 8px;
+            z-index: 2002;
+            transform: translateY(-100%) translateX(-50%);
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        #reaction-popup.visible { opacity: 1; visibility: visible; transform: translateY(-110%) translateX(-50%); }
+        #reaction-popup span { font-size: 1.5em; cursor: pointer; transition: transform 0.1s; }
+        #reaction-popup span:hover { transform: scale(1.2); }
         
         .new-post-fab {
             position: fixed;
@@ -453,11 +517,6 @@
             margin-right: 10px;
         }
         
-        #buy-gifts-page .buy-gifts-header-actions {
-            display: flex;
-            justify-content: flex-end;
-        }
-        
         #buy-gifts-page .buy-gifts-header-actions .action-button {
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
@@ -465,9 +524,6 @@
             border-radius: 20px; font-size: 0.9em; cursor: pointer;
             font-weight: 500;
         }
-
-        #buy-gifts-page .page-header { justify-content: space-between; }
-
 
         .gifts-grid {
             display: grid;
@@ -502,6 +558,7 @@
         }
         .buy-gift-item { aspect-ratio: 1/1.1; }
         .gift-card.is-updating { transform: scale(0.95); opacity: 0.7; }
+        .gift-card.is-optimistic { border: 2px dashed var(--tg-theme-link-color); }
         .sortable-chosen, .sortable-ghost {
             cursor: grabbing !important;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -884,7 +941,7 @@
         }
         #filter-popup .clear-data-button svg { width: 20px; height: 20px; fill: currentColor; margin-right: 8px; }
 
-        #filter-popup .settings-row {
+        .settings-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -949,7 +1006,7 @@
             margin-top: 15px; padding-top: 15px;
             border-top: 1px solid var(--app-action-button-bg);
         }
-        #advanced-settings-container input {
+        #advanced-settings-container input[type=number], #advanced-settings-container input[type=text] {
              width: 100%; padding: 12px; border-radius: 8px;
              border: 1px solid var(--tg-theme-bg-color); background-color: var(--tg-theme-bg-color);
              color: var(--tg-theme-text-color); font-size: 1em; margin-top: 8px;
@@ -1185,17 +1242,44 @@
             padding: 2px 4px;
             border-radius: 4px;
         }
+
+        /* Long Press Image Preview */
+        #image-preview-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 3000;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.2s ease;
+        }
+        #image-preview-overlay.visible { opacity: 1; visibility: visible; }
+        #image-preview-overlay img, #image-preview-overlay .lottie-animation-container {
+            max-width: 90%; max-height: 90%;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <h1>Gift Upgrade Bot</h1>
+        <p>@giftUpgradeRU</p>
+        <div class="spinner"></div>
+    </div>
+
     <div class="account-sidebar" id="account-sidebar">
         <div class="sidebar-header">
             <img id="sidebar-current-avatar" src="" alt="Avatar">
             <span id="sidebar-current-name" class="name"></span>
         </div>
+        <div class="sidebar-search-container">
+            <input type="text" id="sidebar-search-input" placeholder="Search @user or Gift-123...">
+        </div>
         <ul class="accounts-list" id="accounts-list"></ul>
         <div class="sidebar-footer">
             <button id="add-account-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,13.28L1,10.72L2.41,9.31L5,11.9L9.6,7.3L11,8.72L5,14.72Z" /></svg>Add Account</button>
+            <button id="admin-login-button" class="hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,1L9,4H15L12,1M19,21H5C3.9,21 3,20.1 3,19V5C3,3.9 3.9,3 5,3H19C20.1,3 21,3.9 21,5V19C21,20.1 20.1,21 19,21M12,11.5A2.5,2.5 0 0,0 9.5,9A2.5,2.5 0 0,0 12,6.5A2.5,2.5 0 0,0 14.5,9A2.5,2.5 0 0,0 12,11.5M16,17H8V15.8C8,14.03 10.67,13 12,13C13.33,13 16,14.03 16,15.8V17Z"/></svg>Login To Anyone</button>
             <button id="open-filters-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" /></svg>Filters</button>
             <button id="open-numbers-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>Numbers</button>
             <button id="open-usernames-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.33 4,18V20H20V18C20,15.33 14.67,14 12,14Z" /></svg>@ Usernames</button>
@@ -1207,7 +1291,12 @@
     <div class="app-container">
         <div id="profile-page" class="page active">
              <input type="file" id="avatar-upload-input" class="hidden" accept="image/*">
-             <div class="page-header"></div>
+             <div class="page-header">
+                <div class="header-title"></div>
+                <div class="header-actions">
+                    <button id="notifications-button" class="hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,22C13.1,22 14,21.1 14,20H10C10,21.1 10.9,22 12,22M18,16V11C18,7.93 16.36,5.36 13.5,4.68V4C13.5,3.17 12.83,2.5 12,2.5C11.17,2.5 10.5,3.17 10.5,4V4.68C7.64,5.36 6,7.93 6,11V16L4,18V19H20V18L18,16Z"/></svg></button>
+                </div>
+             </div>
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
                     <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
@@ -1275,8 +1364,8 @@
 
         <div id="buy-gifts-page" class="page">
             <div class="page-header">
-                 <h2>Gift Shop</h2>
-                 <div class="buy-gifts-header-actions">
+                 <div class="header-title"><h2>Gift Shop</h2></div>
+                 <div class="header-actions">
                     <button id="customize-gift-button" class="action-button">Customize</button>
                  </div>
             </div>
@@ -1411,6 +1500,13 @@
                             <span class="slider round"></span>
                         </label>
                     </div>
+                     <div class="settings-row">
+                        <label>Fullscreen</label>
+                        <label class="switch">
+                            <input type="checkbox" id="fullscreen-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
                     <div class="settings-row">
                         <label>Custom Gifts</label>
                         <label class="switch">
@@ -1430,6 +1526,9 @@
                     </div>
                     <div class="settings-row">
                         <button id="transfer-multiple-button" class="full-width">Transfer Multiple</button>
+                    </div>
+                    <div class="settings-row">
+                        <a href="https://telegra.ph/Terms-of-Use-for-Gift-Upgrade-Demo-08-10" target="_blank" class="modal-button secondary" style="text-align:center;">Terms of Service</a>
                     </div>
                     <div class="settings-row">
                         <button id="clear-current-account-data-button" class="full-width">Clear Current Account Data</button>
@@ -1500,6 +1599,10 @@
                         <div>
                             <label for="custom-buy-quantity">Quantity to Create</label>
                             <input type="number" id="custom-buy-quantity" value="1" min="1">
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <label for="custom-pattern-upload">Custom Pattern (.png)</label>
+                            <input type="file" id="custom-pattern-upload" accept=".png" style="margin-top: 8px;">
                         </div>
                         <div id="custom-buy-clone-section" style="margin-top: 15px;">
                             <h4>Or Clone from Link</h4>
@@ -1679,6 +1782,31 @@
             </div>
         </div>
 
+        <div id="notification-settings-modal" class="modal-overlay">
+            <div class="modal-content">
+                 <div class="modal-header-bar"><h3>Notification Settings</h3></div>
+                 <div class="modal-scrollable-content">
+                     <div class="settings-row">
+                        <label>Notify me about my Mentions</label>
+                        <label class="switch">
+                            <input type="checkbox" id="mentions-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row">
+                        <label>Notify me about New Posts</label>
+                        <label class="switch">
+                            <input type="checkbox" id="new-posts-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                 </div>
+                 <div class="modal-buttons-footer">
+                    <button id="close-notification-settings-modal" class="modal-button">Close</button>
+                 </div>
+            </div>
+        </div>
+
     </div>
 
     <div id="long-press-menu" class="hidden">
@@ -1691,10 +1819,14 @@
             <li id="menu-delete-action" class="danger">Delete</li>
         </ul>
     </div>
+    <div id="image-preview-overlay"></div>
+    <div id="reaction-popup">
+        <span>❤️</span><span>💯</span><span>🏆</span><span>🔥</span><span>👍</span><span>🤗</span><span>💔</span><span>😭</span><span>💋</span><span>🍆</span><span>🍑</span><span>🤬</span><span>🙄</span>
+    </div>
     <script>
         const BACKEND_BASE_URL = "https://upgrade-a57g.onrender.com";
 
-        const APP_VERSION_SUFFIX = '_v15'; // Increment to reset UI preferences on major changes
+        const APP_VERSION_SUFFIX = '_v16'; // Increment to reset UI preferences on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
@@ -1704,6 +1836,7 @@
         const MAX_COLLECTIBLE_USERNAMES = 10;
         const MIN_SALE_PRICE = 125;
         const MAX_SALE_PRICE = 100000;
+        const MAX_REACTIONS_PER_POST = 3;
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
@@ -1845,24 +1978,30 @@
         let animationsEnabled = true;
         let showHiddenGifts = false;
         let customGiftsEnabled = false;
+        let fullscreenEnabled = false;
         let activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
 
         let tg = window.Telegram.WebApp;
 
         // --- DOM Elements ---
+        const loadingScreen = document.getElementById('loading-screen');
         const appContainer = document.querySelector('.app-container');
         const accountSidebar = document.getElementById('account-sidebar');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
         const sidebarCurrentAvatar = document.getElementById('sidebar-current-avatar');
         const sidebarCurrentName = document.getElementById('sidebar-current-name');
+        const sidebarSearchInput = document.getElementById('sidebar-search-input');
         const accountsList = document.getElementById('accounts-list');
         const addAccountButton = document.getElementById('add-account-button');
+        const adminLoginButton = document.getElementById('admin-login-button');
         const openFiltersButton = document.getElementById('open-filters-button');
         const openNumbersButton = document.getElementById('open-numbers-button');
         const openUsernamesButton = document.getElementById('open-usernames-button');
         const createGiveawayButton = document.getElementById('create-giveaway-button');
 
         const profilePage = document.getElementById('profile-page');
+        const profilePageHeader = profilePage.querySelector('.page-header');
+        const notificationsButton = document.getElementById('notifications-button');
         const profileTopSection = document.getElementById('profile-top-section');
         const profileHeaderPatternOverlay = document.getElementById('profile-header-pattern-overlay');
         const profileAvatar = document.getElementById('profile-avatar');
@@ -1953,6 +2092,7 @@
 
         const settingsModal = document.getElementById('settings-modal');
         const animationToggle = document.getElementById('animation-toggle');
+        const fullscreenToggle = document.getElementById('fullscreen-toggle');
         const customGiftsToggle = document.getElementById('custom-gifts-toggle');
         const showHiddenToggle = document.getElementById('show-hidden-toggle');
         const hideMultipleButton = document.getElementById('hide-multiple-button');
@@ -1974,6 +2114,7 @@
         const advancedSettingsToggle = document.getElementById('advanced-settings-toggle');
         const advancedSettingsContainer = document.getElementById('advanced-settings-container');
         const customBuyQuantityInput = document.getElementById('custom-buy-quantity');
+        const customPatternUploadInput = document.getElementById('custom-pattern-upload');
         const cloneUrlInput = document.getElementById('clone-url-input');
         const cloneGiftButton = document.getElementById('clone-gift-button');
         const customBuyConfirmButton = document.getElementById('custom-buy-confirm-button');
@@ -2032,6 +2173,14 @@
         const newPostModal = document.getElementById('new-post-modal');
         const newPostContent = document.getElementById('new-post-content');
         const submitNewPostButton = document.getElementById('submit-new-post-button');
+        
+        const notificationSettingsModal = document.getElementById('notification-settings-modal');
+        const mentionsToggle = document.getElementById('mentions-toggle');
+        const newPostsToggle = document.getElementById('new-posts-toggle');
+        
+        const imagePreviewOverlay = document.getElementById('image-preview-overlay');
+        
+        const reactionPopup = document.getElementById('reaction-popup');
 
         const exitFilterModeButton = document.createElement('button');
         exitFilterModeButton.id = 'exit-filter-mode-button';
@@ -2077,10 +2226,11 @@
         let tapCount = 0;
         let currentGiftToSell = null;
         let currentGiftToTransfer = null;
-        let longPressAvatarTimer;
+        let longPressTimer;
         let sortableInstance = null;
         let modalSwipeState = { startX: 0, isSwiping: false };
         let selectedGiveawayGifts = new Set();
+        let currentPostForReaction = null;
 
         // --- API Utility Function ---
         async function callBackend(endpoint, method = 'GET', data = null, params = {}) {
@@ -2130,7 +2280,7 @@
         function playLottieAnimation(container, path, loop = true, isGridItem = false) {
             if (!animationsEnabled) {
                 destroyLottieAnimation(container);
-                const parentCard = container.closest('.gift-card, .buy-gift-item, .modal-collectible-visual');
+                const parentCard = container.closest('.gift-card, .buy-gift-item, .modal-collectible-visual, #image-preview-overlay');
                 if (parentCard) {
                     const staticFallback = parentCard.querySelector('.static-image-fallback');
                     if(staticFallback) staticFallback.style.display = 'block';
@@ -2199,9 +2349,14 @@
 
             loadClientSideState();
 
+            // Handle fullscreen on load
+            if (fullscreenEnabled) {
+                try { tg.requestFullscreen(); } catch (e) { console.warn("Fullscreen request failed on load:", e); }
+            }
+
             const startAppParam = tg.initDataUnsafe?.start_param;
             if (startAppParam) {
-                await initializeTelegramUserAccount();
+                await initializeTelegramUserAccount(false); // don't hide loader yet
                 if (startAppParam.startsWith('user')) {
                     const username = startAppParam.substring(4);
                     await displayUserProfile(username);
@@ -2221,8 +2376,11 @@
                     }
                 }
             } else {
-                await initializeTelegramUserAccount();
+                await initializeTelegramUserAccount(true);
             }
+
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => loadingScreen.classList.add('hidden'), 300);
 
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
@@ -2234,9 +2392,12 @@
             await fetchAvailableGifts();
         }
 
-        async function initializeTelegramUserAccount() {
+        async function initializeTelegramUserAccount(hideLoader = true) {
             manageBackButton(false);
             viewingOwnProfile = true;
+            notificationsButton.classList.add('hidden');
+            buyGiftsTabButton.classList.remove('hidden');
+
             const user = tg.initDataUnsafe?.user;
             let tg_id = user?.id;
 
@@ -2278,6 +2439,10 @@
                 console.log("Account data loaded successfully.");
             } catch (error) {
                 console.error("Failed to initializeTelegramUserAccount:", error);
+                if (hideLoader) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+                }
             }
         }
 
@@ -2303,6 +2468,9 @@
              }
 
              viewingOwnProfile = false;
+             buyGiftsTabButton.classList.add('hidden');
+             notificationsButton.classList.remove('hidden');
+
              try {
                 const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
                 ownedGifts = profileData.owned_gifts || [];
@@ -2331,6 +2499,7 @@
                 profileBio.style.cursor = 'default';
                 profileBio.onclick = null;
                 profileAvatar.style.cursor = 'default';
+                profileAvatar.oncontextmenu = (e) => e.preventDefault();
 
                 renderAll();
             } catch (error) {
@@ -2414,11 +2583,18 @@
 
             sidebarCurrentAvatar.src = account.avatar_url;
             sidebarCurrentName.textContent = account.full_name;
+
+            if (currentAccountTgId == 5146625949) {
+                adminLoginButton.classList.remove('hidden');
+            } else {
+                adminLoginButton.classList.add('hidden');
+            }
         }
 
         // --- Account Management ---
         function loadClientSideState() {
             animationsEnabled = JSON.parse(localStorage.getItem('animationsEnabled' + APP_VERSION_SUFFIX)) ?? true;
+            fullscreenEnabled = JSON.parse(localStorage.getItem('fullscreenEnabled' + APP_VERSION_SUFFIX)) ?? false;
             showHiddenGifts = JSON.parse(localStorage.getItem('showHiddenGifts' + APP_VERSION_SUFFIX)) ?? false;
             activeFilters = JSON.parse(localStorage.getItem('activeFilters' + APP_VERSION_SUFFIX)) || { collection: null, model: null, backdrop: null, pattern: null };
             accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
@@ -2428,6 +2604,7 @@
         function saveClientSideState() {
             localStorage.setItem('activeFilters' + APP_VERSION_SUFFIX, JSON.stringify(activeFilters));
             localStorage.setItem('animationsEnabled' + APP_VERSION_SUFFIX, JSON.stringify(animationsEnabled));
+            localStorage.setItem('fullscreenEnabled' + APP_VERSION_SUFFIX, JSON.stringify(fullscreenEnabled));
             localStorage.setItem('showHiddenGifts' + APP_VERSION_SUFFIX, JSON.stringify(showHiddenGifts));
         }
 
@@ -2451,20 +2628,33 @@
 
         async function handleAddAccount() {
             const newTgId = Math.floor(Math.random() * 1e12) + 1;
+            const newUsername = `testuser_${Math.random().toString(36).substring(2, 8)}`;
             const newAccountData = {
                 tg_id: newTgId,
-                username: `testuser_${Math.random().toString(36).substring(2, 8)}`,
+                username: newUsername,
                 full_name: `Test User ${accounts.length + 1}`,
                 avatar_url: `https://i.pravatar.cc/140?u=${newTgId}`
             };
 
             try {
-                const createdAccount = await callBackend('/api/account', 'POST', newAccountData);
-                accounts.push(createdAccount);
-                await switchAccount(createdAccount.tg_id);
+                // Optimistically add to UI first
+                accounts.push(newAccountData);
+                await switchAccount(newAccountData.tg_id);
                 closeSidebar();
+
+                // Then sync with backend
+                const createdAccount = await callBackend('/api/account', 'POST', newAccountData);
+                // Update local data with server response (in case of changes)
+                const localIndex = accounts.findIndex(acc => acc.tg_id === newTgId);
+                if (localIndex > -1) {
+                    accounts[localIndex] = createdAccount;
+                    saveClientSideAccounts();
+                }
             } catch (error) {
                 console.error(error);
+                // Rollback if backend fails
+                accounts = accounts.filter(acc => acc.tg_id !== newTgId);
+                await switchAccount(accounts[0]?.tg_id || null); // switch back to first account
             }
         }
 
@@ -2481,6 +2671,7 @@
             }
             renderAccountsList();
             animationToggle.checked = animationsEnabled;
+            fullscreenToggle.checked = fullscreenEnabled;
             showHiddenToggle.checked = showHiddenGifts;
             customGiftsToggle.checked = customGiftsEnabled;
             applyWornGiftStyles();
@@ -2494,11 +2685,11 @@
                 const li = document.createElement('li');
                 li.dataset.accountId = acc.tg_id;
                 li.innerHTML = `<img src="${acc.avatar_url}" alt="Avatar"> <span>${acc.full_name}</span>`;
-                if (acc.tg_id === currentAccountTgId) {
+                if (acc.tg_id == currentAccountTgId) { // Use == for type flexibility with localStorage
                     li.classList.add('active');
                 }
                 li.addEventListener('click', async () => {
-                    if (acc.tg_id !== currentAccountTgId) {
+                    if (acc.tg_id != currentAccountTgId) {
                         await switchAccount(acc.tg_id);
                     }
                     closeSidebar();
@@ -2634,7 +2825,7 @@
                 item.innerHTML = `
                     <div class="image-container">
                         <div class="lottie-animation-container" style="display:none;"></div>
-                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.innerHTML = '🖼️';">
+                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML = '🖼️';">
                     </div>
                     <div class="gift-name">${name}</div>
                     ${priceHTML}
@@ -2701,16 +2892,19 @@
                 return true;
             });
 
-            const sortedGifts = [...filteredGifts].sort((a, b) => {
-                const aIsPinned = a.is_pinned && a.pin_order != null;
-                const bIsPinned = b.is_pinned && b.pin_order != null;
-                if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
-                if (aIsPinned) return -1;
-                if (bIsPinned) return 1;
+            currentlySortedGifts = [...filteredGifts].sort((a, b) => {
+                const aIsPinned = a.is_pinned;
+                const bIsPinned = b.is_pinned;
+                if (aIsPinned && !bIsPinned) return -1;
+                if (!aIsPinned && bIsPinned) return 1;
+                if (aIsPinned && bIsPinned) {
+                    const aOrder = a.pin_order ?? Infinity;
+                    const bOrder = b.pin_order ?? Infinity;
+                    return aOrder - bOrder;
+                }
                 return new Date(b.acquired_date) - new Date(a.acquired_date);
             });
 
-            currentlySortedGifts = sortedGifts;
 
             profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
             if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) {
@@ -2749,6 +2943,7 @@
             card.dataset.pinned = gift.is_pinned;
 
             if (gift.is_hidden) card.classList.add('is-hidden');
+            if (gift.isOptimistic) card.classList.add('is-optimistic');
 
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
@@ -2897,30 +3092,55 @@
                 tg.showAlert(`Cannot buy ${quantity} gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
             }
+            
+            const tempGifts = [];
+            for (let i = 0; i < quantity; i++) {
+                const tempGift = {
+                    instance_id: `temp_${generateUniqueId()}`,
+                    owner_id: currentAccountTgId,
+                    gift_type_id: id,
+                    gift_name: name,
+                    original_image_url: originalImage,
+                    lottie_path: lottiePath,
+                    is_collectible: false,
+                    is_pinned: false,
+                    is_hidden: false,
+                    is_worn: false,
+                    acquired_date: new Date().toISOString(),
+                    isOptimistic: true
+                };
+                tempGifts.push(tempGift);
+            }
+            
+            ownedGifts.unshift(...tempGifts);
+            renderProfileGifts();
+            tg.HapticFeedback.notificationOccurred('success');
+            showPage('profile-page');
+            switchTab('gifts');
 
             try {
-                for (let i = 0; i < quantity; i++) {
-                     await callBackend('/api/gifts', 'POST', {
-                        instance_id: generateUniqueId(),
-                        owner_id: currentAccountTgId,
-                        gift_type_id: id,
-                        gift_name: name,
-                        original_image_url: originalImage,
-                        lottie_path: lottiePath
+                for (const tempGift of tempGifts) {
+                    const newGiftData = await callBackend('/api/gifts', 'POST', {
+                        instance_id: generateUniqueId(), // Let backend generate final ID
+                        owner_id: tempGift.owner_id,
+                        gift_type_id: tempGift.gift_type_id,
+                        gift_name: tempGift.gift_name,
+                        original_image_url: tempGift.original_image_url,
+                        lottie_path: tempGift.lottie_path
                     });
+                    
+                    const giftIndex = ownedGifts.findIndex(g => g.instance_id === tempGift.instance_id);
+                    if (giftIndex !== -1) {
+                        ownedGifts[giftIndex] = newGiftData; // Replace temp with real data
+                    }
                 }
-                
-                await initializeTelegramUserAccount();
-
-                renderProfileGifts();
-                tg.HapticFeedback.notificationOccurred('success');
-                const message = quantity > 1 ? `Added ${quantity} "${name}" gifts!` : `Added "${name}" gift!`;
-                tg.showAlert(message);
-                showPage('profile-page');
-                switchTab('gifts');
-
             } catch (error) {
                 tg.HapticFeedback.notificationOccurred('error');
+                ownedGifts = ownedGifts.filter(g => !g.isOptimistic);
+            } finally {
+                // Final render to remove optimistic styles
+                ownedGifts.forEach(g => delete g.isOptimistic);
+                renderProfileGifts();
             }
         }
 
@@ -2929,14 +3149,8 @@
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
 
-            confirmBuyMultipleButton.disabled = true;
-            confirmBuyMultipleButton.textContent = 'Buying...';
-
-            await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
-
-            confirmBuyMultipleButton.disabled = false;
-            confirmBuyMultipleButton.textContent = 'Buy';
             closeModal(buyMultipleModal);
+            await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
             currentGiftToBuyMultiple = null;
         }
 
@@ -2960,28 +3174,45 @@
             }
         }
 
-        async function upgradeSingleGiftLogic(giftToUpgrade, customPattern = null) {
+        async function upgradeSingleGiftLogic(giftToUpgrade) {
             if (giftToUpgrade.is_collectible) return { status: 'skipped' };
             
             if (CUSTOM_GIFTS_DATA[giftToUpgrade.gift_name] && !customGiftsEnabled) {
                 return { status: 'failed', error: "Custom Gifts disabled" };
             }
 
+            // Optimistic update
+            const originalGift = { ...giftToUpgrade };
+            const tempCollectibleData = {
+                model: { name: 'Upgrading...' },
+                backdrop: { name: '...' },
+                pattern: { name: '...' },
+                modelImage: giftToUpgrade.original_image_url
+            };
+            giftToUpgrade.is_collectible = true;
+            giftToUpgrade.collectible_data = tempCollectibleData;
+            giftToUpgrade.collectible_number = '...';
+            giftToUpgrade.lottie_path = null;
+            giftToUpgrade.isOptimistic = true;
+
+            const cardElement = giftsGrid.querySelector(`.gift-card[data-instance-id="${giftToUpgrade.instance_id}"]`);
+            if (cardElement) cardElement.classList.add('is-updating');
+            
             try {
-                const payload = { instance_id: giftToUpgrade.instance_id };
-                if (customPattern) {
-                    payload.custom_pattern = customPattern;
-                }
-                
-                const upgradedGiftData = await callBackend('/api/gifts/upgrade', 'POST', payload);
+                const upgradedGiftData = await callBackend('/api/gifts/upgrade', 'POST', { instance_id: giftToUpgrade.instance_id });
 
                 const giftIndex = ownedGifts.findIndex(g => g.instance_id === upgradedGiftData.instance_id);
                 if(giftIndex !== -1) ownedGifts[giftIndex] = upgradedGiftData;
                 
                 return { ...upgradedGiftData, status: 'success' };
             } catch (error) {
-                console.error(`Upgrade error for "${giftToUpgrade.gift_name}" (ID: ${giftToUpgrade.instance_id}):`, error);
+                console.error(`Upgrade error for "${originalGift.gift_name}" (ID: ${originalGift.instance_id}):`, error);
+                const giftIndex = ownedGifts.findIndex(g => g.instance_id === originalGift.instance_id);
+                if(giftIndex !== -1) ownedGifts[giftIndex] = originalGift;
                 return { status: 'failed', error: error.message };
+            } finally {
+                if (cardElement) cardElement.classList.remove('is-updating');
+                delete giftToUpgrade.isOptimistic;
             }
         }
 
@@ -2993,25 +3224,16 @@
                 tg.showAlert("Please enable Custom Gifts in settings to upgrade this item.");
                 return;
             }
+            
+            closeModal(giftDetailModal);
+            const result = await upgradeSingleGiftLogic(gift);
+            renderProfileGifts();
 
-            upgradeGiftDetailModalButton.textContent = 'Upgrading...';
-            upgradeGiftDetailModalButton.disabled = true;
-
-            try {
-                const result = await upgradeSingleGiftLogic(gift);
-                if (result.status === 'success') {
-                    renderProfileGifts();
-                    tg.HapticFeedback.notificationOccurred('success');
-                    closeModal(giftDetailModal);
-                    openGiftDetailByInstanceId(gift.instance_id);
-                } else if (result.status === 'failed') {
-                    // Error is handled by callBackend
-                }
-            } catch (error) {
-                console.error("Error during single gift upgrade:", error);
-            } finally {
-                upgradeGiftDetailModalButton.textContent = '✨ Upgrade';
-                upgradeGiftDetailModalButton.disabled = false;
+            if (result.status === 'success') {
+                tg.HapticFeedback.notificationOccurred('success');
+                openGiftDetailByInstanceId(gift.instance_id);
+            } else if (result.status === 'failed') {
+                tg.HapticFeedback.notificationOccurred('error');
             }
         }
 
@@ -3030,15 +3252,12 @@
             for (let i = 0; i < giftsToUpgrade.length; i++) {
                 const gift = giftsToUpgrade[i];
                 upgradeAllGiftsButton.textContent = `Upgrading (${i + 1}/${giftsToUpgrade.length})...`;
-                const cardElement = giftsGrid.querySelector(`.gift-card[data-instance-id="${gift.instance_id}"]`);
-                if (cardElement) cardElement.classList.add('is-updating');
+                
                 const result = await upgradeSingleGiftLogic(gift);
-                if (cardElement) cardElement.classList.remove('is-updating');
-                if (result.status === 'success') {
-                    successCount++;
-                    renderProfileGifts();
-                } else if (result.status === 'failed') failureCount++;
-                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
+                renderProfileGifts();
+                if (result.status === 'success') successCount++;
+                else if (result.status === 'failed') failureCount++;
+                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 100));
             }
 
             let summaryMessage = `Upgrade complete.\nSucceeded: ${successCount}`;
@@ -3116,14 +3335,11 @@
 
             const numberForLink = gift.collectible_number;
             
-            const snoopGifts = ['Snoop Dogg', 'Swag Bag', 'Snoop Cigar', 'Low Rider', 'Westside Sign'];
-            const vasiliyGifts = ['Dildo', 'Skebob', "Baggin' Cat"];
-
+            const author = gift.collectible_data?.author;
+            
             let subtextHTML;
-            if (snoopGifts.includes(gift.gift_name)) {
-                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'snoopdogg')">@snoopdogg</a>`;
-            } else if (vasiliyGifts.includes(gift.gift_name)) {
-                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'Vasiliy939')">@Vasiliy939</a>`;
+            if (author) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, '${author}')">@${author}</a>`;
             } else {
                 subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
             }
@@ -3144,7 +3360,7 @@
                 collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
 
-            if (cd.patternImage && patternContainerDynamic) {
+            if (cd.patternImage && patternContainerDynamic && !cd.patternImage.startsWith('data:image')) {
                 setTimeout(() => {
                     if(!patternContainerDynamic) return;
                     const containerWidth = patternContainerDynamic.offsetWidth;
@@ -3206,9 +3422,9 @@
             }
 
             let ownerName, ownerAvatar, ownerUsername;
-            const isOwner = (gift.owner_id === currentAccountTgId);
+            const isOwner = (gift.owner_id == currentAccountTgId);
             if(isOwner) {
-                const myAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+                const myAccount = accounts.find(acc => acc.tg_id == currentAccountTgId);
                 ownerName = myAccount.full_name;
                 ownerAvatar = myAccount.avatar_url;
                 ownerUsername = myAccount.username;
@@ -3245,7 +3461,7 @@
             if (patternValueEl) patternValueEl.addEventListener('click', (e) => handleTripleTap(e, 'pattern', gift.collectible_data.pattern?.name));
         }
 
-        let currentLongPressGift = null; let longPressTimer;
+        let currentLongPressGift = null;
         function setupLongPress(element, gift) {
             element.addEventListener('touchstart', (e) => {
                 clearTimeout(longPressTimer);
@@ -3255,10 +3471,50 @@
             element.addEventListener('touchmove', () => clearTimeout(longPressTimer));
             element.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(longPressTimer); openLongPressMenu(gift, e); });
         }
+
+        function setupModalImageLongPress(element, gift) {
+             element.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showImagePreview(gift);
+            });
+            let longPressImageTimer;
+            element.addEventListener('touchstart', (e) => {
+                longPressImageTimer = setTimeout(() => showImagePreview(gift), 500);
+            }, { passive: false });
+            element.addEventListener('touchend', () => clearTimeout(longPressImageTimer));
+            element.addEventListener('touchmove', () => clearTimeout(longPressImageTimer));
+        }
+
+        function showImagePreview(gift) {
+            imagePreviewOverlay.innerHTML = '';
+            
+            let imageUrl, lottiePath;
+            if (gift.is_collectible && gift.collectible_data) {
+                imageUrl = gift.collectible_data.modelImage;
+                lottiePath = gift.collectible_data.lottieModelPath;
+            } else {
+                imageUrl = gift.original_image_url;
+                lottiePath = gift.lottie_path;
+            }
+
+            if (animationsEnabled && lottiePath) {
+                const lottieContainer = document.createElement('div');
+                lottieContainer.className = 'lottie-animation-container';
+                imagePreviewOverlay.appendChild(lottieContainer);
+                playLottieAnimation(lottieContainer, lottiePath, true);
+            } else if (imageUrl) {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                imagePreviewOverlay.appendChild(img);
+            }
+
+            imagePreviewOverlay.classList.add('visible');
+        }
+
         function openLongPressMenu(gift, eventCoords) {
             currentLongPressGift = gift;
 
-            const isOwner = (gift.owner_id === currentAccountTgId);
+            const isOwner = (gift.owner_id == currentAccountTgId);
 
             if (!gift.is_collectible) {
                 menuPinAction.textContent = 'Pin (Collectibles only)';
@@ -3271,7 +3527,7 @@
                 menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin';
                 menuPinAction.classList.toggle('disabled', !isOwner);
                 menuShareImageAction.classList.remove('hidden');
-                menuCopyLinkAction.classList.add('hidden');
+                menuCopyLinkAction.classList.add('hidden'); // Deprecated, link copied from modal text
                 menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
             }
 
@@ -3287,7 +3543,7 @@
 
         function openCollectibleMenu(gift, eventCoords) {
             currentLongPressGift = gift;
-            const isOwner = (gift.owner_id === currentAccountTgId);
+            const isOwner = (gift.owner_id == currentAccountTgId);
 
             if (!gift.is_collectible) return;
 
@@ -3321,7 +3577,7 @@
                 tg.showAlert("Only collectible gifts can be pinned.");
                 longPressMenu.classList.add('hidden'); currentLongPressGift = null; return;
             }
-            if (currentLongPressGift.owner_id !== currentAccountTgId) {
+            if (currentLongPressGift.owner_id != currentAccountTgId) {
                 tg.showAlert("You can only pin gifts you own.");
                 longPressMenu.classList.add('hidden'); currentLongPressGift = null; return;
             }
@@ -3335,7 +3591,7 @@
             const giftToUpdate = ownedGifts.find(g => g.instance_id === giftInstanceId);
             if (!giftToUpdate) return;
 
-            const currentlyPinnedCount = ownedGifts.filter(g => g.is_pinned && g.owner_id === currentAccountTgId).length;
+            const currentlyPinnedCount = ownedGifts.filter(g => g.is_pinned && g.owner_id == currentAccountTgId).length;
 
             if (!isCurrentlyPinned && currentlyPinnedCount >= 6) {
                 showTooManyPinsModal();
@@ -3362,7 +3618,7 @@
             const giftToUpdate = currentLongPressGift || currentlySortedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId) || ownedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId);
             if (!giftToUpdate) return;
 
-            if (giftToUpdate.owner_id !== currentAccountTgId) {
+            if (giftToUpdate.owner_id != currentAccountTgId) {
                 tg.showAlert("You can only hide gifts you own.");
                 longPressMenu.classList.add('hidden'); currentLongPressGift = null; return;
             }
@@ -3391,7 +3647,7 @@
         }
 
         function handleDeleteAction() {
-            if (!currentLongPressGift || currentLongPressGift.owner_id !== currentAccountTgId) {
+            if (!currentLongPressGift || currentLongPressGift.owner_id != currentAccountTgId) {
                 if(currentLongPressGift) tg.showAlert("You can only delete gifts you own.");
                 longPressMenu.classList.add('hidden'); currentLongPressGift = null; return;
             }
@@ -3423,25 +3679,34 @@
         function showTooManyPinsModal() {
             unpinSelectionGrid.innerHTML = '';
 
-            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden && g.owner_id === currentAccountTgId);
+            const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden && g.owner_id == currentAccountTgId);
 
             pinnedGifts.forEach(pinnedGift => {
                 const card = createGiftCardDOM(pinnedGift);
-                card.addEventListener('click', async () => {
+                // Fix: Remove the onclick that opens the modal
+                card.onclick = async () => {
                     try {
+                        const unpinnedGift = ownedGifts.find(g => g.instance_id === pinnedGift.instance_id);
+                        if(unpinnedGift) unpinnedGift.is_pinned = false;
+
+                        const giftToPin = ownedGifts.find(g => g.instance_id === currentLongPressGift.instance_id);
+                        if(giftToPin) giftToPin.is_pinned = true;
+
                         await callBackend(`/api/gifts/${pinnedGift.instance_id}`, 'PUT', { action: 'pin', value: false });
                         if (currentLongPressGift && currentLongPressGift.is_collectible) {
                              await callBackend(`/api/gifts/${currentLongPressGift.instance_id}`, 'PUT', { action: 'pin', value: true });
                         }
-                        await initializeTelegramUserAccount();
+                        
                         tg.HapticFeedback.impactOccurred('medium');
+                        renderProfileGifts();
                     } catch (error) {
                        console.error(error);
+                       await initializeTelegramUserAccount();
                     } finally {
                         closeModal(tooManyPinsModal);
                         currentLongPressGift = null;
                     }
-                });
+                };
                 unpinSelectionGrid.appendChild(card);
                 observeLottieElement(card);
             });
@@ -3453,7 +3718,7 @@
             if (!currentModalInstanceId) return;
 
             const giftToUpdate = ownedGifts.find(g => g.instance_id === currentModalInstanceId);
-            if (!giftToUpdate || giftToUpdate.owner_id !== currentAccountTgId) return;
+            if (!giftToUpdate || giftToUpdate.owner_id != currentAccountTgId) return;
             if (giftToUpdate.is_hidden) { tg.showAlert("Cannot wear a hidden gift."); return; }
 
             const isCurrentlyWorn = giftToUpdate.is_worn === true;
@@ -3539,7 +3804,7 @@
                             await callBackend(`/api/gifts/${gift.instance_id}`, 'DELETE');
                         }
 
-                        const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+                        const currentAccount = accounts.find(acc => acc.tg_id == currentAccountTgId);
                         if (currentAccount && currentAccount.collectible_usernames) {
                             for(const uname of [...currentAccount.collectible_usernames]) {
                                 await callBackend(`/api/collectible_usernames/${uname}`, 'DELETE', { owner_id: currentAccountTgId });
@@ -3548,7 +3813,7 @@
 
                         await callBackend('/api/account', 'PUT', {
                             tg_id: currentAccountTgId,
-                            phone_number: "Not specified",
+                            phone_number: null,
                             bio: "My first account!",
                         });
 
@@ -3573,11 +3838,12 @@
         async function handleClearAllAccountsData() {
             tg.showConfirm("Are you sure you want to delete ALL accounts and data from this simulator? This cannot be undone.", async (confirmed) => {
                 if (confirmed) {
+                    // This is a client-side only clear for mock environments
                     accounts = [];
                     currentAccountTgId = null;
 
                     activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-                    animationsEnabled = true; showHiddenGifts = false;
+                    animationsEnabled = true; showHiddenGifts = false; fullscreenEnabled = false;
 
                     localStorage.clear();
 
@@ -3593,6 +3859,21 @@
             animationsEnabled = animationToggle.checked;
             tg.HapticFeedback.impactOccurred('light');
             updateAllAnimationsState();
+            saveClientSideState();
+        }
+
+        function handleFullscreenToggle() {
+            fullscreenEnabled = fullscreenToggle.checked;
+            tg.HapticFeedback.impactOccurred('light');
+            try {
+                if (fullscreenEnabled) {
+                    tg.requestFullscreen();
+                } else {
+                    tg.closeFullscreen();
+                }
+            } catch (e) {
+                console.warn("Fullscreen API not available or failed.", e);
+            }
             saveClientSideState();
         }
 
@@ -3642,6 +3923,7 @@
                     currentlyEditingGiftIndex = -1;
                     addGiftToQueue();
                     cloneUrlInput.value = '';
+                    customPatternUploadInput.value = '';
                     advancedSettingsContainer.classList.add('hidden');
                     populateBaseGiftOptions();
                     openModal(customBuyModal);
@@ -3934,10 +4216,31 @@
 
             customBuyConfirmButton.disabled = true;
             customBuyConfirmButton.textContent = 'Creating...';
+            closeModal(customBuyModal); 
 
             try {
                 for (const giftConfig of giftCreationQueue) {
                     for (let i = 0; i < giftConfig.quantity; i++) {
+                        
+                        const tempGift = {
+                            instance_id: `temp_upgrade_${generateUniqueId()}`,
+                            owner_id: currentAccountTgId,
+                            gift_type_id: giftConfig.id,
+                            gift_name: giftConfig.name,
+                            original_image_url: giftConfig.originalImage,
+                            lottie_path: giftConfig.lottiePath,
+                            is_collectible: true,
+                            isOptimistic: true,
+                            collectible_data: { modelImage: giftConfig.model.image },
+                            acquired_date: new Date().toISOString()
+                        };
+                        ownedGifts.unshift(tempGift);
+
+                        // Optimistically render the UI
+                        renderProfileGifts();
+                        showPage('profile-page');
+                        switchTab('gifts');
+
                         const newInstanceId = generateUniqueId();
                         await callBackend('/api/gifts', 'POST', {
                             instance_id: newInstanceId,
@@ -3952,24 +4255,28 @@
                             instance_id: newInstanceId,
                             custom_model: giftConfig.model,
                             custom_backdrop: giftConfig.backdrop,
+                            custom_pattern: giftConfig.pattern
                         };
                         
-                        if (giftConfig.quantity === 1) {
-                            upgradePayload.custom_pattern = giftConfig.pattern;
+                        if (giftConfig.quantity > 1) {
+                            delete upgradePayload.custom_pattern; // Randomize pattern for multi-buy
                         }
 
-                        await callBackend('/api/gifts/upgrade', 'POST', upgradePayload);
+                        const finalGift = await callBackend('/api/gifts/upgrade', 'POST', upgradePayload);
+                        const tempIndex = ownedGifts.findIndex(g => g.instance_id === tempGift.instance_id);
+                        if (tempIndex !== -1) {
+                            ownedGifts[tempIndex] = finalGift;
+                        }
                     }
                 }
                 
-                await initializeTelegramUserAccount();
                 tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`${totalToCreate} gift(s) created successfully!`);
-                closeModal(customBuyModal); 
-                showPage('profile-page');
-
+                
             } catch (error) {
+                // Errors are shown by callBackend
             } finally {
+                ownedGifts = ownedGifts.filter(g => !g.isOptimistic);
+                renderProfileGifts(); // Final render to clean up
                 customBuyConfirmButton.disabled = false;
                 updateCreateButtonState();
             }
@@ -3990,7 +4297,7 @@
         
         async function preloadImage(url) {
             return new Promise((resolve) => {
-                if (!url) { resolve(); return; }
+                if (!url || url.startsWith('data:image')) { resolve(); return; }
                 const img = new Image(); img.crossOrigin = 'Anonymous'; img.src = url;
                 img.onload = resolve;
                 img.onerror = () => { console.warn(`Failed to preload image: ${url}`); resolve(); };
@@ -4055,7 +4362,7 @@
             if (cd.backdropColors) tempContainer.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
             else tempContainer.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
             const textColor = '#ffffff';
-            if (cd.patternImage) {
+            if (cd.patternImage && !cd.patternImage.startsWith('data:image')) {
                 const patternOverlay = document.createElement('div');
                 patternOverlay.style.position = 'absolute'; patternOverlay.style.top = '0'; patternOverlay.style.left = '0';
                 patternOverlay.style.width = '100%'; patternOverlay.style.height = '100%';
@@ -4200,7 +4507,7 @@
 
         function openSellModal(gift) {
             if (!gift || !gift.is_collectible) return;
-            if (gift.owner_id !== currentAccountTgId) return;
+            if (gift.owner_id != currentAccountTgId) return;
             currentGiftToSell = gift;
             closeModal(collectibleDetailModal);
 
@@ -4258,7 +4565,7 @@
 
         function openTransferModal(gift) {
             if (!gift || !gift.is_collectible) return;
-            if (gift.owner_id !== currentAccountTgId) return;
+            if (gift.owner_id != currentAccountTgId) return;
             currentGiftToTransfer = gift;
             closeModal(collectibleDetailModal);
 
@@ -4281,7 +4588,7 @@
             const comment = transferCommentInput.value.trim();
 
             if (!receiverUsername) { transferStatusMessage.innerHTML = '<p style="color:red;">Please enter a username.</p>'; return; }
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            const currentAccount = accounts.find(acc => acc.tg_id == currentAccountTgId);
             if (receiverUsername.toLowerCase() === currentAccount?.username.toLowerCase()) {
                 transferStatusMessage.innerHTML = '<p style="color:red;">Cannot transfer to yourself.</p>';
                 return;
@@ -4328,7 +4635,7 @@
             const allPossibleNumbers = [...coolNumbers];
             for (let i = 0; i < 20; i++) { allPossibleNumbers.push(generateRandom888Number()); }
 
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            const currentAccount = accounts.find(acc => acc.tg_id == currentAccountTgId);
             const userPhoneNumber = currentAccount?.phone_number;
             const availableNumbers = [...new Set(allPossibleNumbers)].filter(n => n !== userPhoneNumber);
 
@@ -4385,7 +4692,7 @@
                 listToShow = shuffled.slice(0, 25);
             }
 
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            const currentAccount = accounts.find(acc => acc.tg_id == currentAccountTgId);
             const ownedUsernames = currentAccount?.collectible_usernames || [];
             const filteredList = listToShow.filter(uname => !ownedUsernames.includes(uname));
 
@@ -4403,7 +4710,7 @@
         }
 
         async function buyUsername(username) {
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            const currentAccount = accounts.find(acc => acc.tg_id == currentAccountTgId);
             if (!currentAccount || (currentAccount.collectible_usernames && currentAccount.collectible_usernames.length >= MAX_COLLECTIBLE_USERNAMES)) {
                 tg.showAlert(`Username limit reached (${MAX_COLLECTIBLE_USERNAMES}).`);
                 return;
@@ -4444,7 +4751,7 @@
         }
 
         async function handleEditBio() {
-            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            const currentAccount = accounts.find(acc => acc.tg_id == currentAccountTgId);
             if (!currentAccount) return;
             const newBio = prompt("Enter your new bio:", currentAccount.bio);
             if (newBio !== null) {
@@ -4480,13 +4787,14 @@
             if (tabName === 'gifts') {
                 giftsTabButton.classList.add('active');
                 giftsContent.classList.add('active');
+                showPage('profile-page');
             } else if (tabName === 'posts') {
                 postsTabButton.classList.add('active');
                 postsContent.classList.add('active');
                 if (viewingOwnProfile) newPostFab.classList.remove('hidden');
+                showPage('profile-page');
             } else if (tabName === 'buy-gifts') {
                 buyGiftsTabButton.classList.add('active');
-                giftsContent.classList.add('active'); // Keep gifts visible as a base
                 showPage('buy-gifts-page');
             }
         }
@@ -4755,45 +5063,37 @@
             profilePosts.forEach(post => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
+                card.dataset.postId = post.id;
+                
+                const menuButtonHTML = viewingOwnProfile 
+                    ? `<button class="post-menu-button" data-post-id="${post.id}">${MENU_DOTS_SVG}</button>` 
+                    : '';
+
                 card.innerHTML = `
-                    <div class="post-content">${parsePostContent(post.content)}</div>
+                    ${menuButtonHTML}
+                    <div class="post-content">${post.content}</div>
+                    <div class="post-reactions-container"></div>
                     <div class="post-footer">
-                        <span>${new Date(post.created_at).toLocaleString()}</span>
                         <span>👁️ ${post.views}</span>
                     </div>
                 `;
                 postsContent.appendChild(card);
-                // Increment view count, but not for own posts
-                if (!viewingOwnProfile) {
-                    callBackend(`/api/posts/${post.id}/view`, 'POST');
-                }
+                renderPostReactions(post.id, post.reactions);
             });
         }
         
-        function parsePostContent(content) {
-            let html = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
-            // Bold
-            html = html.replace(/\*(.*?)\*/g, '<b>$1</b>');
-            // Demonic Red
-            html = html.replace(/&(.*?)&/g, '<span class="text-demonic">$1</span>');
-            // Pink
-            html = html.replace(/♡(.*?)♡/g, '<span class="text-pink">$1</span>');
-            // Green
-            html = html.replace(/\$(.*?)\$/g, '<span class="text-green">$1</span>');
-            // Blue
-            html = html.replace(/%(.*?)%/g, '<span class="text-blue">$1</span>');
-            // Username
-            html = html.replace(/@([a-zA-Z0-9_]{5,32})/g, '<a href="#" class="user-link" data-username="$1">@$1</a>');
-            // Gift Name and Number
-            html = html.replace(/([A-Za-z\s']{3,20})-([0-9]{1,6})/g, (match, name, number) => {
-                const giftId = `${name.replace(/\s/g, '')}-${number}`;
-                return `<a href="#" class="gift-link" data-gift-id="${giftId}">${match}</a>`;
+        function renderPostReactions(postId, reactions) {
+            const container = postsContent.querySelector(`.post-card[data-post-id="${postId}"] .post-reactions-container`);
+            if (!container) return;
+            container.innerHTML = '';
+            (reactions || []).forEach(reaction => {
+                const chip = document.createElement('div');
+                chip.className = 'reaction-chip';
+                chip.innerHTML = `<span class="emoji">${reaction.emoji}</span> <span class="count">${reaction.count}</span>`;
+                container.appendChild(chip);
             });
-
-            return html;
         }
-
+        
         function handleWallClick(e) {
             const userLink = e.target.closest('.user-link');
             if (userLink) {
@@ -4804,11 +5104,78 @@
             const giftLink = e.target.closest('.gift-link');
             if (giftLink) {
                 e.preventDefault();
-                const [giftName, giftNumber] = giftLink.dataset.giftId.split('-');
-                if (giftName && giftNumber) {
-                     displayDeepLinkedGift(giftName, parseInt(giftNumber));
+                const giftTypeId = giftLink.dataset.giftTypeId;
+                const giftNumber = giftLink.dataset.giftNumber;
+                if (giftTypeId && giftNumber) {
+                     displayDeepLinkedGift(giftTypeId, parseInt(giftNumber));
                 }
             }
+            const menuButton = e.target.closest('.post-menu-button');
+            if (menuButton) {
+                e.preventDefault();
+                handleDeletePost(menuButton.dataset.postId);
+                return;
+            }
+            const postCard = e.target.closest('.post-card');
+            if (postCard) {
+                showReactionPopup(postCard, e);
+            }
+        }
+
+        function showReactionPopup(postCard, event) {
+            currentPostForReaction = postCard.dataset.postId;
+            const rect = postCard.getBoundingClientRect();
+            reactionPopup.style.left = `${event.clientX}px`;
+            reactionPopup.style.top = `${rect.top}px`;
+            reactionPopup.classList.add('visible');
+            document.addEventListener('click', hideReactionPopup, { once: true });
+        }
+
+        function hideReactionPopup(event) {
+            if (event && reactionPopup.contains(event.target)) return;
+            reactionPopup.classList.remove('visible');
+            currentPostForReaction = null;
+            document.removeEventListener('click', hideReactionPopup);
+        }
+        
+        async function handleReaction(emoji) {
+            if (!currentPostForReaction) return;
+            
+            try {
+                await callBackend(`/api/posts/${currentPostForReaction}/react`, 'POST', {
+                    user_id: currentAccountTgId,
+                    emoji: emoji
+                });
+                
+                // Optimistic UI Update
+                const postToUpdate = profilePosts.find(p => p.id == currentPostForReaction);
+                if (postToUpdate) {
+                    let reaction = postToUpdate.reactions.find(r => r.emoji === emoji);
+                    if (reaction) {
+                        reaction.count += 1;
+                    } else {
+                        postToUpdate.reactions.push({ emoji: emoji, count: 1 });
+                    }
+                    renderPostReactions(currentPostForReaction, postToUpdate.reactions);
+                }
+            } catch (error) {
+                // Error already shown by callBackend
+            }
+        }
+        
+        async function handleDeletePost(postId) {
+            tg.showConfirm("Are you sure you want to delete this post?", async (confirmed) => {
+                if(confirmed) {
+                    try {
+                        await callBackend(`/api/posts/${postId}`, 'DELETE', null, { owner_id: currentAccountTgId });
+                        profilePosts = profilePosts.filter(p => p.id != postId);
+                        renderPosts();
+                        tg.HapticFeedback.notificationOccurred('success');
+                    } catch (error) {
+                        // Error shown by callBackend
+                    }
+                }
+            });
         }
         
         async function handleNewPostSubmit() {
@@ -4837,6 +5204,37 @@
             }
         }
 
+        async function handleAdminLogin() {
+            const username = prompt("Enter username to log in as:");
+            if (username) {
+                try {
+                    const profileData = await callBackend(`/api/profile/${username}`);
+                    const tempAccount = {
+                        tg_id: profileData.tg_id,
+                        username: profileData.username,
+                        full_name: profileData.full_name,
+                        avatar_url: profileData.avatar_url,
+                        // Add other fields from profileData if needed
+                        owned_gifts: profileData.owned_gifts,
+                        posts: profileData.posts,
+                        collectible_usernames: profileData.collectible_usernames
+                    };
+                    
+                    const existingIndex = accounts.findIndex(acc => acc.tg_id === tempAccount.tg_id);
+                    if (existingIndex > -1) {
+                        accounts[existingIndex] = tempAccount;
+                    } else {
+                        accounts.push(tempAccount);
+                    }
+                    
+                    await switchAccount(tempAccount.tg_id);
+                    closeSidebar();
+
+                } catch (error) {
+                    tg.showAlert(`Could not find or log in as @${username}.`);
+                }
+            }
+        }
 
         function setupEventListeners() {
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
@@ -4844,6 +5242,13 @@
             buyGiftsTabButton.addEventListener('click', () => switchTab('buy-gifts'));
             postsContent.addEventListener('click', handleWallClick);
             newPostFab.addEventListener('click', () => openModal(newPostModal));
+            reactionPopup.querySelectorAll('span').forEach(span => {
+                span.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleReaction(span.textContent);
+                    hideReactionPopup();
+                });
+            });
 
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
 
@@ -4877,7 +5282,10 @@
                 content.classList.toggle('hidden');
                 e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
             });
-
+            
+            setupModalImageLongPress(modalCollectibleVisual, () => ownedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId));
+            setupModalImageLongPress(customBuyModal.querySelector('#custom-buy-models-grid'), () => giftCreationQueue[currentlyEditingGiftIndex]);
+            imagePreviewOverlay.addEventListener('click', () => imagePreviewOverlay.classList.remove('visible'));
 
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
@@ -4921,6 +5329,7 @@
 
             settingsModal.querySelector('.modal-button.secondary')?.addEventListener('click', () => closeModal(settingsModal));
             animationToggle.addEventListener('change', handleAnimationToggle);
+            fullscreenToggle.addEventListener('change', handleFullscreenToggle);
             customGiftsToggle.addEventListener('change', handleCustomGiftsToggle);
             showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
             hideMultipleButton.addEventListener('click', () => enterSelectionMode('hide'));
@@ -4933,6 +5342,18 @@
             cloneGiftButton.addEventListener('click', handleCloneGift);
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
+            
+            customPatternUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const patternData = { name: 'Custom', image: event.target.result };
+                        selectCustomPart('pattern', patternData);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
 
             sellPriceInput.addEventListener('input', updateSellPriceDetails);
             confirmSellButton.addEventListener('click', handleConfirmSell);
@@ -4965,13 +5386,11 @@
                 if (touchStartX < swipeEdgeThreshold && deltaX > swipeEdgeThreshold) { 
                     openSidebar(); 
                 }
-                else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold) {
-                    switchTab('buy-gifts');
-                }
             }, { passive: true });
 
             sidebarOverlay.addEventListener('click', closeSidebar);
             addAccountButton.addEventListener('click', handleAddAccount);
+            adminLoginButton.addEventListener('click', handleAdminLogin);
 
             collectibleDetailModal.addEventListener('touchstart', (e) => {
                 modalSwipeState.startX = e.touches[0].clientX;
@@ -5013,6 +5432,8 @@
                 };
                 tg.openTelegramLink = (url) => { console.log(`Opening TG Link: ${url}`); window.open(url, '_blank'); };
                 tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
+                tg.requestFullscreen = () => console.log('Request Fullscreen');
+                tg.closeFullscreen = () => console.log('Close Fullscreen');
                 tg.SettingsButton = { isVisible: false, onClick: (cb) => {tg._settingsCb = cb}, show: () => console.log("Settings Button Show"), hide: () => console.log("Settings Button Hide") };
                 tg.BackButton = { isVisible: false, onClick: (cb) => {tg._backCb = cb}, offClick: (cb) => {}, show: () => console.log("Back button shown"), hide: () => console.log("Back button hidden") };
 
@@ -5022,3 +5443,4 @@
     </script>
 </body>
 </html>
+
