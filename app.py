@@ -38,7 +38,10 @@ MAX_COLLECTIONS_PER_USER = 9
 MAX_COLLECTIBLE_USERNAMES = 10
 MIN_SALE_PRICE = 125
 MAX_SALE_PRICE = 100000
+MAX_REACTIONS_PER_POST = 3
+
 CDN_BASE_URL = "https://cdn.changes.tg/gifts/"
+GIFTS_JSON_URL = f"{CDN_BASE_URL}id-to-name.json"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 WEBAPP_URL = "https://vasiliy-katsyka.github.io/upgrade/"
 WEBAPP_SHORT_NAME = "upgrade"
@@ -54,6 +57,8 @@ CACHE_DURATION_SECONDS = 3600  # Cache for 1 hour
 # --- INLINE BOT CACHE ---
 inline_cache = {}
 
+# --- IN-MEMORY GIFT NAME MAP ---
+GIFT_NAME_TO_ID_MAP = {}
 
 # --- CUSTOM GIFT DATA ---
 CUSTOM_GIFTS_DATA = {
@@ -182,6 +187,7 @@ def init_db():
         return
 
     with conn.cursor() as cur:
+        # Accounts Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
                 tg_id BIGINT PRIMARY KEY,
@@ -194,6 +200,21 @@ def init_db():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         """)
+        # Add phone_number uniqueness constraint if not exists
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'accounts_phone_number_key' AND conrelid = 'accounts'::regclass
+                ) THEN
+                    ALTER TABLE accounts ADD CONSTRAINT accounts_phone_number_key UNIQUE (phone_number);
+                END IF;
+            END;
+            $$;
+        """)
+
+        # Gifts Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS gifts (
                 instance_id VARCHAR(50) PRIMARY KEY,
@@ -209,7 +230,10 @@ def init_db():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_owner_id ON gifts (owner_id);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_type_and_number ON gifts (gift_type_id, collectible_number);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_pin_order ON gifts (owner_id, pin_order);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_name_and_number ON gifts (gift_name, collectible_number);")
 
+
+        # Collectible Usernames Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS collectible_usernames (
                 id SERIAL PRIMARY KEY,
@@ -218,7 +242,7 @@ def init_db():
             );
         """)
         
-        # New table for Wall/Posts feature
+        # Posts Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS posts (
                 id SERIAL PRIMARY KEY,
@@ -230,6 +254,33 @@ def init_db():
         """)
         cur.execute("CREATE INDEX IF NOT EXISTS idx_posts_owner_id ON posts (owner_id);")
 
+        # Post Reactions Table (NEW)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS post_reactions (
+                id SERIAL PRIMARY KEY,
+                post_id INT REFERENCES posts(id) ON DELETE CASCADE,
+                user_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                emoji VARCHAR(10) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(post_id, user_id, emoji)
+            );
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_post_reactions_post_id ON post_reactions (post_id);")
+
+        # Notification Subscriptions Table (NEW)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS notification_subscriptions (
+                id SERIAL PRIMARY KEY,
+                subscriber_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                target_user_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                notification_type VARCHAR(50) NOT NULL, -- 'mentions' or 'new_posts'
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(subscriber_id, target_user_id, notification_type)
+            );
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_notification_subscriptions_target ON notification_subscriptions (target_user_id, notification_type);")
+
+        # Giveaways Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS giveaways (
                 id SERIAL PRIMARY KEY,
@@ -240,18 +291,10 @@ def init_db():
                 status VARCHAR(20) NOT NULL DEFAULT 'pending_setup',
                 message_id BIGINT,
                 last_update_time TIMESTAMP WITH TIME ZONE,
-                required_channels TEXT, -- New column for required channels
+                required_channels TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         """)
-        cur.execute("""
-            DO $$ BEGIN
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='giveaways' AND column_name='required_channels') THEN
-                    ALTER TABLE giveaways ADD COLUMN required_channels TEXT;
-                END IF;
-            END $$;
-        """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS giveaway_gifts (
                 id SERIAL PRIMARY KEY,
@@ -269,12 +312,14 @@ def init_db():
             );
         """)
         
+        # User Settings Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users_with_custom_gifts_enabled (
                 tg_id BIGINT PRIMARY KEY REFERENCES accounts(tg_id) ON DELETE CASCADE
             );
         """)
 
+        # Collections Tables
         cur.execute("""
             CREATE TABLE IF NOT EXISTS collections (
                 id SERIAL PRIMARY KEY,
@@ -297,6 +342,7 @@ def init_db():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_collections_owner_id ON collections (owner_id);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_gift_collections_collection_id ON gift_collections (collection_id);")
 
+        # Test Account
         cur.execute("SELECT 1 FROM accounts WHERE tg_id = %s;", (TEST_ACCOUNT_TG_ID,))
         if not cur.fetchone():
             cur.execute("""
@@ -307,6 +353,17 @@ def init_db():
     conn.commit()
     conn.close()
     app.logger.info("Database initialized successfully.")
+
+def load_gift_name_map():
+    global GIFT_NAME_TO_ID_MAP
+    try:
+        response = requests.get(GIFTS_JSON_URL, timeout=10)
+        response.raise_for_status()
+        id_to_name = response.json()
+        GIFT_NAME_TO_ID_MAP = {v: k for k, v in id_to_name.items()}
+        app.logger.info(f"Loaded {len(GIFT_NAME_TO_ID_MAP)} gift names into memory map.")
+    except Exception as e:
+        app.logger.error(f"Failed to load gift name map from CDN: {e}")
 
 # --- CUSTOM GIFT HELPERS ---
 def is_custom_gift(gift_name):
@@ -328,6 +385,34 @@ def get_gift_author(gift_name):
     elif gift_name in ["Dildo", "Skebob", "Baggin' Cat"]:
         return "Vasiliy939"
     return None
+
+def parse_post_content_for_backend(content):
+    """Parses post content to replace mentions and gift links with proper HTML."""
+    # Escape basic HTML
+    html = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    
+    # Custom formatting to HTML
+    html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', html)
+    html = re.sub(r'&(.*?)&', r'<span class="text-demonic">\1</span>', html)
+    html = re.sub(r'♡(.*?)♡', r'<span class="text-pink">\1</span>', html)
+    html = re.sub(r'\$(.*?)\$', r'<span class="text-green">\1</span>', html)
+    html = re.sub(r'%(.*?)%', r'<span class="text-blue">\1</span>', html)
+
+    # User mentions
+    html = re.sub(r'@([a-zA-Z0-9_]{5,32})', r'<a href="#" class="user-link" data-username="\1">@\1</a>', html)
+    
+    # Gift mentions
+    def replace_gift_link(match):
+        name = match.group(1).strip()
+        number = match.group(2)
+        gift_type_id = GIFT_NAME_TO_ID_MAP.get(name)
+        if gift_type_id:
+            return f'<a href="#" class="gift-link" data-gift-type-id="{gift_type_id}" data-gift-number="{number}">{name}-{number}</a>'
+        return match.group(0) # Return original string if name not found
+
+    html = re.sub(r'([A-Za-z\s\']{3,25})-([0-9]{1,7})', replace_gift_link, html)
+    
+    return html
 
 # --- TELEGRAM BOT HELPERS ---
 
@@ -517,7 +602,7 @@ def normalize_and_build_clone_url(input_str):
             return input_str
         else:
             return None
-    match = re.match(r'^([\w\s]+?)\s*[#-]?\s*(\d+)$', input_str)
+    match = re.match(r'^([\w\s\']{3,25})[#-]?\s*(\d+)$', input_str)
     if not match:
         match = re.match(r'^([a-zA-Z]+)-(\d+)$', input_str)
     if match:
@@ -549,7 +634,6 @@ def update_giveaway_message(giveaway_id):
             emoji = emojis[i] if i < len(emojis) else "🏅"
             rewards += f' {emoji} {gift["gift_name"]} #{gift["collectible_number"]:,}'
 
-        # Use new message format
         end_date_str = giveaway['end_date'].astimezone(pytz.utc).strftime('%d.%m.%Y %H:%M UTC')
         required_channels_text = giveaway.get('required_channels', '@roxman')
         
@@ -658,14 +742,13 @@ def webhook_handler():
                         send_telegram_message(user_id, "This giveaway has already been published or does not exist.")
                         return jsonify({"status": "ok"}), 200
 
-                    # The message generation logic is now in update_giveaway_message
                     post_result = send_telegram_message(giveaway['channel_id'], "Preparing giveaway...")
 
                     if post_result and post_result.get('ok'):
                         message_id = post_result['result']['message_id']
                         cur.execute("UPDATE giveaways SET status = 'active', message_id = %s, last_update_time = CURRENT_TIMESTAMP WHERE id = %s;", (message_id, giveaway_id))
                         conn.commit()
-                        update_giveaway_message(giveaway_id) # Initial message content
+                        update_giveaway_message(giveaway_id)
                         send_telegram_message(user_id, "✅ Giveaway published successfully!")
                     else:
                         send_telegram_message(user_id, "❌ Failed to publish giveaway. Please check that the Channel ID is correct and that the bot has permission to post in it.")
@@ -683,15 +766,16 @@ def webhook_handler():
                     handle_giveaway_setup(conn, cur, chat_id, user_state, text)
 
                 elif text.startswith("/start"):
-                    if "giveaway" in text:
+                    start_param = text.split(' ', 1)[-1] if ' ' in text else ''
+
+                    if start_param.startswith("giveaway"):
                         try:
-                            giveaway_id = int(text.split('giveaway')[1])
+                            giveaway_id = int(start_param.replace('giveaway', ''))
                             cur.execute("SELECT id, last_update_time, required_channels FROM giveaways WHERE id = %s AND status = 'active'", (giveaway_id,))
                             giveaway = cur.fetchone()
                             if not giveaway:
                                 send_telegram_message(chat_id, "This giveaway is no longer active or does not exist.")
                             else:
-                                # Check subscription
                                 unsubscribed_channels = []
                                 if giveaway['required_channels']:
                                     channels_to_check = [c.strip() for c in giveaway['required_channels'].split(',')]
@@ -716,6 +800,18 @@ def webhook_handler():
                                         threading.Thread(target=update_giveaway_message, args=(giveaway_id,)).start()
                         except (IndexError, ValueError):
                             send_telegram_message(chat_id, "Invalid giveaway link.")
+                    elif start_param.startswith("user-"):
+                        username = start_param.replace('user-', '')
+                        send_telegram_message(chat_id, f"Opening profile for @{username}...", reply_markup={"inline_keyboard": [[{"text": f"View @{username}'s Profile", "web_app": {"url": f"{WEBAPP_URL}?startapp=user{username}"}}]]})
+                    elif start_param.startswith("phone-"):
+                        phone_number = "+" + start_param.replace('phone-', '').replace(' ', '')
+                        cur.execute("SELECT username FROM accounts WHERE phone_number = %s", (phone_number,))
+                        user_data = cur.fetchone()
+                        if user_data and user_data['username']:
+                            username = user_data['username']
+                            send_telegram_message(chat_id, f"Opening profile for user with number {phone_number} (@{username})...", reply_markup={"inline_keyboard": [[{"text": f"View @{username}'s Profile", "web_app": {"url": f"{WEBAPP_URL}?startapp=user{username}"}}]]})
+                        else:
+                            send_telegram_message(chat_id, "Could not find a user with this phone number.")
                     else:
                         caption = ("<b>Welcome to the Gift Upgrade Demo!</b>\n\n"
                                    "This app is a simulation of Telegram's gift and collectible system. "
@@ -736,7 +832,6 @@ def webhook_handler():
     return jsonify({"status": "ok"}), 200
 
 # --- INLINE BOT HANDLERS ---
-# These functions remain unchanged as their logic is self-contained and not affected by the new requirements.
 def handle_inline_query(inline_query):
     query_id = inline_query['id']
     from_user = inline_query['from']
@@ -945,7 +1040,6 @@ def _execute_gift_transfer(sender_id, sender_username, receiver_id, receiver_use
                 return
 
             cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
-            # --- MODIFICATION: Update acquired_date on transfer ---
             cur.execute("UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL, acquired_date = CURRENT_TIMESTAMP WHERE instance_id = %s;", (receiver_id, instance_id))
             conn.commit()
 
@@ -999,7 +1093,6 @@ def _execute_create_and_send(sender_id, sender_username, receiver_id, receiver_u
             
             collectible_data = {"model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern, "modelImage": model_image_url, "lottieModelPath": lottie_model_path, "patternImage": pattern_image_url, "backdropColors": selected_backdrop.get('hex'), "supply": random.randint(2000, 10000), "author": get_gift_author(gift_name)}
             
-            # --- MODIFICATION: acquired_date is set to CURRENT_TIMESTAMP by default ---
             cur.execute("INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number) VALUES (%s, %s, %s, %s, TRUE, %s, %s);", (new_instance_id, receiver_id, gift_type_id, gift_name, json.dumps(collectible_data), next_number))
             conn.commit()
             
@@ -1035,6 +1128,54 @@ def check_customization_access():
             return jsonify({"access": True}), 200
 
     return jsonify({"access": False}), 200
+    
+@app.route('/api/search', methods=['GET'])
+def search():
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify([])
+
+    search_term = f"%{query}%"
+    results = []
+    
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database failed"}), 500
+
+    with conn.cursor(cursor_factory=DictCursor) as cur:
+        try:
+            # Search for users
+            cur.execute("SELECT tg_id, username, full_name, avatar_url FROM accounts WHERE username ILIKE %s LIMIT 5", (search_term,))
+            users = cur.fetchall()
+            for user in users:
+                results.append({"type": "user", **dict(user)})
+
+            # Search for gifts
+            cur.execute("""
+                SELECT gift_name, collectible_number, gift_type_id, collectible_data
+                FROM gifts 
+                WHERE is_collectible = TRUE AND (gift_name ILIKE %s OR CAST(collectible_number AS TEXT) LIKE %s)
+                LIMIT 5
+            """, (search_term, search_term))
+            gifts = cur.fetchall()
+            for gift in gifts:
+                cd = gift['collectible_data']
+                if isinstance(cd, str): cd = json.loads(cd)
+                results.append({
+                    "type": "gift",
+                    "gift_name": gift['gift_name'],
+                    "collectible_number": gift['collectible_number'],
+                    "gift_type_id": gift['gift_type_id'],
+                    "image_url": cd.get('modelImage')
+                })
+
+        except Exception as e:
+            app.logger.error(f"Error in search API for query '{query}': {e}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+        finally:
+            conn.close()
+
+    return jsonify(results)
+
 
 @app.route('/api/profile/<string:username>', methods=['GET'])
 def get_user_profile(username):
@@ -1081,10 +1222,27 @@ def get_user_profile(username):
                 collections_with_order.append({ "id": coll['id'], "name": coll['name'], "ordered_instance_ids": ordered_ids })
             profile_data['collections'] = collections_with_order
             
-            # Fetch posts for the Wall
-            cur.execute("SELECT id, content, views, created_at FROM posts WHERE owner_id = %s ORDER BY created_at DESC;", (user_id,))
+            # Fetch posts with reactions
+            cur.execute("""
+                SELECT 
+                    p.id, p.content, p.views, p.created_at, p.owner_id,
+                    COALESCE(r.reactions, '[]'::jsonb) as reactions
+                FROM posts p
+                LEFT JOIN (
+                    SELECT 
+                        post_id, 
+                        jsonb_agg(jsonb_build_object('emoji', emoji, 'count', count)) as reactions
+                    FROM (
+                        SELECT post_id, emoji, count(*) as count
+                        FROM post_reactions
+                        GROUP BY post_id, emoji
+                    ) as counts
+                    GROUP BY post_id
+                ) as r ON p.id = r.post_id
+                WHERE p.owner_id = %s
+                ORDER BY p.created_at DESC;
+            """, (user_id,))
             profile_data['posts'] = [dict(row) for row in cur.fetchall()]
-
 
             return jsonify(profile_data), 200
         except Exception as e:
@@ -1104,7 +1262,9 @@ def get_or_create_account():
             cur.execute("SELECT * FROM accounts WHERE tg_id = %s;", (tg_id,))
             account = cur.fetchone()
             if not account:
-                cur.execute("""INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio, phone_number) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tg_id) DO NOTHING;""", (tg_id, data.get('username'), data.get('full_name'), data.get('avatar_url'), 'My first account!', 'Not specified'))
+                cur.execute("""INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio, phone_number) 
+                               VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tg_id) DO NOTHING;""", 
+                               (tg_id, data.get('username'), data.get('full_name'), data.get('avatar_url'), 'My first account!', None))
                 conn.commit()
             
             cur.execute("""
@@ -1141,8 +1301,26 @@ def get_or_create_account():
                 collections_with_order.append({ "id": coll['id'], "name": coll['name'], "ordered_instance_ids": ordered_ids })
             account_data['collections'] = collections_with_order
             
-            # Fetch posts for Wall
-            cur.execute("SELECT id, content, views, created_at FROM posts WHERE owner_id = %s ORDER BY created_at DESC;", (tg_id,))
+            # Fetch posts with reactions
+            cur.execute("""
+                SELECT 
+                    p.id, p.content, p.views, p.created_at, p.owner_id,
+                    COALESCE(r.reactions, '[]'::jsonb) as reactions
+                FROM posts p
+                LEFT JOIN (
+                    SELECT 
+                        post_id, 
+                        jsonb_agg(jsonb_build_object('emoji', emoji, 'count', count)) as reactions
+                    FROM (
+                        SELECT post_id, emoji, count(*) as count
+                        FROM post_reactions
+                        GROUP BY post_id, emoji
+                    ) as counts
+                    GROUP BY post_id
+                ) as r ON p.id = r.post_id
+                WHERE p.owner_id = %s
+                ORDER BY p.created_at DESC;
+            """, (tg_id,))
             account_data['posts'] = [dict(row) for row in cur.fetchall()]
 
             return jsonify(account_data), 200
@@ -1172,6 +1350,11 @@ def update_account():
             if cur.rowcount == 0: conn.close(); return jsonify({"error": "Account not found"}), 404
             conn.commit()
             return jsonify({"message": "Account updated"}), 200
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if 'accounts_phone_number_key' in str(e):
+                return jsonify({"error": "This phone number is already taken."}), 409
+            return jsonify({"error": "A unique field is already taken."}), 409
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error updating account {tg_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
@@ -1212,7 +1395,7 @@ def add_gift():
     
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database failed"}), 500
-    with conn.cursor() as cur:
+    with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
             if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
                 return jsonify({"error": "You must enable Custom Gifts in settings to acquire this item."}), 403
@@ -1220,9 +1403,10 @@ def add_gift():
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
             
-            cur.execute("""INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) VALUES (%s, %s, %s, %s, %s, %s);""", (data['instance_id'], owner_id, data['gift_type_id'], gift_name, data['original_image_url'], data.get('lottie_path')))
+            cur.execute("""INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) VALUES (%s, %s, %s, %s, %s, %s) RETURNING *;""", (data['instance_id'], owner_id, data['gift_type_id'], gift_name, data['original_image_url'], data.get('lottie_path')))
+            new_gift = dict(cur.fetchone())
             conn.commit()
-            return jsonify({"message": "Gift added"}), 201
+            return jsonify(new_gift), 201
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error adding gift for {owner_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
@@ -1232,7 +1416,10 @@ def upgrade_gift():
     data = request.get_json()
     if 'instance_id' not in data: return jsonify({"error": "instance_id is required"}), 400
     instance_id = data['instance_id']
-    custom_model_data, custom_backdrop_data, custom_pattern_data = data.get('custom_model'), data.get('custom_backdrop'), data.get('custom_pattern')
+    custom_model_data = data.get('custom_model')
+    custom_backdrop_data = data.get('custom_backdrop')
+    custom_pattern_data = data.get('custom_pattern')
+
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database failed"}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -1249,20 +1436,25 @@ def upgrade_gift():
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
             next_number = cur.fetchone()[0]
             parts_data = fetch_collectible_parts(gift_name)
+            
             selected_model = custom_model_data or select_weighted_random(parts_data.get('models', []))
             selected_backdrop = custom_backdrop_data or select_weighted_random(parts_data.get('backdrops', []))
             selected_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
-            if not all([selected_model, selected_backdrop, selected_pattern]): return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
-            supply = random.randint(2000, 10000)
+
+            if not all([selected_model, selected_backdrop, selected_pattern]):
+                return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
             
-            if gift_name in CUSTOM_GIFTS_DATA:
-                pattern_source_name = CUSTOM_GIFTS_DATA[gift_name].get("patterns_source", gift_name)
-            else:
-                pattern_source_name = gift_name
+            supply = random.randint(2000, 10000)
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
             
             model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
             lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
-            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+            
+            # Handle custom uploaded pattern (Base64)
+            if 'image' in selected_pattern and selected_pattern['image'].startswith('data:image'):
+                pattern_image_url = selected_pattern['image']
+            else:
+                pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
 
             collectible_data = {
                 "model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern,
@@ -1378,7 +1570,7 @@ def get_gift_by_details(gift_type_id, collectible_number):
     if not conn: return jsonify({"error": "Database failed"}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
-            cur.execute("""SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE LOWER(g.gift_type_id) = LOWER(%s) AND g.collectible_number = %s AND g.is_collectible = TRUE;""", (gift_type_id, collectible_number))
+            cur.execute("""SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE g.gift_type_id = %s AND g.collectible_number = %s AND g.is_collectible = TRUE;""", (gift_type_id, collectible_number))
             gift_data = cur.fetchone()
             if not gift_data: return jsonify({"error": "Collectible gift not found."}), 404
 
@@ -1396,34 +1588,61 @@ def get_gift_by_details(gift_type_id, collectible_number):
 
 @app.route('/api/gifts/<string:instance_id>', methods=['PUT'])
 def update_gift_state(instance_id):
-    data = request.get_json(); action, value = data.get('action'), data.get('value')
-    if action not in ['pin', 'hide', 'wear'] or not isinstance(value, bool): return jsonify({"error": "Invalid action or value"}), 400
-    column_to_update = {'pin': 'is_pinned', 'hide': 'is_hidden', 'wear': 'is_worn'}[action]
-    conn = get_db_connection();
+    data = request.get_json()
+    action = data.get('action')
+    value = data.get('value')
+    if action not in ['pin', 'hide', 'wear'] or not isinstance(value, bool):
+        return jsonify({"error": "Invalid action or value"}), 400
+
+    conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     with conn.cursor() as cur:
         try:
+            # Prepare query parts dynamically
+            update_clauses = []
+            params = []
+            
             if action == 'wear' and value is True:
                 cur.execute("SELECT owner_id FROM gifts WHERE instance_id = %s;", (instance_id,))
                 owner_id_result = cur.fetchone()
                 if not owner_id_result: return jsonify({"error": "Gift not found for wear action."}), 404
                 cur.execute("UPDATE gifts SET is_worn = FALSE WHERE owner_id = %s AND is_worn = TRUE;", (owner_id_result[0],))
 
-            update_query = f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;"
-            if action == 'hide' and value is True:
-                update_query = "UPDATE gifts SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;"
-            elif action == 'pin' and value is False:
-                 update_query = "UPDATE gifts SET is_pinned = FALSE, pin_order = NULL WHERE instance_id = %s;"
+            if action == 'pin':
+                update_clauses.append("is_pinned = %s")
+                params.append(value)
+                if value is False:
+                    update_clauses.append("pin_order = NULL")
+            elif action == 'hide':
+                update_clauses.append("is_hidden = %s")
+                params.append(value)
+                if value is True: # When hiding, also unpin and unwear
+                    update_clauses.append("is_pinned = FALSE")
+                    update_clauses.append("is_worn = FALSE")
+                    update_clauses.append("pin_order = NULL")
+            elif action == 'wear':
+                update_clauses.append("is_worn = %s")
+                params.append(value)
+            
+            if not update_clauses: return jsonify({"error": "No valid action to perform."}), 400
 
-            cur.execute(update_query, (value, instance_id) if (action != 'hide' and (action != 'pin' or value is not False)) else (instance_id,))
+            params.append(instance_id)
+            update_query = f"UPDATE gifts SET {', '.join(update_clauses)} WHERE instance_id = %s;"
+            
+            cur.execute(update_query, tuple(params))
 
-            if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or state not changed."}), 404
+            if cur.rowcount == 0:
+                conn.rollback()
+                return jsonify({"error": "Gift not found or state not changed."}), 404
+            
             conn.commit()
             return jsonify({"message": f"Gift {action} state updated"}), 200
         except Exception as e:
-            conn.rollback(); app.logger.error(f"DB error updating gift state for {instance_id}: {e}", exc_info=True)
+            conn.rollback()
+            app.logger.error(f"DB error updating gift state for {instance_id}: {e}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
-        finally: conn.close()
+        finally:
+            conn.close()
 
 @app.route('/api/gifts/<string:instance_id>', methods=['DELETE'])
 def delete_gift(instance_id):
@@ -1561,7 +1780,6 @@ def batch_gift_action():
 
                 cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = ANY(%s);", (instance_ids,))
                 
-                # --- MODIFICATION: Update acquired_date on transfer ---
                 cur.execute("""
                     UPDATE gifts
                     SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL, acquired_date = CURRENT_TIMESTAMP
@@ -1627,7 +1845,6 @@ def transfer_gift():
 
             cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
 
-            # --- MODIFICATION: Update acquired_date on transfer ---
             cur.execute("""UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL, acquired_date = CURRENT_TIMESTAMP WHERE instance_id = %s AND is_collectible = TRUE;""", (receiver_id, instance_id))
             if cur.rowcount == 0: conn.rollback(); return jsonify({"error": "Gift not found or could not be transferred."}), 404
             conn.commit()
@@ -1690,13 +1907,43 @@ def create_post():
     if not owner_id or not content:
         return jsonify({"error": "owner_id and content are required"}), 400
     
+    # Parse content on backend to create durable links
+    parsed_content = parse_post_content_for_backend(content)
+
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database failed"}), 500
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
-            cur.execute("INSERT INTO posts (owner_id, content) VALUES (%s, %s) RETURNING *;", (owner_id, content))
-            new_post = dict(cur.fetchone())
+            cur.execute("INSERT INTO posts (owner_id, content) VALUES (%s, %s) RETURNING *;", (owner_id, parsed_content))
+            new_post_raw = cur.fetchone()
             conn.commit()
+            
+            new_post = dict(new_post_raw)
+            new_post['reactions'] = []
+
+            # --- Notification Logic ---
+            # 1. New Post Notifications
+            cur.execute("SELECT subscriber_id FROM notification_subscriptions WHERE target_user_id = %s AND notification_type = 'new_posts'", (owner_id,))
+            subscribers = [row['subscriber_id'] for row in cur.fetchall()]
+            cur.execute("SELECT username FROM accounts WHERE tg_id = %s", (owner_id,))
+            author_username = cur.fetchone()['username']
+            for sub_id in subscribers:
+                post_url = f"{WEBAPP_URL}?startapp=user-{author_username}"
+                send_telegram_message(sub_id, f"🔔 User @{author_username} has created a new post!", reply_markup={"inline_keyboard": [[{"text": "View Post", "url": post_url}]]})
+            
+            # 2. Mention Notifications
+            mentioned_users = re.findall(r'data-username="([a-zA-Z0-9_]{5,32})"', parsed_content)
+            for mentioned_username in set(mentioned_users):
+                cur.execute("SELECT tg_id FROM accounts WHERE username = %s", (mentioned_username,))
+                mentioned_user_data = cur.fetchone()
+                if mentioned_user_data:
+                    mentioned_user_id = mentioned_user_data['tg_id']
+                    cur.execute("SELECT subscriber_id FROM notification_subscriptions WHERE target_user_id = %s AND notification_type = 'mentions' AND subscriber_id = %s", (mentioned_user_id, mentioned_user_id))
+                    if cur.fetchone(): # Check if the user is subscribed to their own mentions
+                        post_url = f"{WEBAPP_URL}?startapp=user-{author_username}"
+                        send_telegram_message(mentioned_user_id, f"🔔 You were mentioned in a post by @{author_username}!", reply_markup={"inline_keyboard": [[{"text": "View Post", "url": post_url}]]})
+            # --- End Notification Logic ---
+
             return jsonify(new_post), 201
         except Exception as e:
             conn.rollback()
@@ -1704,6 +1951,33 @@ def create_post():
             return jsonify({"error": "An internal server error occurred."}), 500
         finally:
             conn.close()
+
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    # This endpoint now requires authentication/ownership check
+    data = request.get_json()
+    owner_id = data.get('owner_id')
+    if not owner_id:
+        return jsonify({"error": "owner_id is required for deletion"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database failed"}), 500
+    with conn.cursor() as cur:
+        try:
+            # Important: Check ownership before deleting
+            cur.execute("DELETE FROM posts WHERE id = %s AND owner_id = %s;", (post_id, owner_id))
+            if cur.rowcount == 0:
+                conn.rollback()
+                return jsonify({"error": "Post not found or you are not the owner."}), 404
+            conn.commit()
+            return jsonify({"message": "Post deleted successfully"}), 200
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error deleting post {post_id} for user {owner_id}: {e}", exc_info=True)
+            return jsonify({"error": "An internal server error occurred."}), 500
+        finally:
+            conn.close()
+
 
 @app.route('/api/posts/<int:post_id>/view', methods=['POST'])
 def increment_post_view(post_id):
@@ -1737,7 +2011,7 @@ def add_collectible_username():
             conn.commit()
             return jsonify({"message": "Username added"}), 201
         except psycopg2.IntegrityError:
-            conn.rollback(); app.logger.warning(f"Integrity error adding username {username}.", exc_info=True)
+            conn.rollback();
             return jsonify({"error": f"Username @{username} is already taken."}), 409
         except Exception as e:
             conn.rollback(); app.logger.error(f"Error adding username {username}: {e}", exc_info=True)
@@ -1898,16 +2172,11 @@ def reorder_in_collection():
         finally:
             conn.close()
 
-# --- UNCHANGED ENDPOINTS FROM ORIGINAL FILE ---
-# These endpoints are preserved as-is because their functionality was not part of the requested changes.
 @app.route('/api/stats', methods=['GET'])
 def get_stats_ultimate():
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     stats = {}
-    now_utc = datetime.now(pytz.utc)
-    one_day_ago = now_utc - timedelta(days=1)
-    thirty_days_ago = now_utc - timedelta(days=30)
     with conn.cursor(cursor_factory=DictCursor) as cur:
         try:
             cur.execute("SELECT COUNT(*) FROM gifts;")
@@ -2112,7 +2381,6 @@ def api_transfer_gift():
 
             cur.execute("DELETE FROM gift_collections WHERE gift_instance_id = %s;", (instance_id,))
 
-            # --- MODIFICATION: Update acquired_date on transfer ---
             cur.execute("""
                 UPDATE gifts SET owner_id = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL, acquired_date = CURRENT_TIMESTAMP
                 WHERE instance_id = %s;
@@ -2201,7 +2469,6 @@ def create_and_transfer_random_gift():
                 "supply": random.randint(2000, 10000)
             }
             
-            # --- MODIFICATION: acquired_date is set to CURRENT_TIMESTAMP by default ---
             cur.execute("""
                 INSERT INTO gifts 
                 (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number) 
@@ -2305,7 +2572,6 @@ def create_and_transfer_custom_gift():
                 "supply": random.randint(2000, 10000)
             }
             
-            # --- MODIFICATION: acquired_date is set to CURRENT_TIMESTAMP by default ---
             cur.execute("""
                 INSERT INTO gifts 
                 (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number) 
@@ -2392,6 +2658,7 @@ if __name__ != '__main__':
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
+    load_gift_name_map() # Load the map on startup
     set_webhook()
     init_db()
     giveaway_thread = threading.Thread(target=check_finished_giveaways, daemon=True)
@@ -2399,7 +2666,9 @@ if __name__ != '__main__':
 
 if __name__ == '__main__':
     print("Starting Flask server for local development...")
+    load_gift_name_map() # Load the map on startup
     init_db()
     giveaway_thread = threading.Thread(target=check_finished_giveaways, daemon=True)
     giveaway_thread.start()
     app.run(debug=True, port=int(os.environ.get('PORT', 5001)))
+```
