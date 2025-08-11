@@ -60,44 +60,6 @@
             overflow-x: hidden;
         }
 
-        .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--tg-theme-bg-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.3s ease-out;
-        }
-        .loading-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .loading-animation-container {
-            width: 120px; height: 120px; margin-bottom: 20px;
-        }
-        .loading-title {
-            font-size: 1.5em;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        .loading-subtitle {
-            font-size: 1em;
-            color: var(--tg-theme-hint-color);
-        }
-        .loading-spinner {
-            margin-top: 25px;
-            border: 4px solid var(--tg-theme-hint-color);
-            border-top: 4px solid var(--tg-theme-link-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         .app-container {
             max-width: 600px;
             margin: 0 auto;
@@ -132,21 +94,6 @@
             display: flex;
             align-items: center;
         }
-        .sidebar-search-container {
-            padding: 10px 15px;
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-bottom: 1px solid var(--tg-theme-bg-color);
-        }
-        #sidebar-search-input {
-            width: 100%;
-            padding: 10px 15px;
-            border-radius: 20px;
-            border: none;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-size: 0.95em;
-            outline: none;
-        }
         .sidebar-header img {
             width: 50px; height: 50px;
             border-radius: 50%;
@@ -156,32 +103,19 @@
             font-size: 1.1em;
             font-weight: 500;
         }
-        .accounts-list, .search-results-list {
+        .accounts-list {
             list-style: none;
             flex-grow: 1;
             overflow-y: auto;
         }
-        .accounts-list li, .search-results-list li {
+        .accounts-list li {
             display: flex;
             align-items: center;
             padding: 12px 15px;
             cursor: pointer;
             border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
         }
-        .search-results-list li img {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            margin-right: 15px;
-            object-fit: cover;
-        }
-        .search-results-list li .result-info {
-            display: flex; flex-direction: column;
-        }
-        .search-results-list li .result-type {
-            font-size: 0.8em; color: var(--tg-theme-hint-color);
-        }
-
-        .accounts-list li:hover, .search-results-list li:hover {
+        .accounts-list li:hover {
             background-color: rgba(255,255,255,0.05);
         }
         .accounts-list li.active {
@@ -392,11 +326,6 @@
             align-items: center;
             justify-content: center;
         }
-        .profile-tabs button:disabled {
-            color: var(--tg-theme-hint-color);
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
         #gifts-tab-button .gift-preview-container {
             display: flex;
             align-items: center;
@@ -436,14 +365,7 @@
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 12px;
-            position: relative;
         }
-        .post-menu-button {
-            position: absolute; top: 10px; right: 10px;
-            background: none; border: none; color: var(--tg-theme-hint-color);
-            cursor: pointer; padding: 5px;
-        }
-        .post-menu-button svg { width: 20px; height: 20px; fill: currentColor; }
         .post-content {
             font-size: 1em;
             line-height: 1.5;
@@ -474,37 +396,6 @@
             font-size: 0.8em;
             color: var(--tg-theme-hint-color);
         }
-        .post-reactions-container {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .reaction-chip {
-            background-color: rgba(255, 255, 255, 0.08);
-            border-radius: 15px;
-            padding: 4px 10px;
-            font-size: 0.9em;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-        }
-        .reaction-chip .emoji { margin-right: 5px; }
-        .reaction-popup {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-10px);
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-radius: 20px;
-            padding: 8px 12px;
-            display: flex;
-            gap: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            z-index: 10;
-        }
-        .reaction-popup .emoji { font-size: 1.5em; cursor: pointer; transition: transform 0.1s; }
-        .reaction-popup .emoji:hover { transform: scale(1.2); }
         
         .new-post-fab {
             position: fixed;
@@ -604,7 +495,6 @@
             aspect-ratio: 1 / 1; cursor: pointer;
             position: relative; overflow: hidden;
             transition: transform 0.1s ease-out, opacity 0.2s;
-            user-select: none;
         }
         .gift-card.is-hidden {
             opacity: 0.5;
@@ -649,11 +539,11 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Rotated Label */
+        /* Rotated Label - CORRECTED */
         .gift-card .top-right-label {
             position: absolute;
-            top: 10px;
-            right: -28px;
+            top: 10px; /* Adjusted for visual balance */
+            right: -28px; /* Adjusted for visual balance */
             transform: rotate(45deg);
             transform-origin: center;
             background-color: rgba(0,0,0,0.35);
@@ -673,12 +563,12 @@
 
         /* Selection Mode Checkbox */
         .gift-card .selection-checkbox {
-            position: absolute; top: 5px; right: 5px;
+            position: absolute; top: 5px; right: 5px; /* Moved to right for consistency */
             width: 22px; height: 22px;
             background-color: rgba(0, 0, 0, 0.4);
             border: 2px solid #fff;
             border-radius: 50%;
-            z-index: 5;
+            z-index: 5; /* Higher than label */
             display: flex; align-items: center; justify-content: center;
             transition: background-color 0.2s;
         }
@@ -786,7 +676,7 @@
             color: var(--tg-theme-link-color);
         }
         .modal-buttons-footer .modal-button.secondary {
-             margin-top: 0;
+             margin-top: 0; /* Override default */
         }
         .modal-button:disabled {
             background-color: var(--tg-theme-hint-color);
@@ -818,18 +708,18 @@
         #gift-detail-modal .modal-info-table .info-label { color: var(--tg-theme-text-color); }
         #gift-detail-modal .modal-info-table .info-value { color: var(--tg-theme-hint-color); }
 
-        /* Collectible Modal */
+        /* === COLLECTIBLE MODAL REDESIGN === */
         #collectible-detail-modal .modal-content { padding-top: 0; overflow: hidden; }
         #collectible-detail-modal .modal-scrollable-content { padding: 0; }
         #collectible-detail-modal #collectible-menu-button {
             position: absolute; top: 10px; right: 10px; z-index: 3;
             background: rgba(0,0,0,0.2); border-radius: 50%; padding: 0;
-            width: 36px; height: 36px; border: none;
+            width: 36px; height: 36px;
         }
         #collectible-detail-modal #collectible-menu-button svg { fill: white; }
 
         .collectible-display-area {
-            padding: 40px 0 20px 0;
+            padding: 40px 0 20px 0; /* Adjusted padding */
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -885,13 +775,13 @@
 
         .modal-action-buttons-row {
             display: flex; justify-content: space-around; gap: 10px;
-            padding: 20px;
-            background-color: transparent;
-            position: relative; z-index: 2;
+            padding: 20px; /* Moved padding here from display-area */
+            background-color: transparent; /* No longer has its own background */
+            position: relative; z-index: 2; /* Ensure buttons are on top */
         }
         .modal-action-buttons-row button {
             flex-grow: 1; padding: 10px 5px; font-size: 0.9em;
-            background-color: rgba(0,0,0,0.25);
+            background-color: rgba(0,0,0,0.25); /* Dark, transparent background */
             color: var(--tg-theme-text-color);
             border: none; border-radius: 8px;
             display: flex; flex-direction: column; align-items: center;
@@ -900,6 +790,7 @@
         .modal-action-buttons-row button .icon { margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
         .modal-action-buttons-row button .icon svg { width: 22px; height: 22px; fill: var(--tg-theme-link-color); }
         .modal-action-buttons-row button .text { font-size: 0.9em; }
+        /* === END COLLECTIBLE MODAL REDESIGN === */
 
         .collectible-info-section { padding: 0 20px; background-color: var(--tg-theme-secondary-bg-color); }
         .collectible-info-section .info-row {
@@ -940,7 +831,7 @@
             background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 2001;
+            z-index: 2001; /* Higher than sidebar overlay */
             padding: 6px 0; min-width: 220px;
         }
         #long-press-menu ul { list-style: none; }
@@ -1058,7 +949,7 @@
             margin-top: 15px; padding-top: 15px;
             border-top: 1px solid var(--app-action-button-bg);
         }
-        #advanced-settings-container input, #advanced-settings-container label.file-upload-label {
+        #advanced-settings-container input {
              width: 100%; padding: 12px; border-radius: 8px;
              border: 1px solid var(--tg-theme-bg-color); background-color: var(--tg-theme-bg-color);
              color: var(--tg-theme-text-color); font-size: 1em; margin-top: 8px;
@@ -1067,9 +958,7 @@
             display: block; text-align: left; font-size: 0.9em;
             color: var(--tg-theme-hint-color); margin-bottom: 4px;
         }
-        #advanced-settings-container label.file-upload-label {
-            cursor: pointer; text-align: center; background-color: var(--app-action-button-bg);
-        }
+
 
         #chances-probability-display {
             background-color: var(--tg-theme-bg-color);
@@ -1138,6 +1027,14 @@
             resize: vertical;
         }
 
+
+        .spinner {
+            border: 4px solid var(--tg-theme-hint-color);
+            border-top: 4px solid var(--tg-theme-link-color);
+            border-radius: 50%; width: 30px; height: 30px;
+            animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hidden { display: none !important; }
         .placeholder-image {
             background-color: var(--tg-theme-hint-color); width: 100%; height: 100%;
@@ -1288,59 +1185,17 @@
             padding: 2px 4px;
             border-radius: 4px;
         }
-
-        /* Image Preview Overlay */
-        #image-preview-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease-in-out;
-        }
-        #image-preview-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        #image-preview-content {
-            max-width: 90vw;
-            max-height: 90vh;
-        }
-        #image-preview-content img, #image-preview-content .lottie-animation-container {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
     </style>
 </head>
 <body>
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="loading-animation-container" id="loading-animation-container"></div>
-        <div class="loading-title">Gift Upgrade Bot</div>
-        <div class="loading-subtitle">@giftUpgradeRU</div>
-        <div class="loading-spinner"></div>
-    </div>
-
     <div class="account-sidebar" id="account-sidebar">
         <div class="sidebar-header">
             <img id="sidebar-current-avatar" src="" alt="Avatar">
             <span id="sidebar-current-name" class="name"></span>
         </div>
-        <div class="sidebar-search-container">
-            <input type="text" id="sidebar-search-input" placeholder="Search @user or GiftName-123...">
-        </div>
         <ul class="accounts-list" id="accounts-list"></ul>
-        <ul class="search-results-list hidden" id="search-results-list"></ul>
         <div class="sidebar-footer">
             <button id="add-account-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,13.28L1,10.72L2.41,9.31L5,11.9L9.6,7.3L11,8.72L5,14.72Z" /></svg>Add Account</button>
-            <button id="admin-login-button" class="hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,1L9,4H15L12,1M19,21H5C3.9,21 3,20.1 3,19V10C3,8.9 3.9,8 5,8H19C20.1,8 21,8.9 21,10V19C21,20.1 20.1,21 19,21M19,10H5V19H19V10M12,6A2,2 0 0,1 14,8C14,9.1 13.1,10 12,10A2,2 0 0,1 10,8C10,6.9 10.9,6 12,6Z" /></svg>Login To Anyone</button>
             <button id="open-filters-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" /></svg>Filters</button>
             <button id="open-numbers-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>Numbers</button>
             <button id="open-usernames-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.33 4,18V20H20V18C20,15.33 14.67,14 12,14Z" /></svg>@ Usernames</button>
@@ -1348,10 +1203,6 @@
         </div>
     </div>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
-    
-    <div id="image-preview-overlay">
-        <div id="image-preview-content"></div>
-    </div>
 
     <div class="app-container">
         <div id="profile-page" class="page active">
@@ -1380,7 +1231,7 @@
                     <div id="profile-details" class="profile-details">
                          <div class="info-block">
                             <div class="info-label">Phone</div>
-                            <div class="info-value collectible-value" id="profile-phone"></div>
+                            <div class="info-value" id="profile-phone"></div>
                         </div>
                          <div class="info-block">
                             <div class="info-label">Bio</div>
@@ -1414,7 +1265,7 @@
                             </div>
                         </div>
                         <div id="gifts-grid" class="gifts-grid">
-                            <div class="loading-spinner hidden" id="gifts-loading-spinner"></div>
+                            <div class="spinner hidden" id="gifts-loading-spinner"></div>
                         </div>
                     </div>
                 </div>
@@ -1430,7 +1281,7 @@
                  </div>
             </div>
             <div id="buy-gifts-grid" class="gifts-grid">
-                <div class="loading-spinner" id="buy-gifts-loading-spinner"></div>
+                <div class="spinner" id="buy-gifts-loading-spinner"></div>
             </div>
         </div>
 
@@ -1553,13 +1404,6 @@
                     <h3>Settings</h3>
                 </div>
                 <div class="modal-scrollable-content">
-                    <div class="settings-row">
-                        <label>Fullscreen</label>
-                        <label class="switch">
-                            <input type="checkbox" id="fullscreen-toggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
                      <div class="settings-row">
                         <label>Animations</label>
                         <label class="switch">
@@ -1588,9 +1432,6 @@
                         <button id="transfer-multiple-button" class="full-width">Transfer Multiple</button>
                     </div>
                     <div class="settings-row">
-                        <button id="terms-of-service-button" class="full-width">Terms of Service</button>
-                    </div>
-                    <div class="settings-row">
                         <button id="clear-current-account-data-button" class="full-width">Clear Current Account Data</button>
                     </div>
                     <div class="settings-row danger">
@@ -1608,7 +1449,7 @@
                 <div class="modal-scrollable-content">
                     <p id="chances-gift-name" style="text-align: center; font-weight: 500; margin-bottom: 15px;"></p>
                     <div id="chances-probability-display"></div>
-                    <div class="loading-spinner hidden" id="chances-loading-spinner"></div>
+                    <div class="spinner hidden" id="chances-loading-spinner"></div>
                     <div class="filter-section hidden" id="chances-models-section">
                         <h4>Select model</h4>
                         <div class="filter-options-grid" id="chances-options-models"></div>
@@ -1659,12 +1500,6 @@
                         <div>
                             <label for="custom-buy-quantity">Quantity to Create</label>
                             <input type="number" id="custom-buy-quantity" value="1" min="1">
-                        </div>
-                        <div id="custom-pattern-upload-section" style="margin-top: 15px;">
-                            <label>Custom Pattern (PNG)</label>
-                            <label for="custom-pattern-upload-input" class="file-upload-label">Upload Image</label>
-                            <input type="file" id="custom-pattern-upload-input" class="hidden" accept="image/png">
-                            <p id="custom-pattern-filename" style="font-size: 0.8em; color: var(--tg-theme-hint-color); margin-top: 5px;"></p>
                         </div>
                         <div id="custom-buy-clone-section" style="margin-top: 15px;">
                             <h4>Or Clone from Link</h4>
@@ -1859,18 +1694,16 @@
     <script>
         const BACKEND_BASE_URL = "https://upgrade-a57g.onrender.com";
 
-        const APP_VERSION_SUFFIX = '_v16'; // Increment to reset UI preferences on major changes
+        const APP_VERSION_SUFFIX = '_v15'; // Increment to reset UI preferences on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
         const STAR_ICON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png";
-        const LOADING_ANIMATION_URL = "https://cdn.changes.tg/gifts/models/Jolly%20Chimp/lottie/Toddler.json"; // Using .tgs directly with lottie might not work, assuming it's a JSON/Lottie file URL
 
         const GIFT_LIMIT_PER_USER = 5000;
         const MAX_COLLECTIBLE_USERNAMES = 10;
         const MIN_SALE_PRICE = 125;
         const MAX_SALE_PRICE = 100000;
-        const ADMIN_USER_ID = 5146625949;
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
@@ -1883,21 +1716,110 @@
             "Dildo": {
                 "id": "custom_dildo",
                 "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_003931098.png",
-                "models": [{"name":"She Wants","rarityPermille":1,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011319484.png"},{"name":"Anal Games","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004252351.png"},{"name":"Romance","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011244151.png"},{"name":"Ma Boi","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012725065.png"},{"name":"Twins 18","rarityPermille":8,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004029718.png"},{"name":"Golden Sex","rarityPermille":8,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004223973.png"},{"name":"Pixels","rarityPermille":8,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012914349.png"},{"name":"Penis Sword","rarityPermille":8,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014719027.png"},{"name":"Water One","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004351728.png"},{"name":"Woman Place","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004416012.png"},{"name":"Volcano","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011343633.png"},{"name":"Telegram","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012648445.png"},{"name":"Pinkie Twinkie","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004004128.png"},{"name":"Silver Glass","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004200179.png"},{"name":"Plush","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011552827.png"},{"name":"Plush Cuttie","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011623951.png"},{"name":"Spider Fun","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012003197.png"},{"name":"Horse","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012355663.png"},{"name":"Hand","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013039090.png"},{"name":"Ancient","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014521352.png"},{"name":"Minion","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014626463.png"},{"name":"Skinny Boi","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004055652.png"},{"name":"Rainbow","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004125778.png"},{"name":"Russian Wood","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011527878.png"},{"name":"Afterparty","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011822289.png"},{"name":"Neon","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012439323.png"},{"name":"Black Jack","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013144671.png"},{"name":"Galaxy","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014555528.png"},{"name":"Hell Red","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014650858.png"}],
+                "models": [
+                    {"name": "She Wants", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011319484.png"},
+                    {"name": "Anal Games", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004252351.png"},
+                    {"name": "Romance", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011244151.png"},
+                    {"name": "Ma Boi", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012725065.png"},
+                    {"name": "Twins 18", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004029718.png"},
+                    {"name": "Golden Sex", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004223973.png"},
+                    {"name": "Pixels", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012914349.png"},
+                    {"name": "Penis Sword", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014719027.png"},
+                    {"name": "Water One", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004351728.png"},
+                    {"name": "Woman Place", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004416012.png"},
+                    {"name": "Volcano", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011343633.png"},
+                    {"name": "Telegram", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012648445.png"},
+                    {"name": "Pinkie Twinkie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004004128.png"},
+                    {"name": "Silver Glass", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004200179.png"},
+                    {"name": "Plush", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011552827.png"},
+                    {"name": "Plush Cuttie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011623951.png"},
+                    {"name": "Spider Fun", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012003197.png"},
+                    {"name": "Horse", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012355663.png"},
+                    {"name": "Hand", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013039090.png"},
+                    {"name": "Ancient", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014521352.png"},
+                    {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014626463.png"},
+                    {"name": "Skinny Boi", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004055652.png"},
+                    {"name": "Rainbow", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004125778.png"},
+                    {"name": "Russian Wood", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011527878.png"},
+                    {"name": "Afterparty", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011822289.png"},
+                    {"name": "Neon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012439323.png"},
+                    {"name": "Black Jack", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013144671.png"},
+                    {"name": "Galaxy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014555528.png"},
+                    {"name": "Hell Red", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014650858.png"}
+                ],
                 "backdrops_source": "Astral Shard",
                 "patterns_source": "Astral Shard"
             },
             "Skebob": {
                 "id": "custom_skebob",
                 "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/refs/heads/main/BackgroundEraser_20250718_034626591.png",
-                "models": [{"name":"Nikitka","rarityPermille":1,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/refs/heads/main/BackgroundEraser_20250718_145212143.png"},{"name":"Gold","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220944840-min.png"},{"name":"Plushy","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221053786-min.png"},{"name":"XXXTentacion","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222249990-min.png"},{"name":"Cactus King","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013002213-min.png"},{"name":"354 KANON","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013042799-min.png"},{"name":"Duck","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014036288-min.png"},{"name":"Spider King","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220335725-min.png"},{"name":"Bitcoin","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012502725-min.png"},{"name":"Move To Heaven","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012612974-min.png"},{"name":"Frogie","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012824238-min.png"},{"name":"The King","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012931928-min.png"},{"name":"Fire On Fire","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013941593-min.png"},{"name":"Icy","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220405846-min.png"},{"name":"Pick Me","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220906007-min.png"},{"name":"Black Bird","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221147963-min.png"},{"name":"Pavel Durov","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222706006-min.png"},{"name":"Banana","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013851152-min.png"},{"name":"Mummy","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014247708-min.png"},{"name":"Police Man","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014319952-min.png"},{"name":"Electric BDSM","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014554522-min.png"},{"name":"Glassy","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221020205-min.png"},{"name":"Ancient","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012541910-min.png"},{"name":"Business","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013214856-min.png"},{"name":"Spookie","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013308503-min.png"},{"name":"Minion","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013343118-min.png"},{"name":"Oh Shit","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013417326-min.png"},{"name":"Emo Girl","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014533870-min.png"},{"name":"Minecraft","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014750440-min.png"}],
+                "models": [
+                    {"name": "Nikitka", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/refs/heads/main/BackgroundEraser_20250718_145212143.png"},
+                    {"name": "Gold", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220944840-min.png"},
+                    {"name": "Plushy", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221053786-min.png"},
+                    {"name": "XXXTentacion", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222249990-min.png"},
+                    {"name": "Cactus King", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013002213-min.png"},
+                    {"name": "354 KANON", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013042799-min.png"},
+                    {"name": "Duck", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014036288-min.png"},
+                    {"name": "Spider King", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220335725-min.png"},
+                    {"name": "Bitcoin", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012502725-min.png"},
+                    {"name": "Move To Heaven", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012612974-min.png"},
+                    {"name": "Frogie", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012824238-min.png"},
+                    {"name": "The King", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012931928-min.png"},
+                    {"name": "Fire On Fire", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013941593-min.png"},
+                    {"name": "Icy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220405846-min.png"},
+                    {"name": "Pick Me", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220906007-min.png"},
+                    {"name": "Black Bird", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221147963-min.png"},
+                    {"name": "Pavel Durov", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222706006-min.png"},
+                    {"name": "Banana", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013851152-min.png"},
+                    {"name": "Mummy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014247708-min.png"},
+                    {"name": "Police Man", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014319952-min.png"},
+                    {"name": "Electric BDSM", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014554522-min.png"},
+                    {"name": "Glassy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221020205-min.png"},
+                    {"name": "Ancient", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012541910-min.png"},
+                    {"name": "Business", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013214856-min.png"},
+                    {"name": "Spookie", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013308503-min.png"},
+                    {"name": "Minion", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013343118-min.png"},
+                    {"name": "Oh Shit", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013417326-min.png"},
+                    {"name": "Emo Girl", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014533870-min.png"},
+                    {"name": "Minecraft", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014750440-min.png"}
+                ],
                 "backdrops_source": "Snoop Dogg",
                 "patterns_source": "Snoop Dogg"
             },
             "Baggin' Cat": {
                 "id": "custom_baggin_cat",
                 "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/refs/heads/main/IMG_20250718_234950_164.png",
-                "models": [{"name":"Redo","rarityPermille":1,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154505502.png"},{"name":"Bored Ape","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153421320.png"},{"name":"Snoop Dogg","rarityPermille":5,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153800346.png"},{"name":"Austronaut","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153211676.png"},{"name":"Chinese Dragon","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153332160.png"},{"name":"Radioactive","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154437815.png"},{"name":"Pink Guard","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154725761.png"},{"name":"Angel","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155859028.png"},{"name":"Devil","rarityPermille":10,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155937967.png"},{"name":"Minion","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153059849.png"},{"name":"Rainbow","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153251813.png"},{"name":"Spookie","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153836181.png"},{"name":"Spider","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154055429.png"},{"name":"Dying Light","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154537813.png"},{"name":"Hippo","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155053345.png"},{"name":"Poo","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155200011.png"},{"name":"Pikachu","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155411045.png"},{"name":"XXXTentacion","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155652114.png"},{"name":"Electric","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155830968.png"},{"name":"Glassy","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160036747.png"},{"name":"Alien","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160243304.png"},{"name":"Piggy","rarityPermille":20,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160346910.png"},{"name":"Panda","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153136834.png"},{"name":"Capybara","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153629360.png"},{"name":"Dolphin","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155125393.png"},{"name":"Rabbit","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155341280.png"},{"name":"Elephant","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160003197.png"},{"name":"Bee","rarityPermille":30,"image":"https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160317620.png"}],
+                "models": [
+                    {"name": "Redo", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154505502.png"},
+                    {"name": "Bored Ape", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153421320.png"},
+                    {"name": "Snoop Dogg", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153800346.png"},
+                    {"name": "Austronaut", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153211676.png"},
+                    {"name": "Chinese Dragon", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153332160.png"},
+                    {"name": "Radioactive", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154437815.png"},
+                    {"name": "Pink Guard", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154725761.png"},
+                    {"name": "Angel", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155859028.png"},
+                    {"name": "Devil", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155937967.png"},
+                    {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153059849.png"},
+                    {"name": "Rainbow", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153251813.png"},
+                    {"name": "Spookie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153836181.png"},
+                    {"name": "Spider", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154055429.png"},
+                    {"name": "Dying Light", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154537813.png"},
+                    {"name": "Hippo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155053345.png"},
+                    {"name": "Poo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155200011.png"},
+                    {"name": "Pikachu", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155411045.png"},
+                    {"name": "XXXTentacion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155652114.png"},
+                    {"name": "Electric", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155830968.png"},
+                    {"name": "Glassy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160036747.png"},
+                    {"name": "Alien", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160243304.png"},
+                    {"name": "Piggy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160346910.png"},
+                    {"name": "Panda", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153136834.png"},
+                    {"name": "Capybara", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153629360.png"},
+                    {"name": "Dolphin", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155125393.png"},
+                    {"name": "Rabbit", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155341280.png"},
+                    {"name": "Elephant", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160003197.png"},
+                    {"name": "Bee", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160317620.png"}
+                ],
                 "backdrops_source": "Toy Bear",
                 "patterns_source": "Toy Bear"
             }
@@ -1921,28 +1843,20 @@
         let selectedGiftIds = new Set();
 
         let animationsEnabled = true;
-        let fullscreenEnabled = false;
         let showHiddenGifts = false;
         let customGiftsEnabled = false;
         let activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-        
-        let searchDebounceTimer;
 
         let tg = window.Telegram.WebApp;
 
         // --- DOM Elements ---
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const loadingAnimationContainer = document.getElementById('loading-animation-container');
         const appContainer = document.querySelector('.app-container');
         const accountSidebar = document.getElementById('account-sidebar');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
         const sidebarCurrentAvatar = document.getElementById('sidebar-current-avatar');
         const sidebarCurrentName = document.getElementById('sidebar-current-name');
-        const sidebarSearchInput = document.getElementById('sidebar-search-input');
         const accountsList = document.getElementById('accounts-list');
-        const searchResultsList = document.getElementById('search-results-list');
         const addAccountButton = document.getElementById('add-account-button');
-        const adminLoginButton = document.getElementById('admin-login-button');
         const openFiltersButton = document.getElementById('open-filters-button');
         const openNumbersButton = document.getElementById('open-numbers-button');
         const openUsernamesButton = document.getElementById('open-usernames-button');
@@ -2038,13 +1952,11 @@
         const clearFiltersButton = document.getElementById('clear-filters-button');
 
         const settingsModal = document.getElementById('settings-modal');
-        const fullscreenToggle = document.getElementById('fullscreen-toggle');
         const animationToggle = document.getElementById('animation-toggle');
         const customGiftsToggle = document.getElementById('custom-gifts-toggle');
         const showHiddenToggle = document.getElementById('show-hidden-toggle');
         const hideMultipleButton = document.getElementById('hide-multiple-button');
         const transferMultipleButton = document.getElementById('transfer-multiple-button');
-        const termsOfServiceButton = document.getElementById('terms-of-service-button');
         const clearCurrentAccountDataButton = document.getElementById('clear-current-account-data-button');
         const clearAllAccountsDataButton = document.getElementById('clear-all-accounts-data-button');
 
@@ -2062,15 +1974,10 @@
         const advancedSettingsToggle = document.getElementById('advanced-settings-toggle');
         const advancedSettingsContainer = document.getElementById('advanced-settings-container');
         const customBuyQuantityInput = document.getElementById('custom-buy-quantity');
-        const customPatternUploadInput = document.getElementById('custom-pattern-upload-input');
-        const customPatternFilename = document.getElementById('custom-pattern-filename');
         const cloneUrlInput = document.getElementById('clone-url-input');
         const cloneGiftButton = document.getElementById('clone-gift-button');
         const customBuyConfirmButton = document.getElementById('custom-buy-confirm-button');
         const customBuyCancelButton = document.getElementById('custom-buy-cancel-button');
-        
-        const imagePreviewOverlay = document.getElementById('image-preview-overlay');
-        const imagePreviewContent = document.getElementById('image-preview-content');
 
         const generatedImageModal = document.getElementById('generated-image-modal');
         const generatedImageFooter = document.getElementById('generated-image-footer');
@@ -2155,8 +2062,6 @@
         hideSelectedGiftsButton.className = 'action-button hidden';
         hideSelectedGiftsButton.textContent = 'Hide';
         profileGiftsActions.prepend(hideSelectedGiftsButton);
-        
-        const POST_REACTIONS = ['❤️', '🔥', '👍', '😭', '🤯', '😂', '🤡'];
 
         const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", "+888 7777 7777", "+888 0707 6969", "+888 1337 1337", "+888 2024 2025", "+888 1000 0001", "+888 0808 0808"];
         const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous", "market", "bank", "news", "pessi", "penaldo", "token", "exchange", "ceo", "founder", "investor"];
@@ -2166,7 +2071,6 @@
         
         let giftCreationQueue = [];
         let currentlyEditingGiftIndex = -1;
-        let customPatternBase64 = null;
 
         let cachedCollectibleParts = {};
         let lastTap = 0;
@@ -2177,7 +2081,6 @@
         let sortableInstance = null;
         let modalSwipeState = { startX: 0, isSwiping: false };
         let selectedGiveawayGifts = new Set();
-        let longPressImageTimer;
 
         // --- API Utility Function ---
         async function callBackend(endpoint, method = 'GET', data = null, params = {}) {
@@ -2220,7 +2123,7 @@
         function formatRarity(permille) {
             if (!permille) return 'N/A';
             const percentage = permille / 10;
-            const oneInX = Math.round(1000 / permille);
+            const oneInX = Math.round(1000 / permille); // Correct calculation
             return `${percentage.toFixed(1)}% <span class="one-in-x">(1 of ${oneInX.toLocaleString('en-US')})</span>`;
         }
 
@@ -2238,14 +2141,10 @@
             if (!container || !path) return;
             if (container.lottieInstance) { container.lottieInstance.destroy(); delete container.lottieInstance; }
             container.innerHTML = '';
-            try {
-                const anim = bodymovin.loadAnimation({ container: container, path: path, renderer: 'svg', loop: loop, autoplay: true });
-                container.lottieInstance = anim;
-                if (isGridItem && !loop) {
-                    anim.addEventListener('complete', () => { if (container.lottieInstance === anim) container.dataset.playedOnce = 'true'; });
-                }
-            } catch (e) {
-                console.error("Lottie loading error:", e);
+            const anim = bodymovin.loadAnimation({ container: container, path: path, renderer: 'svg', loop: loop, autoplay: true });
+            container.lottieInstance = anim;
+            if (isGridItem && !loop) {
+                anim.addEventListener('complete', () => { if (container.lottieInstance === anim) container.dataset.playedOnce = 'true'; });
             }
         }
         function destroyLottieAnimation(container) {
@@ -2290,62 +2189,49 @@
         }
 
         async function initApp() {
-            tg.ready();
-            tg.expand();
-
-            playLottieAnimation(loadingAnimationContainer, LOADING_ANIMATION_URL, true);
+            tg.ready(); tg.expand();
             initLottieObserver();
-            
+
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
 
-            try {
-                loadClientSideState();
+            loadClientSideState();
 
-                if (fullscreenEnabled && tg.requestFullscreen) {
-                    tg.requestFullscreen();
-                }
-
-                const startAppParam = tg.initDataUnsafe?.start_param;
-                if (startAppParam) {
-                    await initializeTelegramUserAccount();
-                    if (startAppParam.startsWith('user')) {
-                        const identifier = startAppParam.substring(4);
-                        await displayUserProfile(identifier);
-                    } else if (startAppParam.startsWith('gift')) {
-                        const giftString = startAppParam.substring(4);
-                        const [giftTypeId, collectibleNumberStr] = giftString.split('-');
-                        const collectibleNumber = parseInt(collectibleNumberStr, 10);
+            const startAppParam = tg.initDataUnsafe?.start_param;
+            if (startAppParam) {
+                await initializeTelegramUserAccount();
+                if (startAppParam.startsWith('user')) {
+                    const username = startAppParam.substring(4);
+                    await displayUserProfile(username);
+                } else if (startAppParam.startsWith('gift')) {
+                    const giftString = startAppParam.substring(4);
+                    const lastHyphenIndex = giftString.lastIndexOf('-');
+                    if (lastHyphenIndex > -1) {
+                        const giftTypeId = giftString.substring(0, lastHyphenIndex);
+                        const collectibleNumber = parseInt(giftString.substring(lastHyphenIndex + 1), 10);
                         if (giftTypeId && !isNaN(collectibleNumber)) {
                             await displayDeepLinkedGift(giftTypeId, collectibleNumber);
                         } else {
                             tg.showAlert("Invalid gift format in deep link.");
                         }
+                    } else {
+                         tg.showAlert("Invalid gift format in deep link.");
                     }
-                } else {
-                    await initializeTelegramUserAccount();
                 }
-
-                applyTheme(tg.themeParams);
-                tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
-                tg.SettingsButton.show();
-                tg.SettingsButton.onClick(openSettingsModal);
-
-                setupEventListeners();
-                await fetchGiftPrices();
-                await fetchAvailableGifts();
-
-            } catch (error) {
-                console.error("A critical error occurred during app initialization:", error);
-                tg.showAlert("Failed to load app data. Please try again later.");
-            } finally {
-                // This block will ALWAYS run, ensuring the loading screen is hidden.
-                setTimeout(() => {
-                    loadingOverlay.classList.add('hidden');
-                }, 500); // A small delay to prevent a jarring flash
+            } else {
+                await initializeTelegramUserAccount();
             }
+
+            applyTheme(tg.themeParams);
+            tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
+            tg.SettingsButton.show();
+            tg.SettingsButton.onClick(openSettingsModal);
+
+            setupEventListeners();
+            await fetchGiftPrices();
+            await fetchAvailableGifts();
         }
 
         async function initializeTelegramUserAccount() {
@@ -2381,10 +2267,9 @@
                 profilePosts = accountData.posts || [];
                 customGiftsEnabled = accountData.custom_gifts_enabled || false;
 
-                let existingAccountIndex = accounts.findIndex(acc => acc.tg_id === currentAccountTgId);
-                if (existingAccountIndex > -1) {
-                    // Update existing account data but keep local-only fields if they exist
-                    accounts[existingAccountIndex] = { ...accounts[existingAccountIndex], ...accountData };
+                let existingAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+                if (existingAccount) {
+                    Object.assign(existingAccount, accountData);
                 } else {
                     accounts.push(accountData);
                 }
@@ -2410,35 +2295,32 @@
             }
         }
 
-        async function displayUserProfile(identifier) {
+        async function displayUserProfile(username) {
              const ownAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-             if (ownAccount && ownAccount.username && ownAccount.username.toLowerCase() === identifier.toLowerCase()) {
+             if (ownAccount && ownAccount.username && ownAccount.username.toLowerCase() === username.toLowerCase()) {
                  await initializeTelegramUserAccount();
                  return;
              }
 
              viewingOwnProfile = false;
              try {
-                const profileData = await callBackend(`/api/profile_by_collectible/${identifier}`, 'GET');
-                const username = profileData.username;
-                
-                const fullProfileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
-                ownedGifts = fullProfileData.owned_gifts || [];
-                profilePosts = fullProfileData.posts || [];
+                const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
+                ownedGifts = profileData.owned_gifts || [];
+                profilePosts = profileData.posts || [];
 
-                profileName.textContent = fullProfileData.full_name || 'User';
-                profileAvatar.src = fullProfileData.avatar_url || '';
+                profileName.textContent = profileData.full_name || 'User';
+                profileAvatar.src = profileData.avatar_url || '';
                 profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
-                profileUsername.textContent = fullProfileData.username ? `@${fullProfileData.username}` : 'no username';
+                profileUsername.textContent = profileData.username ? `@${profileData.username}` : 'no username';
                 profileUsername.onclick = null;
-                profileBio.textContent = fullProfileData.bio || "No bio yet";
-                profilePhone.textContent = fullProfileData.phone_number || "Not specified";
+                profileBio.textContent = profileData.bio || "No bio yet";
+                profilePhone.textContent = profileData.phone_number || "Not specified";
 
                 collectibleUsernamesContainer.innerHTML = '';
-                if (fullProfileData.collectible_usernames && fullProfileData.collectible_usernames.length > 0) {
+                if (profileData.collectible_usernames && profileData.collectible_usernames.length > 0) {
                     const alsoSpan = document.createElement('span'); alsoSpan.className = 'also-text'; alsoSpan.textContent = 'also';
                     collectibleUsernamesContainer.appendChild(alsoSpan);
-                    fullProfileData.collectible_usernames.forEach(uname => {
+                    profileData.collectible_usernames.forEach(uname => {
                         const unameSpan = document.createElement('span'); unameSpan.className = 'collectible-username-span'; unameSpan.textContent = `@${uname}`;
                         collectibleUsernamesContainer.appendChild(unameSpan);
                     });
@@ -2453,7 +2335,6 @@
                 renderAll();
             } catch (error) {
                 console.error("Error fetching user profile:", error);
-                tg.showAlert("User profile not found or could not be loaded.");
                 await initializeTelegramUserAccount();
             }
         }
@@ -2499,14 +2380,11 @@
             const account = accounts.find(acc => acc.tg_id === currentAccountTgId);
             if (!account) return;
 
-            adminLoginButton.classList.toggle('hidden', currentAccountTgId !== ADMIN_USER_ID);
-
             profileName.textContent = account.full_name || 'User';
             profileAvatar.src = account.avatar_url || '';
             profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
             profileUsername.textContent = account.username ? `@${account.username}` : 'no username';
-            profileUsername.onclick = () => { if(account.username) displayUserProfile(`@${account.username}`); };
-            profilePhone.onclick = () => { if(account.phone_number) displayUserProfile(account.phone_number); };
+            profileUsername.onclick = () => { if(account.username) displayUserProfile(account.username); };
             profileBio.textContent = account.bio || "No bio yet";
             profilePhone.textContent = account.phone_number || "Not specified";
             profileBio.style.cursor = 'pointer';
@@ -2524,7 +2402,7 @@
                     unameSpan.className = 'collectible-username-span';
                     unameSpan.textContent = `@${uname}`;
                     unameSpan.dataset.username = uname;
-                    unameSpan.addEventListener('click', () => displayUserProfile(`@${uname}`));
+                    unameSpan.addEventListener('click', () => displayUserProfile(uname));
                     unameSpan.addEventListener('contextmenu', (e) => {
                         e.preventDefault();
                         handleDeleteCollectibleUsername(uname);
@@ -2541,7 +2419,6 @@
         // --- Account Management ---
         function loadClientSideState() {
             animationsEnabled = JSON.parse(localStorage.getItem('animationsEnabled' + APP_VERSION_SUFFIX)) ?? true;
-            fullscreenEnabled = JSON.parse(localStorage.getItem('fullscreenEnabled' + APP_VERSION_SUFFIX)) ?? false;
             showHiddenGifts = JSON.parse(localStorage.getItem('showHiddenGifts' + APP_VERSION_SUFFIX)) ?? false;
             activeFilters = JSON.parse(localStorage.getItem('activeFilters' + APP_VERSION_SUFFIX)) || { collection: null, model: null, backdrop: null, pattern: null };
             accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
@@ -2551,7 +2428,6 @@
         function saveClientSideState() {
             localStorage.setItem('activeFilters' + APP_VERSION_SUFFIX, JSON.stringify(activeFilters));
             localStorage.setItem('animationsEnabled' + APP_VERSION_SUFFIX, JSON.stringify(animationsEnabled));
-            localStorage.setItem('fullscreenEnabled' + APP_VERSION_SUFFIX, JSON.stringify(fullscreenEnabled));
             localStorage.setItem('showHiddenGifts' + APP_VERSION_SUFFIX, JSON.stringify(showHiddenGifts));
         }
 
@@ -2573,36 +2449,22 @@
             }
         }
 
-        async function handleAddAccount(newAccountData = null) {
-            if (!newAccountData) {
-                newAccountData = {
-                    tg_id: Math.floor(Math.random() * 1e12) + 1,
-                    username: `testuser_${Math.random().toString(36).substring(2, 8)}`,
-                    full_name: `Test User ${accounts.length + 1}`,
-                    avatar_url: `https://i.pravatar.cc/140?u=${Math.floor(Math.random() * 1e12) + 1}`
-                };
-            }
-        
-            // Check if account already exists locally before calling backend
-            if (accounts.some(acc => acc.tg_id === newAccountData.tg_id)) {
-                await switchAccount(newAccountData.tg_id);
-                closeSidebar();
-                return;
-            }
+        async function handleAddAccount() {
+            const newTgId = Math.floor(Math.random() * 1e12) + 1;
+            const newAccountData = {
+                tg_id: newTgId,
+                username: `testuser_${Math.random().toString(36).substring(2, 8)}`,
+                full_name: `Test User ${accounts.length + 1}`,
+                avatar_url: `https://i.pravatar.cc/140?u=${newTgId}`
+            };
 
             try {
-                // Call backend to ensure account is created/retrieved
                 const createdAccount = await callBackend('/api/account', 'POST', newAccountData);
-                
-                // Add to local list only if it's truly new
-                if (!accounts.some(acc => acc.tg_id === createdAccount.tg_id)) {
-                    accounts.push(createdAccount);
-                }
-                
+                accounts.push(createdAccount);
                 await switchAccount(createdAccount.tg_id);
                 closeSidebar();
             } catch (error) {
-                console.error("Error adding account:", error);
+                console.error(error);
             }
         }
 
@@ -2616,12 +2478,8 @@
         function renderAll() {
             if (viewingOwnProfile) {
                 loadUserData();
-                buyGiftsTabButton.disabled = false;
-            } else {
-                buyGiftsTabButton.disabled = true;
             }
             renderAccountsList();
-            fullscreenToggle.checked = fullscreenEnabled;
             animationToggle.checked = animationsEnabled;
             showHiddenToggle.checked = showHiddenGifts;
             customGiftsToggle.checked = customGiftsEnabled;
@@ -2891,7 +2749,6 @@
             card.dataset.pinned = gift.is_pinned;
 
             if (gift.is_hidden) card.classList.add('is-hidden');
-            if (gift.isPending) card.style.opacity = '0.6';
 
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
@@ -2991,15 +2848,7 @@
             const uniqueGiftTypes = new Set();
             const giftsToShow = [];
             
-            const sortedPreviewGifts = [...ownedGifts].sort((a, b) => {
-                const aIsPinned = a.is_pinned;
-                const bIsPinned = b.is_pinned;
-                if (aIsPinned && !bIsPinned) return -1;
-                if (!aIsPinned && bIsPinned) return 1;
-                return new Date(b.acquired_date) - new Date(a.acquired_date);
-            });
-
-            for (const gift of sortedPreviewGifts) {
+            for (const gift of currentlySortedGifts) {
                 if (!uniqueGiftTypes.has(gift.gift_type_id)) {
                     uniqueGiftTypes.add(gift.gift_type_id);
                     giftsToShow.push(gift);
@@ -3049,50 +2898,28 @@
                 return;
             }
 
-            // --- Optimistic Update ---
-            const tempGifts = [];
-            for (let i = 0; i < quantity; i++) {
-                const tempGift = {
-                    instance_id: `temp-${generateUniqueId()}`,
-                    owner_id: currentAccountTgId,
-                    gift_type_id: id,
-                    gift_name: name,
-                    original_image_url: originalImage,
-                    lottie_path: lottiePath,
-                    acquired_date: new Date().toISOString(),
-                    is_collectible: false,
-                    isPending: true // Custom flag for styling
-                };
-                tempGifts.push(tempGift);
-            }
-            
-            ownedGifts.unshift(...tempGifts); // Add to the top
-            renderProfileGifts();
-            
-            showPage('profile-page');
-            switchTab('gifts');
-
-            // --- Backend Sync ---
             try {
-                for (const tempGift of tempGifts) {
-                    await callBackend('/api/gifts', 'POST', {
-                        instance_id: tempGift.instance_id,
-                        owner_id: tempGift.owner_id,
-                        gift_type_id: tempGift.gift_type_id,
-                        gift_name: tempGift.gift_name,
-                        original_image_url: tempGift.original_image_url,
-                        lottie_path: tempGift.lottie_path
+                for (let i = 0; i < quantity; i++) {
+                     await callBackend('/api/gifts', 'POST', {
+                        instance_id: generateUniqueId(),
+                        owner_id: currentAccountTgId,
+                        gift_type_id: id,
+                        gift_name: name,
+                        original_image_url: originalImage,
+                        lottie_path: lottiePath
                     });
                 }
                 
-                await initializeTelegramUserAccount(); // Full refresh to get real data
+                await initializeTelegramUserAccount();
+
+                renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('success');
                 const message = quantity > 1 ? `Added ${quantity} "${name}" gifts!` : `Added "${name}" gift!`;
                 tg.showAlert(message);
+                showPage('profile-page');
+                switchTab('gifts');
+
             } catch (error) {
-                // Revert optimistic update on failure
-                ownedGifts = ownedGifts.filter(g => !tempGifts.some(tg => tg.instance_id === g.instance_id));
-                renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('error');
             }
         }
@@ -3102,9 +2929,14 @@
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
 
-            closeModal(buyMultipleModal);
+            confirmBuyMultipleButton.disabled = true;
+            confirmBuyMultipleButton.textContent = 'Buying...';
+
             await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
-            
+
+            confirmBuyMultipleButton.disabled = false;
+            confirmBuyMultipleButton.textContent = 'Buy';
+            closeModal(buyMultipleModal);
             currentGiftToBuyMultiple = null;
         }
 
@@ -3273,7 +3105,7 @@
         }
         
         function openTelegramProfile(event, username) {
-            event.stopPropagation();
+            event.stopPropagation(); // Prevent parent click
             event.preventDefault();
             tg.openTelegramLink(`https://t.me/${username}`);
         }
@@ -3387,7 +3219,7 @@
             }
 
             const ownerDisplayHTML = ownerUsername
-                ? `<a href="#" onclick="event.preventDefault(); displayUserProfile('@${ownerUsername}')"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</a>`
+                ? `<a href="#" onclick="event.preventDefault(); displayUserProfile('${ownerUsername}')"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</a>`
                 : `<span><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span>`;
 
             modalCollectibleInfoTable.innerHTML = `
@@ -3411,19 +3243,7 @@
             if (modelValueEl) modelValueEl.addEventListener('click', (e) => handleTripleTap(e, 'model', gift.collectible_data.model?.name));
             if (backdropValueEl) backdropValueEl.addEventListener('click', (e) => handleTripleTap(e, 'backdrop', gift.collectible_data.backdrop?.name));
             if (patternValueEl) patternValueEl.addEventListener('click', (e) => handleTripleTap(e, 'pattern', gift.collectible_data.pattern?.name));
-            
-            modalCollectibleVisual.removeEventListener('contextmenu', preventDefault);
-            modalCollectibleVisual.addEventListener('contextmenu', preventDefault);
-            modalCollectibleVisual.addEventListener('touchstart', (e) => {
-                clearTimeout(longPressImageTimer);
-                longPressImageTimer = setTimeout(() => showImagePreview(gift), 500);
-            }, { passive: true });
-            modalCollectibleVisual.addEventListener('touchend', () => clearTimeout(longPressImageTimer));
-            modalCollectibleVisual.addEventListener('touchmove', () => clearTimeout(longPressImageTimer));
-
         }
-        
-        function preventDefault(e) { e.preventDefault(); }
 
         let currentLongPressGift = null; let longPressTimer;
         function setupLongPress(element, gift) {
@@ -3607,8 +3427,7 @@
 
             pinnedGifts.forEach(pinnedGift => {
                 const card = createGiftCardDOM(pinnedGift);
-                card.onclick = async (e) => { // Make it async
-                    e.stopPropagation(); // Prevent any other clicks from firing
+                card.addEventListener('click', async () => {
                     try {
                         await callBackend(`/api/gifts/${pinnedGift.instance_id}`, 'PUT', { action: 'pin', value: false });
                         if (currentLongPressGift && currentLongPressGift.is_collectible) {
@@ -3622,7 +3441,7 @@
                         closeModal(tooManyPinsModal);
                         currentLongPressGift = null;
                     }
-                };
+                });
                 unpinSelectionGrid.appendChild(card);
                 observeLottieElement(card);
             });
@@ -3758,7 +3577,7 @@
                     currentAccountTgId = null;
 
                     activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-                    animationsEnabled = true; showHiddenGifts = false; fullscreenEnabled = false;
+                    animationsEnabled = true; showHiddenGifts = false;
 
                     localStorage.clear();
 
@@ -3768,17 +3587,6 @@
                     closeModal(settingsModal);
                 }
             });
-        }
-        
-        function handleFullscreenToggle() {
-            fullscreenEnabled = fullscreenToggle.checked;
-            tg.HapticFeedback.impactOccurred('light');
-            if (fullscreenEnabled && tg.requestFullscreen) {
-                tg.requestFullscreen();
-            } else if (!fullscreenEnabled && tg.exitFullscreen) {
-                tg.exitFullscreen();
-            }
-            saveClientSideState();
         }
 
         function handleAnimationToggle() {
@@ -4076,7 +3884,7 @@
                 if (!partsInfo) return false;
                 return (partsInfo.models.length === 0 || !!gift.model) &&
                        (partsInfo.backdrops.length === 0 || !!gift.backdrop) &&
-                       (partsInfo.patterns.length === 0 || !!gift.pattern || customPatternBase64);
+                       (partsInfo.patterns.length === 0 || !!gift.pattern);
             });
             
             customBuyConfirmButton.disabled = !allGiftsValid;
@@ -4101,7 +3909,7 @@
                 await initializeTelegramUserAccount();
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert("Gift cloned successfully!");
-                closeModal(customBuyModal); 
+                closeModal(customBuyModal);
                 showPage('profile-page');
             } catch (error) {
                 // Error is shown by callBackend
@@ -4144,9 +3952,11 @@
                             instance_id: newInstanceId,
                             custom_model: giftConfig.model,
                             custom_backdrop: giftConfig.backdrop,
-                            custom_pattern: giftConfig.pattern,
-                            custom_pattern_image: customPatternBase64
                         };
+                        
+                        if (giftConfig.quantity === 1) {
+                            upgradePayload.custom_pattern = giftConfig.pattern;
+                        }
 
                         await callBackend('/api/gifts/upgrade', 'POST', upgradePayload);
                     }
@@ -4159,7 +3969,6 @@
                 showPage('profile-page');
 
             } catch (error) {
-                 // Error handled by callBackend
             } finally {
                 customBuyConfirmButton.disabled = false;
                 updateCreateButtonState();
@@ -4516,13 +4325,15 @@
 
         async function handleOpenNumbersModal() {
             numbersList.innerHTML = '';
-            // In a real scenario, we'd fetch available numbers from the backend
-            // Here we simulate it by filtering out owned numbers.
-            const allOwnedNumbers = new Set(accounts.map(a => a.phone_number));
-            const availableNumbers = [...new Set(coolNumbers)].filter(n => !allOwnedNumbers.has(n));
+            const allPossibleNumbers = [...coolNumbers];
+            for (let i = 0; i < 20; i++) { allPossibleNumbers.push(generateRandom888Number()); }
+
+            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            const userPhoneNumber = currentAccount?.phone_number;
+            const availableNumbers = [...new Set(allPossibleNumbers)].filter(n => n !== userPhoneNumber);
 
             if (availableNumbers.length === 0) {
-                numbersList.innerHTML = '<p class="empty-grid-message">No featured numbers available.</p>';
+                numbersList.innerHTML = '<p class="empty-grid-message">No numbers available.</p>';
             } else {
                 availableNumbers.forEach(num => {
                     const li = document.createElement('li');
@@ -4550,7 +4361,7 @@
                         tg.showAlert(`Number ${number} purchased successfully!`);
                         closeModal(numbersModal);
                     } catch (error) {
-                        // Error shown by callBackend
+                        tg.HapticFeedback.notificationOccurred('error');
                     }
                 }
             });
@@ -4565,27 +4376,23 @@
 
         async function populateUsernamesList(searchTerm = '') {
             usernamesList.innerHTML = '';
-            // In a real scenario, this would be a backend search. We simulate it.
-            const allOwnedUsernames = new Set();
-            accounts.forEach(acc => {
-                if(acc.username) allOwnedUsernames.add(acc.username.toLowerCase());
-                if(acc.collectible_usernames) acc.collectible_usernames.forEach(u => allOwnedUsernames.add(u.toLowerCase()));
-            });
-
             let listToShow = [];
+
             if (searchTerm) {
-                const cleanSearch = searchTerm.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                if (cleanSearch && !allOwnedUsernames.has(cleanSearch)) {
-                    listToShow = [cleanSearch];
-                }
+                listToShow = [searchTerm.toLowerCase().replace(/[^a-z0-9_]/g, '')].filter(Boolean);
             } else {
-                listToShow = coolUsernames.filter(u => !allOwnedUsernames.has(u));
+                const shuffled = [...coolUsernames].sort(() => 0.5 - Math.random());
+                listToShow = shuffled.slice(0, 25);
             }
 
-            if (listToShow.length === 0) {
-                usernamesList.innerHTML = `<p class="empty-grid-message">${searchTerm ? 'This username is not available.' : 'No featured usernames available.'}</p>`;
+            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            const ownedUsernames = currentAccount?.collectible_usernames || [];
+            const filteredList = listToShow.filter(uname => !ownedUsernames.includes(uname));
+
+            if (filteredList.length === 0) {
+                usernamesList.innerHTML = '<p class="empty-grid-message">No usernames available.</p>';
             } else {
-                listToShow.forEach(uname => {
+                filteredList.forEach(uname => {
                     const li = document.createElement('li');
                     li.className = 'collectible-list-item';
                     li.innerHTML = `<span class="at-symbol">@</span>${uname}`;
@@ -4615,7 +4422,7 @@
                         tg.showAlert(`Username @${username} purchased successfully!`);
                         closeModal(usernamesModal);
                     } catch (error) {
-                         // Error shown by callBackend
+                        tg.HapticFeedback.notificationOccurred('error');
                     }
                 }
             });
@@ -4630,7 +4437,7 @@
                         tg.HapticFeedback.notificationOccurred('success');
                         tg.showAlert(`Username @${username} has been deleted.`);
                     } catch (error) {
-                        // Error shown by callBackend
+                        tg.HapticFeedback.notificationOccurred('error');
                     }
                 }
             });
@@ -4679,7 +4486,7 @@
                 if (viewingOwnProfile) newPostFab.classList.remove('hidden');
             } else if (tabName === 'buy-gifts') {
                 buyGiftsTabButton.classList.add('active');
-                giftsContent.classList.add('active');
+                giftsContent.classList.add('active'); // Keep gifts visible as a base
                 showPage('buy-gifts-page');
             }
         }
@@ -4909,7 +4716,6 @@
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert("Giveaway saved! Please return to your chat with the bot to complete the setup.");
             } catch (error) {
-                 // Error handled by callBackend
             } finally {
                 confirmGiveawaySetupButton.disabled = false;
                 confirmGiveawaySetupButton.textContent = "Start Setup in Bot";
@@ -4949,21 +4755,15 @@
             profilePosts.forEach(post => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
-                
-                const menuButtonHTML = viewingOwnProfile ? `<button class="post-menu-button" data-post-id="${post.id}">${MENU_DOTS_SVG}</button>` : '';
-
                 card.innerHTML = `
-                    ${menuButtonHTML}
                     <div class="post-content">${parsePostContent(post.content)}</div>
-                    <div class="post-reactions-container" data-post-id="${post.id}"></div>
                     <div class="post-footer">
                         <span>${new Date(post.created_at).toLocaleString()}</span>
                         <span>👁️ ${post.views}</span>
                     </div>
                 `;
                 postsContent.appendChild(card);
-                renderPostReactions(post.id, post.reactions);
-                
+                // Increment view count, but not for own posts
                 if (!viewingOwnProfile) {
                     callBackend(`/api/posts/${post.id}/view`, 'POST');
                 }
@@ -4973,19 +4773,22 @@
         function parsePostContent(content) {
             let html = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             
+            // Bold
             html = html.replace(/\*(.*?)\*/g, '<b>$1</b>');
+            // Demonic Red
             html = html.replace(/&(.*?)&/g, '<span class="text-demonic">$1</span>');
+            // Pink
             html = html.replace(/♡(.*?)♡/g, '<span class="text-pink">$1</span>');
+            // Green
             html = html.replace(/\$(.*?)\$/g, '<span class="text-green">$1</span>');
+            // Blue
             html = html.replace(/%(.*?)%/g, '<span class="text-blue">$1</span>');
+            // Username
             html = html.replace(/@([a-zA-Z0-9_]{5,32})/g, '<a href="#" class="user-link" data-username="$1">@$1</a>');
-            html = html.replace(/([A-Za-z\s']{3,25})-([0-9]{1,8})/g, (match, name, number) => {
-                const cleanName = name.trim();
-                const giftTypeId = Object.keys(allAvailableGifts).find(key => allAvailableGifts[key] === cleanName);
-                if(giftTypeId){
-                    return `<a href="#" class="gift-link" data-gift-type-id="${giftTypeId}" data-gift-number="${number}">${match}</a>`;
-                }
-                return match; // Return original if not found
+            // Gift Name and Number
+            html = html.replace(/([A-Za-z\s']{3,20})-([0-9]{1,6})/g, (match, name, number) => {
+                const giftId = `${name.replace(/\s/g, '')}-${number}`;
+                return `<a href="#" class="gift-link" data-gift-id="${giftId}">${match}</a>`;
             });
 
             return html;
@@ -4995,25 +4798,16 @@
             const userLink = e.target.closest('.user-link');
             if (userLink) {
                 e.preventDefault();
-                displayUserProfile(`@${userLink.dataset.username}`);
+                displayUserProfile(userLink.dataset.username);
                 return;
             }
             const giftLink = e.target.closest('.gift-link');
             if (giftLink) {
                 e.preventDefault();
-                const { giftTypeId, giftNumber } = giftLink.dataset;
-                if (giftTypeId && giftNumber) {
-                     displayDeepLinkedGift(giftTypeId, parseInt(giftNumber));
+                const [giftName, giftNumber] = giftLink.dataset.giftId.split('-');
+                if (giftName && giftNumber) {
+                     displayDeepLinkedGift(giftName, parseInt(giftNumber));
                 }
-            }
-            const postCard = e.target.closest('.post-card');
-            if (postCard && !e.target.closest('a, button, .reaction-chip')) {
-                showReactionPopup(postCard, e);
-            }
-            const postMenuButton = e.target.closest('.post-menu-button');
-            if (postMenuButton) {
-                const postId = postMenuButton.dataset.postId;
-                handleDeletePost(postId);
             }
         }
         
@@ -5043,62 +4837,48 @@
             }
         }
 
-        async function handleDeletePost(postId) {
-            tg.showConfirm("Are you sure you want to delete this post?", async (confirmed) => {
-                if (confirmed) {
-                    try {
-                        await callBackend(`/api/posts/${postId}`, 'DELETE', { owner_id: currentAccountTgId });
-                        profilePosts = profilePosts.filter(p => p.id !== parseInt(postId));
-                        renderPosts();
-                        tg.HapticFeedback.notificationOccurred('success');
-                    } catch (error) {
-                        // Error handled by callBackend
-                    }
-                }
-            });
-        }
 
-        
         function setupEventListeners() {
-            // Main navigation
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
             postsTabButton.addEventListener('click', () => switchTab('posts'));
             buyGiftsTabButton.addEventListener('click', () => switchTab('buy-gifts'));
             postsContent.addEventListener('click', handleWallClick);
             newPostFab.addEventListener('click', () => openModal(newPostModal));
 
-            // Profile actions
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
+
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
             profileAvatar.addEventListener('contextmenu', (e) => { e.preventDefault(); if (viewingOwnProfile) avatarUploadInput.click(); });
-            avatarUploadInput.addEventListener('change', handleAvatarUpload);
-            wornGiftIconContainer.addEventListener('click', () => {
-                const wornGift = ownedGifts.find(g => g.is_worn);
-                if (wornGift) openGiftDetailByInstanceId(wornGift.instance_id);
-            });
 
-            // Modal close buttons
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) closeModal(modal);
                 });
             });
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
-            closeCollectibleDetailModalButton.addEventListener('click', () => closeModal(collectibleDetailModal));
-            cancelUnpinModal.addEventListener('click', () => closeModal(tooManyPinsModal));
-            cancelBuyMultipleButton.addEventListener('click', () => closeModal(buyMultipleModal));
-            closeChancesModal.addEventListener('click', () => closeModal(chancesModal));
-            closeGeneratedImageModal.addEventListener('click', () => closeModal(generatedImageModal));
-            cancelSellButton.addEventListener('click', () => closeModal(sellGiftModal));
-            cancelTransferButton.addEventListener('click', () => closeModal(transferGiftModal));
+            upgradeGiftDetailModalButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
+
+            document.getElementById('close-collectible-detail-modal').addEventListener('click', () => closeModal(collectibleDetailModal));
+            document.getElementById('cancel-unpin-modal').addEventListener('click', () => closeModal(tooManyPinsModal));
+            document.getElementById('cancel-buy-multiple').addEventListener('click', () => closeModal(buyMultipleModal));
+            document.getElementById('close-chances-modal').addEventListener('click', () => closeModal(chancesModal));
+            document.getElementById('close-generated-image-modal').addEventListener('click', () => closeModal(generatedImageModal));
+            document.getElementById('cancel-sell-button').addEventListener('click', () => closeModal(sellGiftModal));
+            document.getElementById('cancel-transfer-button').addEventListener('click', () => closeModal(transferGiftModal));
             document.getElementById('close-numbers-modal').addEventListener('click', () => closeModal(numbersModal));
             document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
-            document.getElementById('cancel-new-post-button').addEventListener('click', () => closeModal(newPostModal));
             
-            // Modal action buttons
-            upgradeGiftDetailModalButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
+            submitNewPostButton.addEventListener('click', handleNewPostSubmit);
+            document.getElementById('cancel-new-post-button').addEventListener('click', () => closeModal(newPostModal));
+            document.getElementById('formatting-help-toggle').addEventListener('click', (e) => {
+                const content = document.getElementById('formatting-help-content');
+                content.classList.toggle('hidden');
+                e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
+            });
+
+
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
                 const giftInstanceId = collectibleDetailModal.dataset.instanceId;
@@ -5119,13 +4899,7 @@
                 currentLongPressGift = gift;
                 handleHideAction();
             });
-            confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
-            sellPriceInput.addEventListener('input', updateSellPriceDetails);
-            confirmSellButton.addEventListener('click', handleConfirmSell);
-            transferUsernameInput.addEventListener('input', () => { confirmTransferButton.disabled = transferUsernameInput.value.trim() === ''; });
-            confirmTransferButton.addEventListener('click', handleConfirmTransfer);
 
-            // Long-press context menu
             menuPinAction.addEventListener('click', handlePinAction);
             menuHideAction.addEventListener('click', handleHideAction);
             menuCopyLinkAction.addEventListener('click', () => { if(currentLongPressGift) copyGiftLink(currentLongPressGift); });
@@ -5133,62 +4907,53 @@
             menuShareImageAction.addEventListener('click', handleShareImageAction);
             menuReorderAction.addEventListener('click', enterReorderMode);
 
-            // Filters & Selection
+            confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
+
             openFiltersButton.addEventListener('click', openFilterPopup);
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
             exitFilterModeButton.addEventListener('click', handleClearFilters);
             exitReorderModeButton.addEventListener('click', exitReorderMode);
+
             exitSelectionModeButton.addEventListener('click', exitSelectionMode);
             hideSelectedGiftsButton.addEventListener('click', handleHideMultiple);
             transferSelectedGiftsButton.addEventListener('click', handleTransferMultiple);
 
-            // Settings Modal
-            fullscreenToggle.addEventListener('change', handleFullscreenToggle);
+            settingsModal.querySelector('.modal-button.secondary')?.addEventListener('click', () => closeModal(settingsModal));
             animationToggle.addEventListener('change', handleAnimationToggle);
             customGiftsToggle.addEventListener('change', handleCustomGiftsToggle);
             showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
             hideMultipleButton.addEventListener('click', () => enterSelectionMode('hide'));
             transferMultipleButton.addEventListener('click', () => enterSelectionMode('transfer'));
-            termsOfServiceButton.addEventListener('click', () => tg.openLink('https://telegra.ph/Terms-of-Use-for-Gift-Upgrade-Demo-08-10'));
             clearCurrentAccountDataButton.addEventListener('click', handleClearCurrentAccountData);
             clearAllAccountsDataButton.addEventListener('click', handleClearAllAccountsData);
-            
-            // Custom Buy Modal
+
             customizeGiftButton.addEventListener('click', openCustomBuyModal);
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             cloneGiftButton.addEventListener('click', handleCloneGift);
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
-            customPatternUploadInput.addEventListener('change', handleCustomPatternUpload);
 
-            // Collectibles (Numbers/Usernames)
+            sellPriceInput.addEventListener('input', updateSellPriceDetails);
+            confirmSellButton.addEventListener('click', handleConfirmSell);
+
+            transferUsernameInput.addEventListener('input', () => { confirmTransferButton.disabled = transferUsernameInput.value.trim() === ''; });
+            confirmTransferButton.addEventListener('click', handleConfirmTransfer);
+
+            avatarUploadInput.addEventListener('change', handleAvatarUpload);
+
+            wornGiftIconContainer.addEventListener('click', () => {
+                const wornGift = ownedGifts.find(g => g.is_worn);
+                if (wornGift) openGiftDetailByInstanceId(wornGift.instance_id);
+            });
+
             openNumbersButton.addEventListener('click', handleOpenNumbersModal);
             openUsernamesButton.addEventListener('click', handleOpenUsernamesModal);
             usernameSearchInput.addEventListener('input', (e) => populateUsernamesList(e.target.value));
 
-            // Giveaway
             createGiveawayButton.addEventListener('click', openGiveawaySetupModal);
             confirmGiveawaySetupButton.addEventListener('click', handleConfirmGiveawaySetup);
 
-            // New Post
-            submitNewPostButton.addEventListener('click', handleNewPostSubmit);
-            document.getElementById('formatting-help-toggle').addEventListener('click', (e) => {
-                const content = document.getElementById('formatting-help-content');
-                content.classList.toggle('hidden');
-                e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
-            });
-
-            // Sidebar
-            sidebarSearchInput.addEventListener('input', (e) => {
-                clearTimeout(searchDebounceTimer);
-                searchDebounceTimer = setTimeout(() => handleSidebarSearch(e.target.value), 300);
-            });
-            sidebarOverlay.addEventListener('click', closeSidebar);
-            addAccountButton.addEventListener('click', () => handleAddAccount());
-            adminLoginButton.addEventListener('click', handleAdminLogin);
-
-            // Swipes & gestures
             let touchStartX = 0; const swipeEdgeThreshold = 50;
             appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
             appContainer.addEventListener('touchend', e => {
@@ -5201,10 +4966,12 @@
                     openSidebar(); 
                 }
                 else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold) {
-                    if (buyGiftsTabButton.disabled) return;
                     switchTab('buy-gifts');
                 }
             }, { passive: true });
+
+            sidebarOverlay.addEventListener('click', closeSidebar);
+            addAccountButton.addEventListener('click', handleAddAccount);
 
             collectibleDetailModal.addEventListener('touchstart', (e) => {
                 modalSwipeState.startX = e.touches[0].clientX;
@@ -5221,10 +4988,7 @@
                 }
                 modalSwipeState.isSwiping = false;
             }, { passive: true });
-            
-            imagePreviewOverlay.addEventListener('click', () => imagePreviewOverlay.classList.remove('active'));
         }
-        
 
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
             initApp();
@@ -5248,16 +5012,13 @@
                     notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
                 };
                 tg.openTelegramLink = (url) => { console.log(`Opening TG Link: ${url}`); window.open(url, '_blank'); };
-                tg.openLink = (url) => { console.log(`Opening Link: ${url}`); window.open(url, '_blank'); };
                 tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
                 tg.SettingsButton = { isVisible: false, onClick: (cb) => {tg._settingsCb = cb}, show: () => console.log("Settings Button Show"), hide: () => console.log("Settings Button Hide") };
                 tg.BackButton = { isVisible: false, onClick: (cb) => {tg._backCb = cb}, offClick: (cb) => {}, show: () => console.log("Back button shown"), hide: () => console.log("Back button hidden") };
-                tg.requestFullscreen = () => console.log("Requesting fullscreen");
-                tg.exitFullscreen = () => console.log("Exiting fullscreen");
 
                 initApp();
             });
         }
     </script>
 </body>
-</html>
+                            </html>
