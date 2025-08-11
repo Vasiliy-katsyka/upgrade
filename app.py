@@ -1328,6 +1328,83 @@ def add_gift():
             conn.rollback(); app.logger.error(f"Error adding gift for {owner_id}: {e}", exc_info=True); return jsonify({"error": "Internal server error"}), 500
         finally: conn.close()
 
+@app.route('/api/gifts/create_collectible', methods=['POST'])
+def create_collectible_gift():
+    data = request.get_json()
+    owner_id = data.get('owner_id')
+    gift_name = data.get('gift_name')
+    gift_type_id = data.get('gift_type_id')
+    custom_model_data = data.get('custom_model')
+    custom_backdrop_data = data.get('custom_backdrop')
+    custom_pattern_data = data.get('custom_pattern')
+    custom_pattern_base64 = data.get('custom_pattern_base64')
+
+    if not all([owner_id, gift_name, gift_type_id]):
+        return jsonify({"error": "owner_id, gift_name, and gift_type_id are required"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed"}), 500
+
+    with conn.cursor(cursor_factory=DictCursor) as cur:
+        try:
+            if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
+                return jsonify({"error": "You must enable Custom Gifts in settings to create this item."}), 403
+
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+
+            parts_data = fetch_collectible_parts(gift_name)
+            selected_model = custom_model_data or select_weighted_random(parts_data.get('models', []))
+            selected_backdrop = custom_backdrop_data or select_weighted_random(parts_data.get('backdrops', []))
+
+            selected_pattern = None
+            pattern_image_url = None
+            if custom_pattern_base64:
+                selected_pattern = {"name": "Custom Upload", "rarityPermille": 1}
+                pattern_image_url = custom_pattern_base64
+            else:
+                selected_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
+
+            if not all([selected_model, selected_backdrop, selected_pattern]):
+                return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
+
+            cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
+            next_number = cur.fetchone()[0]
+            new_instance_id = str(uuid.uuid4())
+
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+            model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
+            lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
+
+            if not pattern_image_url:
+                pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+
+            collectible_data = {
+                "model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern,
+                "modelImage": model_image_url, "lottieModelPath": lottie_model_path, "patternImage": pattern_image_url,
+                "backdropColors": selected_backdrop.get('hex'), "supply": random.randint(2000, 10000), "author": get_gift_author(gift_name)
+            }
+
+            cur.execute("""
+                INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number, original_image_url)
+                VALUES (%s, %s, %s, %s, TRUE, %s, %s, %s);
+            """, (new_instance_id, owner_id, gift_type_id, gift_name, json.dumps(collectible_data), next_number, model_image_url))
+            conn.commit()
+
+            cur.execute("SELECT * FROM gifts WHERE instance_id = %s;", (new_instance_id,))
+            created_gift = dict(cur.fetchone())
+            if isinstance(created_gift.get('collectible_data'), str):
+                created_gift['collectible_data'] = json.loads(created_gift['collectible_data'])
+
+            return jsonify(created_gift), 201
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(f"Error in create_collectible_gift for {owner_id}: {e}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+        finally:
+            if conn: conn.close()
+
 @app.route('/api/gifts/upgrade', methods=['POST'])
 def upgrade_gift():
     data = request.get_json()
@@ -1486,6 +1563,101 @@ def clone_gift():
         if conn: conn.close()
         app.logger.error(f"Error cloning gift from {raw_input}: {e}", exc_info=True)
         return jsonify({"error": "An internal error occurred during cloning."}), 500
+
+@app.route('/api/gifts/create_clone', methods=['POST'])
+def create_clone_gift():
+    data = request.get_json()
+    raw_input = data.get('url')
+    owner_id = data.get('owner_id')
+
+    if not raw_input or not owner_id:
+        return jsonify({"error": "url and owner_id are required"}), 400
+
+    normalized_url = normalize_and_build_clone_url(raw_input)
+    if not normalized_url:
+        return jsonify({"error": "Invalid gift format. Please use a valid t.me/nft/ link or 'Name #Number' format."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        response = requests.get(normalized_url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        gift_name_element = soup.find('div', class_='tgme_gift_preview').find('text')
+        gift_name = gift_name_element.text.strip() if gift_name_element else None
+
+        scraped_parts = {}
+        table = soup.find('table', class_='tgme_gift_table')
+        if table:
+            for row in table.find_all('tr'):
+                header = row.find('th').text.strip().lower() if row.find('th') else None
+                value = ' '.join(row.find('td').text.split()) if row.find('td') else None
+                if header and value:
+                    scraped_parts[header] = ' '.join(value.split(' ')[:-1]) if '%' in value else value
+
+        model_name = scraped_parts.get('model')
+        backdrop_name = scraped_parts.get('backdrop')
+        pattern_name = scraped_parts.get('symbol')
+
+        if not all([gift_name, model_name, backdrop_name, pattern_name]):
+            app.logger.error(f"Scraping failed for URL {normalized_url}. Found: name={gift_name}, model={model_name}, backdrop={backdrop_name}, pattern={pattern_name}")
+            return jsonify({"error": "Could not scrape all required gift parts from the provided link."}), 400
+
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
+                return jsonify({"error": "You must enable Custom Gifts in settings to clone this item."}), 403
+
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+
+            all_parts_data = fetch_collectible_parts(gift_name)
+            custom_model = next((m for m in all_parts_data.get('models', []) if m['name'] == model_name), None)
+            custom_backdrop = next((b for b in all_parts_data.get('backdrops', []) if b['name'] == backdrop_name), None)
+            custom_pattern = next((p for p in all_parts_data.get('patterns', []) if p['name'] == pattern_name), None)
+
+            if not all([custom_model, custom_backdrop, custom_pattern]):
+                return jsonify({"error": "Could not match scraped part names to available data."}), 500
+
+            gift_type_id = CUSTOM_GIFTS_DATA.get(gift_name, {}).get('id', 'cloned_gift')
+            cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
+            next_number = cur.fetchone()[0]
+            new_instance_id = str(uuid.uuid4())
+
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+
+            model_image_url = custom_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(custom_model['name'])}.png"
+            lottie_model_path = custom_model.get('lottie') if custom_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(custom_model['name'])}.json"
+            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(custom_pattern['name'])}.png"
+
+            collectible_data = {
+                "model": custom_model, "backdrop": custom_backdrop, "pattern": custom_pattern,
+                "modelImage": model_image_url, "lottieModelPath": lottie_model_path, "patternImage": pattern_image_url,
+                "backdropColors": custom_backdrop.get('hex'), "supply": random.randint(2000, 10000), "author": get_gift_author(gift_name)
+            }
+
+            cur.execute("""
+                INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, is_collectible, collectible_data, collectible_number, original_image_url)
+                VALUES (%s, %s, %s, %s, TRUE, %s, %s, %s);
+            """, (new_instance_id, owner_id, gift_type_id, gift_name, json.dumps(collectible_data), next_number, model_image_url))
+
+            conn.commit()
+
+            cur.execute("SELECT * FROM gifts WHERE instance_id = %s;", (new_instance_id,))
+            cloned_gift = dict(cur.fetchone())
+            if isinstance(cloned_gift.get('collectible_data'), str):
+                cloned_gift['collectible_data'] = json.loads(cloned_gift['collectible_data'])
+
+            return jsonify(cloned_gift), 201
+
+    except Exception as e:
+        if conn and not conn.closed: conn.rollback()
+        app.logger.error(f"Error cloning gift from {raw_input}: {e}", exc_info=True)
+        return jsonify({"error": "An internal error occurred during cloning."}), 500
+    finally:
+        if conn: conn.close()
 
 @app.route('/api/gift/<string:gift_type_id>/<int:collectible_number>', methods=['GET'])
 def get_gift_by_details(gift_type_id, collectible_number):
