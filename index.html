@@ -49,6 +49,13 @@
             padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
+        
+        /* Disable long-press on images to show custom preview */
+        img, .lottie-animation-container {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -68,18 +75,40 @@
             flex-direction: column;
             position: relative;
         }
-        
-        #loading-screen {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
             background-color: var(--tg-theme-bg-color);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 9999;
             transition: opacity 0.3s ease-out;
+            opacity: 1;
+            visibility: visible;
         }
-        #loading-screen.hidden { opacity: 0; pointer-events: none; }
-        #loading-screen h1 { font-size: 1.5em; font-weight: 500; margin-bottom: 5px; }
-        #loading-screen p { font-size: 1em; color: var(--tg-theme-hint-color); margin-bottom: 20px; }
-
+        #loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #loading-overlay .spinner {
+            margin-top: 20px;
+            border: 4px solid var(--tg-theme-hint-color);
+            border-top: 4px solid var(--tg-theme-link-color);
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        #loading-overlay h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        #loading-overlay p {
+            font-size: 1em;
+            color: var(--tg-theme-hint-color);
+        }
+        /* End Loading Overlay */
 
         /* Account Sidebar Styles */
         .account-sidebar {
@@ -104,10 +133,8 @@
             padding: 15px;
             background-color: var(--tg-theme-secondary-bg-color);
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
         }
-        .sidebar-header .user-info { display: flex; align-items: center; width: 100%; margin-bottom: 15px; }
         .sidebar-header img {
             width: 50px; height: 50px;
             border-radius: 50%;
@@ -117,48 +144,48 @@
             font-size: 1.1em;
             font-weight: 500;
         }
-        #sidebar-search-container { width: 100%; position: relative; }
-        #sidebar-search-input { 
-            width: 100%; padding: 10px 15px; border-radius: 8px;
-            border: none; background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color); font-size: 1em;
+        .sidebar-search-container {
+            padding: 10px 15px;
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-bottom: 1px solid var(--tg-theme-bg-color);
         }
-        #sidebar-search-results {
-             position: absolute; top: 105%; left:0; right:0;
-             background-color: var(--tg-theme-secondary-bg-color);
-             border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-             max-height: 200px; overflow-y: auto; z-index: 10;
+        #sidebar-search-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-bg-color);
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-size: 0.95em;
         }
-        .search-result-item {
-            padding: 10px 15px; cursor: pointer; display: flex; align-items: center;
-        }
-        .search-result-item:hover { background-color: rgba(255,255,255,0.05); }
-        .search-result-item img { width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; }
-
-        .accounts-list {
+        .accounts-list, .search-results-list {
             list-style: none;
             flex-grow: 1;
             overflow-y: auto;
         }
-        .accounts-list li {
+        .accounts-list li, .search-results-list li {
             display: flex;
             align-items: center;
             padding: 12px 15px;
             cursor: pointer;
             border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
         }
-        .accounts-list li:hover {
+        .accounts-list li:hover, .search-results-list li:hover {
             background-color: rgba(255,255,255,0.05);
         }
         .accounts-list li.active {
             background-color: var(--tg-theme-link-color);
             color: var(--tg-theme-button-text-color);
         }
-        .accounts-list li img {
+        .accounts-list li img, .search-results-list li img {
             width: 40px; height: 40px;
             border-radius: 50%;
             margin-right: 15px;
+            object-fit: cover;
         }
+        .search-results-list li .info { display: flex; flex-direction: column; }
+        .search-results-list li .info .name { font-weight: 500; }
+        .search-results-list li .info .details { font-size: 0.85em; color: var(--tg-theme-hint-color); }
         .sidebar-footer {
             padding: 10px 15px;
             border-top: 1px solid var(--tg-theme-secondary-bg-color);
@@ -228,6 +255,28 @@
             font-size: 1.15em;
             color: var(--tg-theme-text-color);
             font-weight: 500;
+        }
+        .page-header .header-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .page-header .header-action-button {
+            background: none; border: none;
+            color: var(--tg-theme-link-color);
+            font-size: 0.9em;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .page-header .header-action-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
         }
 
         .profile-page-content {
@@ -346,7 +395,6 @@
             display: flex; justify-content: space-around;
             background-color: var(--tg-theme-bg-color);
             padding: 5px 0 0 0;
-            align-items: center;
         }
         .profile-tabs button {
             background: none; border: none;
@@ -359,10 +407,6 @@
             align-items: center;
             justify-content: center;
         }
-        .profile-tabs button:disabled { color: var(--tg-theme-hint-color); opacity: 0.5; cursor: not-allowed; }
-        #wall-subscription-button { flex-grow: 0; padding: 10px; }
-        #wall-subscription-button svg { width: 24px; height: 24px; fill: currentColor; }
-
         #gifts-tab-button .gift-preview-container {
             display: flex;
             align-items: center;
@@ -404,17 +448,29 @@
             margin-bottom: 12px;
             position: relative;
         }
-        .post-menu-button {
-            position: absolute; top: 10px; right: 10px;
-            background: none; border: none; color: var(--tg-theme-hint-color);
-            cursor: pointer; padding: 5px;
+        .post-card .post-menu {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--tg-theme-hint-color);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .post-card .post-menu svg {
+            width: 20px; height: 20px;
+            fill: currentColor;
         }
         .post-content {
             font-size: 1em;
             line-height: 1.5;
             white-space: pre-wrap;
             word-wrap: break-word;
-            cursor: pointer;
         }
         .post-content .text-demonic {
             color: var(--app-wall-demonic-red);
@@ -427,6 +483,7 @@
         .post-content a.gift-link, .post-content a.user-link {
             color: var(--tg-theme-link-color);
             text-decoration: none;
+            cursor: pointer;
         }
         .post-content a.gift-link:hover, .post-content a.user-link:hover {
             text-decoration: underline;
@@ -436,46 +493,64 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 12px;
+            font-size: 0.8em;
             color: var(--tg-theme-hint-color);
         }
-        .post-meta { font-size: 0.8em; }
-        .post-reactions-container {
-            display: flex; gap: 8px; flex-wrap: wrap;
+        .post-reactions {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.05);
         }
-        .reaction-chip {
-            background-color: var(--app-action-button-bg);
-            padding: 4px 8px; border-radius: 12px;
-            font-size: 0.9em; cursor: pointer;
-            border: 1px solid transparent;
+        .reaction-bubble {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
-        .reaction-chip.user-reacted {
-            border-color: var(--tg-theme-link-color);
+        .reaction-bubble:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        .reaction-emoji-picker {
+            position: absolute;
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            padding: 8px;
+            display: flex;
+            gap: 5px;
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+        .reaction-emoji-picker.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .reaction-emoji-picker .emoji-option {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: var(--tg-theme-bg-color);
+            border-radius: 8px;
+        }
+        .reaction-emoji-picker .emoji-option:active {
+            opacity: 0.7;
         }
 
-        #reaction-popup {
-            position: fixed;
-            background-color: var(--tg-theme-secondary-bg-color);
-            padding: 8px;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            display: flex;
-            gap: 8px;
-            z-index: 1500;
-            transform: scale(0.9);
-            opacity: 0;
-            transition: transform 0.1s ease-out, opacity 0.1s ease-out;
-        }
-        #reaction-popup.visible {
-            transform: scale(1);
-            opacity: 1;
-        }
-        .reaction-emoji {
-            font-size: 1.8em;
-            cursor: pointer;
-            transition: transform 0.1s ease-out;
-        }
-        .reaction-emoji:hover { transform: scale(1.2); }
-        
         .new-post-fab {
             position: fixed;
             bottom: 20px;
@@ -544,6 +619,10 @@
             border-radius: 20px; font-size: 0.9em; cursor: pointer;
             font-weight: 500;
         }
+        #buy-gifts-page .buy-gifts-header-actions .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
 
         #buy-gifts-page .page-header { justify-content: space-between; }
 
@@ -579,17 +658,6 @@
             opacity: 0.5;
             filter: grayscale(80%);
         }
-        .gift-card.is-pending .image-container::after {
-            content: '';
-            position: absolute; top: 50%; left: 50%;
-            width: 24px; height: 24px;
-            margin-left: -12px; margin-top: -12px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top-color: var(--tg-theme-text-color);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
         .buy-gift-item { aspect-ratio: 1/1.1; }
         .gift-card.is-updating { transform: scale(0.95); opacity: 0.7; }
         .sortable-chosen, .sortable-ghost {
@@ -840,7 +908,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            -webkit-user-select: none; user-select: none;
         }
         .modal-collectible-visual .static-image-fallback {
              max-width: 100%;
@@ -975,7 +1042,7 @@
         }
         #filter-popup .clear-data-button svg { width: 20px; height: 20px; fill: currentColor; margin-right: 8px; }
 
-        .settings-row {
+        #filter-popup .settings-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1010,7 +1077,6 @@
         #chances-modal .filter-option img, #chances-modal .filter-option .gradient-square {
             width: 100%; height: 60px; object-fit: contain;
             border-radius: 4px; margin-bottom: 5px;
-            pointer-events: none; /* For long press */
         }
         #custom-buy-modal .filter-option .label, #chances-modal .filter-option .label {
             font-size: 0.75em; color: var(--tg-theme-text-color); text-align: center;
@@ -1041,8 +1107,7 @@
             margin-top: 15px; padding-top: 15px;
             border-top: 1px solid var(--app-action-button-bg);
         }
-        #advanced-settings-container input[type="number"],
-        #advanced-settings-container input[type="text"] {
+        #advanced-settings-container input[type="number"], #advanced-settings-container input[type="text"] {
              width: 100%; padding: 12px; border-radius: 8px;
              border: 1px solid var(--tg-theme-bg-color); background-color: var(--tg-theme-bg-color);
              color: var(--tg-theme-text-color); font-size: 1em; margin-top: 8px;
@@ -1051,20 +1116,23 @@
             display: block; text-align: left; font-size: 0.9em;
             color: var(--tg-theme-hint-color); margin-bottom: 4px;
         }
-        #custom-pattern-upload-label {
-            display: block;
-            background-color: var(--app-action-button-bg);
-            color: var(--tg-theme-link-color);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            margin-top: 10px;
+        #custom-pattern-upload-container {
+            margin-top: 15px;
         }
-        #custom-pattern-preview {
-            max-width: 60px; max-height: 60px;
-            margin: 10px auto 0 auto;
-            border-radius: 6px;
+        #custom-pattern-upload-container label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        #custom-pattern-upload-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            border: 1px solid var(--tg-theme-hint-color);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
         }
 
 
@@ -1293,47 +1361,71 @@
             padding: 2px 4px;
             border-radius: 4px;
         }
-        
-        /* Subscription Modal */
-        #subscription-modal .settings-row { border-bottom: none; }
 
         /* Image Preview Modal */
-        #image-preview-modal .modal-content {
-            background: transparent;
-            box-shadow: none;
-            max-height: 95vh;
-            justify-content: center;
+        #image-preview-modal {
             align-items: center;
+            justify-content: center;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        #image-preview-modal .modal-content {
+            background-color: transparent;
+            box-shadow: none;
+            width: 90%;
+            max-width: 400px;
+            max-height: 90%;
+            height: auto;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
         }
         #image-preview-modal img {
-            max-width: 95vw;
-            max-height: 85vh;
-            border-radius: 12px;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        /* Admin Impersonate Modal */
+        #admin-impersonate-modal .input-wrapper {
+            margin-bottom: 15px;
+            padding: 0 20px;
+        }
+        #admin-impersonate-modal input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-hint-color);
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-size: 1em;
         }
     </style>
 </head>
 <body>
-    <div id="loading-screen">
-        <h1>Gift Upgrade Bot</h1>
-        <p>@giftUpgradeRU</p>
+    <div id="loading-overlay">
+        <h1>Gift Upgrade Demo</h1>
+        <p>@upgradeDemoBot</p>
         <div class="spinner"></div>
     </div>
 
     <div class="account-sidebar" id="account-sidebar">
         <div class="sidebar-header">
-            <div class="user-info">
-                <img id="sidebar-current-avatar" src="" alt="Avatar">
-                <span id="sidebar-current-name" class="name"></span>
-            </div>
-            <div id="sidebar-search-container">
-                <input type="search" id="sidebar-search-input" placeholder="Search @user or Gift-123...">
-                <div id="sidebar-search-results" class="hidden"></div>
-            </div>
+            <img id="sidebar-current-avatar" src="" alt="Avatar">
+            <span id="sidebar-current-name" class="name"></span>
+        </div>
+        <div class="sidebar-search-container">
+            <input type="text" id="sidebar-search-input" placeholder="Search @usernames or gifts...">
         </div>
         <ul class="accounts-list" id="accounts-list"></ul>
+        <ul class="search-results-list hidden" id="search-results-list"></ul>
         <div class="sidebar-footer">
             <button id="add-account-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,13.28L1,10.72L2.41,9.31L5,11.9L9.6,7.3L11,8.72L5,14.72Z" /></svg>Add Account</button>
-            <button id="admin-login-button" class="hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,1L9,4H15L12,1M19,10.5V12H17V10.5C17,9.67 16.33,9 15.5,9C14.67,9 14,9.67 14,10.5V12H10V10.5C10,9.67 9.33,9 8.5,9C7.67,9 7,9.67 7,10.5V12H5V10.5C5,8.57 6.57,7 8.5,7C10.43,7 12,8.57 12,10.5C12,8.57 13.57,7 15.5,7C17.43,7 19,8.57 19,10.5M5,21V14H19V21H5Z" /></svg>Login As User</button>
+            <button id="admin-impersonate-button" class="hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.33 4,18V20H20V18C20,15.33 14.67,14 12,14Z" /></svg>Login To Anyone</button>
             <button id="open-filters-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" /></svg>Filters</button>
             <button id="open-numbers-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>Numbers</button>
             <button id="open-usernames-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.33 4,18V20H20V18C20,15.33 14.67,14 12,14Z" /></svg>@ Usernames</button>
@@ -1345,7 +1437,13 @@
     <div class="app-container">
         <div id="profile-page" class="page active">
              <input type="file" id="avatar-upload-input" class="hidden" accept="image/*">
-             <div class="page-header"></div>
+             <div class="page-header">
+                <div class="header-actions">
+                    <button id="notification-settings-button" class="header-action-button hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>Bell</title><path d="M21,17H3V16A9,9 0 0,1 12,7A9,9 0 0,1 21,16M12,21A2,2 0 0,0 14,19H10A2,2 0 0,0 12,21Z" /></svg>
+                    </button>
+                </div>
+             </div>
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
                     <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
@@ -1390,9 +1488,9 @@
                             Gifts
                             <span class="gift-preview-container" id="gifts-tab-preview-container"></span>
                         </button>
-                        <button id="wall-subscription-button" class="hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21" /></svg></button>
                     </div>
                     <div id="posts-content" class="tab-content">
+                        <!-- Posts will be rendered here by JS -->
                         <p class="empty-grid-message">Nothing to see here yet.</p>
                     </div>
                     <div id="gifts-content" class="tab-content active">
@@ -1527,6 +1625,7 @@
                         <h4>Symbols</h4>
                         <div class="filter-options-grid" id="filter-options-patterns"></div>
                     </div>
+                    <hr style="border-color: rgba(255,255,255,0.1); border-style: solid; border-width: 1px 0 0 0; margin: 20px 0;">
                 </div>
                 <div class="modal-buttons-footer">
                     <button id="apply-filters-button" class="modal-button">Apply Filters</button>
@@ -1549,13 +1648,6 @@
                         </label>
                     </div>
                     <div class="settings-row">
-                        <label>Fullscreen</label>
-                        <label class="switch">
-                            <input type="checkbox" id="fullscreen-toggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="settings-row">
                         <label>Custom Gifts</label>
                         <label class="switch">
                             <input type="checkbox" id="custom-gifts-toggle">
@@ -1570,7 +1662,11 @@
                         </label>
                     </div>
                     <div class="settings-row">
-                        <button id="terms-of-service-button" class="full-width">Terms Of Service</button>
+                        <label>Fullscreen Mode</label>
+                        <label class="switch">
+                            <input type="checkbox" id="fullscreen-toggle">
+                            <span class="slider round"></span>
+                        </label>
                     </div>
                     <div class="settings-row">
                         <button id="hide-multiple-button" class="full-width">Hide Multiple</button>
@@ -1583,6 +1679,9 @@
                     </div>
                     <div class="settings-row danger">
                         <button id="clear-all-accounts-data-button" class="full-width">Clear All Accounts Data</button>
+                    </div>
+                    <div class="settings-row">
+                        <button id="terms-of-service-button" class="full-width">Terms of Service</button>
                     </div>
                 </div>
             </div>
@@ -1648,11 +1747,10 @@
                             <label for="custom-buy-quantity">Quantity to Create</label>
                             <input type="number" id="custom-buy-quantity" value="1" min="1">
                         </div>
-                         <div id="custom-pattern-section" style="margin-top: 15px;">
-                            <label for="custom-pattern-upload">Custom Symbol</label>
-                            <label for="custom-pattern-upload" id="custom-pattern-upload-label">Upload .PNG Image</label>
-                            <input type="file" id="custom-pattern-upload" class="hidden" accept=".png">
-                            <img id="custom-pattern-preview" class="hidden" src="" alt="Custom Pattern Preview">
+                        <div id="custom-pattern-upload-container">
+                            <label>Custom Pattern (PNG)</label>
+                            <input type="file" id="custom-pattern-upload-input" accept="image/png" class="hidden">
+                            <button id="custom-pattern-upload-button">Upload Pattern</button>
                         </div>
                         <div id="custom-buy-clone-section" style="margin-top: 15px;">
                             <h4>Or Clone from Link</h4>
@@ -1683,12 +1781,6 @@
                     <button id="send-generated-image-button" class="modal-button" disabled>Send to Me</button>
                     <button id="close-generated-image-modal" class="modal-button secondary">Close</button>
                 </div>
-            </div>
-        </div>
-        
-        <div id="image-preview-modal" class="modal-overlay">
-            <div class="modal-content">
-                <img src="" alt="Image Preview">
             </div>
         </div>
 
@@ -1837,61 +1929,71 @@
                 </div>
             </div>
         </div>
-        
-        <div id="subscription-modal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header-bar"><h3>Wall Notifications</h3></div>
-                <div class="modal-scrollable-content">
-                    <div class="settings-row">
-                        <label for="mentions-toggle">Mentions</label>
-                        <label class="switch">
-                            <input type="checkbox" id="mentions-toggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="settings-row">
-                        <label for="new-posts-toggle">This User's Posts</label>
-                        <label class="switch">
-                            <input type="checkbox" id="new-posts-toggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                </div>
-                 <div class="modal-buttons-footer">
-                    <button id="close-subscription-modal" class="modal-button">Close</button>
-                </div>
-            </div>
-        </div>
-        
+
         <div id="reaction-users-modal" class="modal-overlay">
             <div class="modal-content">
-                <div class="modal-header-bar"><h3 id="reaction-users-title">Reacted with ❤️</h3></div>
-                <div class="modal-scrollable-content" style="padding:0">
-                    <ul class="accounts-list" id="reaction-users-list" style="max-height: 50vh;">
+                <div class="modal-header-bar">
+                    <h3 id="reaction-users-modal-title">Reactions</h3>
+                </div>
+                <div class="modal-scrollable-content">
+                    <ul class="collectible-list" id="reaction-users-list">
                     </ul>
                 </div>
-                 <div class="modal-buttons-footer">
+                <div class="modal-buttons-footer">
                     <button id="close-reaction-users-modal" class="modal-button">Close</button>
                 </div>
             </div>
         </div>
 
-    </div>
+        <div id="notification-settings-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar">
+                    <h3>Notification Settings</h3>
+                </div>
+                <div class="modal-scrollable-content">
+                    <div class="settings-row">
+                        <label>Notify me when @<span id="notification-target-username"></span> makes new posts</label>
+                        <label class="switch">
+                            <input type="checkbox" id="notify-new-posts-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="settings-row">
+                        <label>Notify me when I am mentioned on @<span id="notification-target-username-mentions"></span>'s wall</label>
+                        <label class="switch">
+                            <input type="checkbox" id="notify-mentions-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="close-notification-settings-modal" class="modal-button">OK</button>
+                </div>
+            </div>
+        </div>
 
-    <div id="reaction-popup" class="hidden">
-        <span class="reaction-emoji">❤️</span>
-        <span class="reaction-emoji">💯</span>
-        <span class="reaction-emoji">🏆</span>
-        <span class="reaction-emoji">🔥</span>
-        <span class="reaction-emoji">👍</span>
-        <span class="reaction-emoji">🤗</span>
-        <span class="reaction-emoji">💔</span>
-        <span class="reaction-emoji">😭</span>
-        <span class="reaction-emoji">💋</span>
-        <span class="reaction-emoji">🍆</span>
-        <span class="reaction-emoji">🍑</span>
-        <span class="reaction-emoji">🤬</span>
-        <span class="reaction-emoji">🙄</span>
+        <div id="image-preview-modal" class="modal-overlay">
+            <div class="modal-content">
+                <img id="image-preview-modal-img" src="" alt="Image Preview">
+            </div>
+        </div>
+
+        <div id="admin-impersonate-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Login To Account</h3></div>
+                <div class="modal-scrollable-content">
+                    <p style="text-align:center; margin-bottom:15px; color: var(--tg-theme-hint-color);">Enter Telegram username to load their profile.</p>
+                    <div class="input-wrapper">
+                        <input type="text" id="impersonate-username-input" placeholder="@username">
+                    </div>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="confirm-impersonate-button" class="modal-button" disabled>Login</button>
+                    <button id="cancel-impersonate-button" class="modal-button secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div id="long-press-menu" class="hidden">
@@ -1904,21 +2006,20 @@
             <li id="menu-delete-action" class="danger">Delete</li>
         </ul>
     </div>
-    
     <script>
         const BACKEND_BASE_URL = "https://upgrade-a57g.onrender.com";
 
-        const APP_VERSION_SUFFIX = '_v16'; // Increment to reset UI preferences on major changes
+        const APP_VERSION_SUFFIX = '_v15'; // Increment to reset UI preferences on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
         const STAR_ICON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png";
-        
-        const ADMIN_TG_ID = 5146625949;
+
         const GIFT_LIMIT_PER_USER = 5000;
         const MAX_COLLECTIBLE_USERNAMES = 10;
         const MIN_SALE_PRICE = 125;
         const MAX_SALE_PRICE = 100000;
+        const ADMIN_TG_ID = 5146625949; // Specific admin user ID
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
@@ -2040,44 +2141,44 @@
             }
         };
 
-
         // --- Global State ---
         let allAvailableGifts = {};
         let giftPrices = {};
+        let allGiftNamesById = {}; // New map: gift_type_id to gift_name
 
         let accounts = [];
         let currentAccountTgId = null;
 
         let ownedGifts = [];
         let profilePosts = [];
-        let currentlySortedGifts = [];
-        let currentlyViewedProfile = {};
+        let currentlySortedGifts = []; // Filtered and sorted gifts for display
         let viewingOwnProfile = true;
         let selectionModeActive = false;
         let selectionAction = null;
         let reorderModeActive = false;
         let selectedGiftIds = new Set();
+        let isLoading = true; // New loading state
 
         let animationsEnabled = true;
         let showHiddenGifts = false;
         let customGiftsEnabled = false;
-        let fullscreenEnabled = false;
+        let fullscreenEnabled = false; // New fullscreen state
         let activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
 
         let tg = window.Telegram.WebApp;
 
         // --- DOM Elements ---
-        const loadingScreen = document.getElementById('loading-screen');
+        const loadingOverlay = document.getElementById('loading-overlay');
         const appContainer = document.querySelector('.app-container');
         const accountSidebar = document.getElementById('account-sidebar');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
         const sidebarCurrentAvatar = document.getElementById('sidebar-current-avatar');
         const sidebarCurrentName = document.getElementById('sidebar-current-name');
         const sidebarSearchInput = document.getElementById('sidebar-search-input');
-        const sidebarSearchResults = document.getElementById('sidebar-search-results');
         const accountsList = document.getElementById('accounts-list');
+        const searchResultsList = document.getElementById('search-results-list');
         const addAccountButton = document.getElementById('add-account-button');
-        const adminLoginButton = document.getElementById('admin-login-button');
+        const adminImpersonateButton = document.getElementById('admin-impersonate-button'); // New
         const openFiltersButton = document.getElementById('open-filters-button');
         const openNumbersButton = document.getElementById('open-numbers-button');
         const openUsernamesButton = document.getElementById('open-usernames-button');
@@ -2098,12 +2199,12 @@
         const profileUsername = document.getElementById('profile-username');
         const collectibleUsernamesContainer = document.getElementById('collectible-usernames-container');
         const profileTopPinnedGifts = document.getElementById('profile-top-pinned-gifts');
+        const notificationSettingsButton = document.getElementById('notification-settings-button');
 
         const giftsTabButton = document.getElementById('gifts-tab-button');
         const giftsTabPreviewContainer = document.getElementById('gifts-tab-preview-container');
         const postsTabButton = document.getElementById('posts-tab-button');
         const buyGiftsTabButton = document.getElementById('buy-gifts-tab-button');
-        const wallSubscriptionButton = document.getElementById('wall-subscription-button');
         const giftsContent = document.getElementById('gifts-content');
         const postsContent = document.getElementById('posts-content');
         const newPostFab = document.getElementById('new-post-fab');
@@ -2163,8 +2264,6 @@
         const menuCopyLinkAction = document.getElementById('menu-copy-link-action');
         const menuDeleteAction = document.getElementById('menu-delete-action');
         const menuShareImageAction = document.getElementById('menu-share-image-action');
-        
-        const imagePreviewModal = document.getElementById('image-preview-modal');
 
         const filterPopup = document.getElementById('filter-popup');
         const filterModelsSection = document.getElementById('filter-models-section');
@@ -2177,14 +2276,14 @@
 
         const settingsModal = document.getElementById('settings-modal');
         const animationToggle = document.getElementById('animation-toggle');
-        const fullscreenToggle = document.getElementById('fullscreen-toggle');
         const customGiftsToggle = document.getElementById('custom-gifts-toggle');
         const showHiddenToggle = document.getElementById('show-hidden-toggle');
-        const termsOfServiceButton = document.getElementById('terms-of-service-button');
+        const fullscreenToggle = document.getElementById('fullscreen-toggle'); // New
         const hideMultipleButton = document.getElementById('hide-multiple-button');
         const transferMultipleButton = document.getElementById('transfer-multiple-button');
         const clearCurrentAccountDataButton = document.getElementById('clear-current-account-data-button');
         const clearAllAccountsDataButton = document.getElementById('clear-all-accounts-data-button');
+        const termsOfServiceButton = document.getElementById('terms-of-service-button'); // New
 
         const customBuyModal = document.getElementById('custom-buy-modal');
         const giftQueueContainer = document.getElementById('gift-queue-container');
@@ -2200,10 +2299,10 @@
         const advancedSettingsToggle = document.getElementById('advanced-settings-toggle');
         const advancedSettingsContainer = document.getElementById('advanced-settings-container');
         const customBuyQuantityInput = document.getElementById('custom-buy-quantity');
+        const customPatternUploadInput = document.getElementById('custom-pattern-upload-input'); // New
+        const customPatternUploadButton = document.getElementById('custom-pattern-upload-button'); // New
         const cloneUrlInput = document.getElementById('clone-url-input');
         const cloneGiftButton = document.getElementById('clone-gift-button');
-        const customPatternUploadInput = document.getElementById('custom-pattern-upload');
-        const customPatternPreview = document.getElementById('custom-pattern-preview');
         const customBuyConfirmButton = document.getElementById('custom-buy-confirm-button');
         const customBuyCancelButton = document.getElementById('custom-buy-cancel-button');
 
@@ -2261,14 +2360,25 @@
         const newPostContent = document.getElementById('new-post-content');
         const submitNewPostButton = document.getElementById('submit-new-post-button');
 
-        const subscriptionModal = document.getElementById('subscription-modal');
-        const mentionsToggle = document.getElementById('mentions-toggle');
-        const newPostsToggle = document.getElementById('new-posts-toggle');
+        const reactionUsersModal = document.getElementById('reaction-users-modal'); // New
+        const reactionUsersModalTitle = document.getElementById('reaction-users-modal-title'); // New
+        const reactionUsersList = document.getElementById('reaction-users-list'); // New
 
-        const reactionPopup = document.getElementById('reaction-popup');
-        const reactionUsersModal = document.getElementById('reaction-users-modal');
-        const reactionUsersTitle = document.getElementById('reaction-users-title');
-        const reactionUsersList = document.getElementById('reaction-users-list');
+        const notificationSettingsModal = document.getElementById('notification-settings-modal'); // New
+        const notifyNewPostsToggle = document.getElementById('notify-new-posts-toggle'); // New
+        const notifyMentionsToggle = document.getElementById('notify-mentions-toggle'); // New
+        const notificationTargetUsername = document.getElementById('notification-target-username'); // New
+        const notificationTargetUsernameMentions = document.getElementById('notification-target-username-mentions'); // New
+        const closeNotificationSettingsModal = document.getElementById('close-notification-settings-modal'); // New
+
+        const imagePreviewModal = document.getElementById('image-preview-modal'); // New
+        const imagePreviewModalImg = document.getElementById('image-preview-modal-img'); // New
+
+        const adminImpersonateModal = document.getElementById('admin-impersonate-modal'); // New
+        const impersonateUsernameInput = document.getElementById('impersonate-username-input'); // New
+        const confirmImpersonateButton = document.getElementById('confirm-impersonate-button'); // New
+        const cancelImpersonateButton = document.getElementById('cancel-impersonate-button'); // New
+
 
         const exitFilterModeButton = document.createElement('button');
         exitFilterModeButton.id = 'exit-filter-mode-button';
@@ -2315,26 +2425,20 @@
         let sortableInstance = null;
         let modalSwipeState = { startX: 0, isSwiping: false };
         let selectedGiveawayGifts = new Set();
-        let searchDebounceTimer;
-        let currentlyReactingPost = null;
+        let lastSearchQuery = '';
+        let searchTimeout;
 
         // --- API Utility Function ---
         async function callBackend(endpoint, method = 'GET', data = null, params = {}) {
             const queryParams = new URLSearchParams(params).toString();
             const url = `${BACKEND_BASE_URL}${endpoint}${queryParams ? '?' + queryParams : ''}`;
 
-            const headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            };
-            
-            if (endpoint.includes('/api/user_data/')) {
-                headers['Authorization'] = `Bearer ${tg.initData}`; // Using a placeholder for API_KEY
-            }
-
             const options = {
                 method: method,
-                headers: headers,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: data ? JSON.stringify(data) : null,
             };
 
@@ -2441,17 +2545,24 @@
 
             loadClientSideState();
 
+            // Apply fullscreen preference immediately
             if (fullscreenEnabled) {
-                try { tg.requestFullscreen(); } catch (e) { console.warn("Fullscreen request failed", e); }
+                try {
+                    await tg.requestViewportExpanded({ height: window.screen.height, is_state_stable: true });
+                } catch (e) { console.warn("Failed to set fullscreen on load:", e); }
             }
 
-            const startAppParam = tg.initDataUnsafe?.start_param;
-            let initialAction = { type: 'default' };
+            // Fetch all available gifts and map names to IDs for quick lookup
+            await fetchAvailableGifts();
 
+            const startAppParam = tg.initDataUnsafe?.start_param;
             if (startAppParam) {
+                // Keep loading screen until deep link action is resolved
+                loadingOverlay.classList.remove('hidden'); 
+                await initializeTelegramUserAccount();
                 if (startAppParam.startsWith('user')) {
-                    const identifier = startAppParam.substring(4);
-                    initialAction = { type: 'user', identifier };
+                    const username = startAppParam.substring(4);
+                    await displayUserProfile(username);
                 } else if (startAppParam.startsWith('gift')) {
                     const giftString = startAppParam.substring(4);
                     const lastHyphenIndex = giftString.lastIndexOf('-');
@@ -2459,28 +2570,24 @@
                         const giftTypeId = giftString.substring(0, lastHyphenIndex);
                         const collectibleNumber = parseInt(giftString.substring(lastHyphenIndex + 1), 10);
                         if (giftTypeId && !isNaN(collectibleNumber)) {
-                            initialAction = { type: 'gift', giftTypeId, collectibleNumber };
-                        } else { tg.showAlert("Invalid gift format in deep link."); }
-                    } else { tg.showAlert("Invalid gift format in deep link."); }
+                            await displayDeepLinkedGift(giftTypeId, collectibleNumber);
+                        } else {
+                            tg.showAlert("Invalid gift format in deep link.");
+                        }
+                    } else if (giftString.match(/^\+?888\s?\d{4}\s?\d{4}$/)) { // Phone number
+                         const phoneNumber = giftString.replace(/\s/g, '');
+                         await displayProfileByCollectible(phoneNumber);
+                    } else if (giftString.match(/^[a-zA-Z0-9_]{5,32}$/)) { // Username
+                        await displayProfileByCollectible(giftString);
+                    }
+                     else {
+                         tg.showAlert("Invalid gift format in deep link.");
+                    }
                 }
+            } else {
+                loadingOverlay.classList.remove('hidden'); 
+                await initializeTelegramUserAccount();
             }
-
-            await initializeTelegramUserAccount(); 
-
-            switch (initialAction.type) {
-                case 'user':
-                    await displayUserProfile(initialAction.identifier);
-                    break;
-                case 'gift':
-                    await displayDeepLinkedGift(initialAction.giftTypeId, initialAction.collectibleNumber);
-                    break;
-            }
-
-            await fetchAvailableGifts();
-            
-            setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-            }, 500);
 
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
@@ -2488,12 +2595,16 @@
             tg.SettingsButton.onClick(openSettingsModal);
 
             setupEventListeners();
+            await fetchGiftPrices(); // Fetch prices after initial load (less critical)
+            
+            // Hide loading screen after all initial data is loaded and rendered
+            isLoading = false;
+            loadingOverlay.classList.add('hidden');
         }
 
         async function initializeTelegramUserAccount() {
             manageBackButton(false);
             viewingOwnProfile = true;
-            currentlyViewedProfile = {};
             const user = tg.initDataUnsafe?.user;
             let tg_id = user?.id;
 
@@ -2512,27 +2623,19 @@
             }
 
             try {
-                // Check if this account exists in local storage first
-                let existingAccount = accounts.find(acc => acc.tg_id === tg_id);
-
-                let accountData;
-                if (existingAccount && accounts.length > 1) { // Avoid unnecessary backend call for simple switches
-                     accountData = await callBackend(`/api/account`, 'POST', { tg_id });
-                } else {
-                     accountData = await callBackend('/api/account', 'POST', {
-                        tg_id: tg_id,
-                        username: user?.username,
-                        full_name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : 'Original User Name',
-                        avatar_url: user?.photo_url || `https://i.pravatar.cc/140?u=${tg_id}`
-                    });
-                }
-
+                const accountData = await callBackend('/api/account', 'POST', {
+                    tg_id: tg_id,
+                    username: user?.username,
+                    full_name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : 'Original User Name',
+                    avatar_url: user?.photo_url || `https://i.pravatar.cc/140?u=${tg_id}`
+                });
 
                 currentAccountTgId = accountData.tg_id;
                 ownedGifts = accountData.owned_gifts || [];
                 profilePosts = accountData.posts || [];
                 customGiftsEnabled = accountData.custom_gifts_enabled || false;
 
+                let existingAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
                 if (existingAccount) {
                     Object.assign(existingAccount, accountData);
                 } else {
@@ -2540,8 +2643,12 @@
                 }
                 saveClientSideAccounts();
                 renderAll();
+                console.log("Account data loaded successfully.");
             } catch (error) {
                 console.error("Failed to initializeTelegramUserAccount:", error);
+                tg.showAlert(`Failed to load account data: ${error.message || 'Unknown error'}`);
+                isLoading = false;
+                loadingOverlay.classList.add('hidden');
             }
         }
 
@@ -2553,34 +2660,38 @@
                 }
             } catch (error) {
                 if (error.reason === 'custom_content_disabled') {
-                    tg.showAlert("Sorry, you cannot see this gift.");
+                    tg.showAlert("Sorry, you cannot see this gift. Please enable Custom Gifts in settings.");
+                } else {
+                    tg.showAlert("Gift not found or could not be loaded.");
                 }
                 console.error("Error fetching deep-linked gift:", error);
             }
         }
 
-        async function displayUserProfile(identifier) {
+        async function displayProfileByCollectible(collectible) {
+            try {
+                const response = await callBackend(`/api/profile_by_collectible/${collectible}`);
+                if (response.username) {
+                    await displayUserProfile(response.username);
+                } else {
+                    tg.showAlert("Collectible not found or not assigned to a user.");
+                }
+            } catch (error) {
+                tg.showAlert("Collectible not found or an error occurred.");
+                console.error("Error fetching profile by collectible:", error);
+            }
+        }
+
+        async function displayUserProfile(username) {
              const ownAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-             if (ownAccount && ownAccount.username && ownAccount.username.toLowerCase() === identifier.toLowerCase()) {
-                 await initializeTelegramUserAccount();
-                 return;
-             }
-             if (ownAccount && ownAccount.phone_number && ownAccount.phone_number === identifier) {
+             if (ownAccount && ownAccount.username && ownAccount.username.toLowerCase() === username.toLowerCase()) {
                  await initializeTelegramUserAccount();
                  return;
              }
 
              viewingOwnProfile = false;
              try {
-                let profileData;
-                if (identifier.startsWith('+888')) {
-                    const userByPhone = await callBackend(`/api/user-by-phone/${identifier}`);
-                    profileData = await callBackend(`/api/profile/${userByPhone.username}`, 'GET', null, { viewer_id: currentAccountTgId });
-                } else {
-                    profileData = await callBackend(`/api/profile/${identifier}`, 'GET', null, { viewer_id: currentAccountTgId });
-                }
-                
-                currentlyViewedProfile = profileData;
+                const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
                 ownedGifts = profileData.owned_gifts || [];
                 profilePosts = profileData.posts || [];
 
@@ -2592,13 +2703,23 @@
                 profileBio.textContent = profileData.bio || "No bio yet";
                 profilePhone.textContent = profileData.phone_number || "Not specified";
 
+                // Update notification settings button visibility and state
+                if (profileData.viewer_subscriptions) {
+                    notificationSettingsButton.classList.remove('hidden');
+                    notifyNewPostsToggle.checked = profileData.viewer_subscriptions.posts || false;
+                    notifyMentionsToggle.checked = profileData.viewer_subscriptions.mentions || false;
+                    notificationTargetUsername.textContent = profileData.username;
+                    notificationTargetUsernameMentions.textContent = profileData.username;
+                } else {
+                    notificationSettingsButton.classList.add('hidden');
+                }
+
                 collectibleUsernamesContainer.innerHTML = '';
                 if (profileData.collectible_usernames && profileData.collectible_usernames.length > 0) {
                     const alsoSpan = document.createElement('span'); alsoSpan.className = 'also-text'; alsoSpan.textContent = 'also';
                     collectibleUsernamesContainer.appendChild(alsoSpan);
                     profileData.collectible_usernames.forEach(uname => {
                         const unameSpan = document.createElement('span'); unameSpan.className = 'collectible-username-span'; unameSpan.textContent = `@${uname}`;
-                        unameSpan.addEventListener('click', () => displayUserProfile(uname));
                         collectibleUsernamesContainer.appendChild(unameSpan);
                     });
                 }
@@ -2609,10 +2730,14 @@
                 profileBio.onclick = null;
                 profileAvatar.style.cursor = 'default';
 
+                // Disable "Buy Gifts" button on public profiles
+                buyGiftsTabButton.disabled = true;
+
                 renderAll();
             } catch (error) {
                 console.error("Error fetching user profile:", error);
-                await initializeTelegramUserAccount();
+                tg.showAlert(`Failed to load profile: ${error.message || 'Unknown error'}`);
+                await initializeTelegramUserAccount(); // Fallback to own profile if public profile load fails
             }
         }
 
@@ -2667,6 +2792,9 @@
             profileBio.style.cursor = 'pointer';
             profileAvatar.style.cursor = 'pointer';
 
+            // Reset notification settings button for own profile
+            notificationSettingsButton.classList.add('hidden');
+
             collectibleUsernamesContainer.innerHTML = '';
             if (account.collectible_usernames && account.collectible_usernames.length > 0) {
                 const alsoSpan = document.createElement('span');
@@ -2691,23 +2819,30 @@
 
             sidebarCurrentAvatar.src = account.avatar_url;
             sidebarCurrentName.textContent = account.full_name;
+
+            // Make "Login To Anyone" button visible only for admin
+            if (currentAccountTgId === ADMIN_TG_ID) {
+                adminImpersonateButton.classList.remove('hidden');
+            } else {
+                adminImpersonateButton.classList.add('hidden');
+            }
         }
 
         // --- Account Management ---
         function loadClientSideState() {
             animationsEnabled = JSON.parse(localStorage.getItem('animationsEnabled' + APP_VERSION_SUFFIX)) ?? true;
             showHiddenGifts = JSON.parse(localStorage.getItem('showHiddenGifts' + APP_VERSION_SUFFIX)) ?? false;
-            fullscreenEnabled = JSON.parse(localStorage.getItem('fullscreenEnabled' + APP_VERSION_SUFFIX)) ?? false;
+            fullscreenEnabled = JSON.parse(localStorage.getItem('fullscreenEnabled' + APP_VERSION_SUFFIX)) ?? false; // New
             activeFilters = JSON.parse(localStorage.getItem('activeFilters' + APP_VERSION_SUFFIX)) || { collection: null, model: null, backdrop: null, pattern: null };
             accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
-            currentAccountTgId = parseInt(localStorage.getItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX), 10);
+            currentAccountTgId = localStorage.getItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX);
         }
 
         function saveClientSideState() {
             localStorage.setItem('activeFilters' + APP_VERSION_SUFFIX, JSON.stringify(activeFilters));
             localStorage.setItem('animationsEnabled' + APP_VERSION_SUFFIX, JSON.stringify(animationsEnabled));
             localStorage.setItem('showHiddenGifts' + APP_VERSION_SUFFIX, JSON.stringify(showHiddenGifts));
-            localStorage.setItem('fullscreenEnabled' + APP_VERSION_SUFFIX, JSON.stringify(fullscreenEnabled));
+            localStorage.setItem('fullscreenEnabled' + APP_VERSION_SUFFIX, JSON.stringify(fullscreenEnabled)); // New
         }
 
         function saveClientSideAccounts() {
@@ -2738,42 +2873,31 @@
             };
 
             try {
-                // Ensure this new user is created on the backend
-                await callBackend('/api/account', 'POST', newAccountData);
-                // The switchAccount function will fetch the full data for this new user
-                await switchAccount(newAccountData.tg_id, newAccountData);
+                const createdAccount = await callBackend('/api/account', 'POST', newAccountData);
+                accounts.push(createdAccount);
+                await switchAccount(createdAccount.tg_id);
                 closeSidebar();
             } catch (error) {
                 console.error(error);
+                tg.showAlert(`Failed to create new account: ${error.message || 'Unknown error'}`);
             }
         }
 
-        async function switchAccount(tgId, newAccountInfo = null) {
+        async function switchAccount(tgId) {
             if (currentAccountTgId === tgId) return;
-
-            if (newAccountInfo && !accounts.find(acc => acc.tg_id === tgId)) {
-                accounts.push(newAccountInfo);
-            }
-
             currentAccountTgId = tgId;
             saveClientSideAccounts();
-            await initializeTelegramUserAccount(); // This will fetch fresh data for the new currentAccountTgId
+            await initializeTelegramUserAccount();
         }
 
         function renderAll() {
             if (viewingOwnProfile) {
                 loadUserData();
-                adminLoginButton.classList.toggle('hidden', currentAccountTgId !== ADMIN_TG_ID);
-                buyGiftsTabButton.disabled = false;
-                wallSubscriptionButton.classList.add('hidden');
-            } else {
-                buyGiftsTabButton.disabled = true;
-                wallSubscriptionButton.classList.remove('hidden');
             }
             renderAccountsList();
             animationToggle.checked = animationsEnabled;
-            fullscreenToggle.checked = fullscreenEnabled;
             showHiddenToggle.checked = showHiddenGifts;
+            fullscreenToggle.checked = fullscreenEnabled; // New
             customGiftsToggle.checked = customGiftsEnabled;
             applyWornGiftStyles();
             renderProfileGifts();
@@ -2801,6 +2925,9 @@
 
         function openSidebar() {
             manageBackButton(true, closeSidebar);
+            sidebarSearchInput.value = '';
+            searchResultsList.classList.add('hidden'); // Hide search results on open
+            accountsList.classList.remove('hidden'); // Show accounts list
             renderAccountsList();
             accountSidebar.classList.add('active');
             sidebarOverlay.classList.add('active');
@@ -2810,6 +2937,10 @@
             manageBackButton(false);
             accountSidebar.classList.remove('active');
             sidebarOverlay.classList.remove('active');
+            // Clear search when closing sidebar
+            sidebarSearchInput.value = '';
+            searchResultsList.classList.add('hidden');
+            accountsList.classList.remove('hidden');
         }
 
         function applyWornGiftStyles() {
@@ -2844,7 +2975,7 @@
             document.getElementById(pageId).classList.add('active');
             if(pageId === 'buy-gifts-page') {
                 renderAvailableGifts();
-                manageBackButton(true, () => showPage('profile-page'));
+                manageBackButton(true, () => switchTab('gifts')); // Go back to gifts tab
             } else {
                 manageBackButton(false);
             }
@@ -2869,12 +3000,22 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 allAvailableGifts = await response.json();
 
+                // Populate allGiftNamesById for quick lookups
+                allGiftNamesById = {};
+                for (const id in allAvailableGifts) {
+                    allGiftNamesById[id] = allAvailableGifts[id];
+                }
+
+                // Add custom gifts to allAvailableGifts for display
                 for (const giftName in CUSTOM_GIFTS_DATA) {
                     const customGift = CUSTOM_GIFTS_DATA[giftName];
                     if (customGift && customGift.id) {
                         allAvailableGifts[customGift.id] = giftName;
+                        allGiftNamesById[customGift.id] = giftName; // Also add to lookup
                     }
                 }
+
+                populateFilterOptions();
             } catch (error) {
                 console.error("Could not load available gifts:", error);
                 buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">Could not load gifts. Please try again later.</p>`;
@@ -2903,7 +3044,7 @@
                 let originalImageUrl, lottiePath;
 
                 if (CUSTOM_GIFTS_DATA[name]) {
-                    originalImageUrl = CUSTOM_GIFTS_DATA[name].defaultImage;
+                    originalImageUrl = CUSTOM_GIFTS_DATA[name].defaultImage || `https://via.placeholder.com/100?text=${name}`;
                     lottiePath = null;
                 } else {
                     originalImageUrl = `${CDN_BASE_URL}originals/${id}/Original.png`;
@@ -2924,12 +3065,20 @@
                 item.innerHTML = `
                     <div class="image-container">
                         <div class="lottie-animation-container" style="display:none;"></div>
-                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.innerHTML = '🖼️';">
+                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.src='https://via.placeholder.com/100?text=Error'; this.style.display='block'; this.nextElementSibling.style.display='none'">
                     </div>
                     <div class="gift-name">${name}</div>
                     ${priceHTML}
                     <div class="limited-label">Limited</div>
                 `;
+                // Store optimistic data for immediate UI update
+                item.dataset.optimisticGift = JSON.stringify({
+                    gift_type_id: id,
+                    gift_name: name,
+                    original_image_url: originalImageUrl,
+                    lottie_path: lottiePath
+                });
+
                 item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
                 let buyItemLongPressTimer;
                 item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
@@ -2992,13 +3141,16 @@
             });
 
             const sortedGifts = [...filteredGifts].sort((a, b) => {
-                if (a.is_pinned && !b.is_pinned) return -1;
-                if (!a.is_pinned && b.is_pinned) return 1;
-                if (a.is_pinned && b.is_pinned) {
-                    if (a.pin_order != null && b.pin_order != null) return a.pin_order - b.pin_order;
-                    if (a.pin_order != null) return -1;
-                    if (b.pin_order != null) return 1;
-                }
+                // Primary sort: Pinned gifts always first
+                const aIsPinned = a.is_pinned && a.pin_order != null;
+                const bIsPinned = b.is_pinned && b.pin_order != null;
+                if (aIsPinned && !bIsPinned) return -1;
+                if (!aIsPinned && bIsPinned) return 1;
+
+                // Secondary sort: Pinned order
+                if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
+                
+                // Tertiary sort: Acquired date (newest first for non-pinned)
                 return new Date(b.acquired_date) - new Date(a.acquired_date);
             });
 
@@ -3041,8 +3193,6 @@
             card.dataset.pinned = gift.is_pinned;
 
             if (gift.is_hidden) card.classList.add('is-hidden');
-            if (gift.is_pending) card.classList.add('is-pending');
-
 
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
@@ -3080,7 +3230,7 @@
                 lottiePathForCard = gift.lottie_path;
             }
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
-            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';};
+            staticImage.onerror = function() { this.src='https://via.placeholder.com/100?text=Error'; this.style.display='block'; lottieContainer.style.display='none';};
             imageContainer.appendChild(lottieContainer); imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
             if (gift.is_pinned && !selectionModeActive) {
@@ -3192,52 +3342,58 @@
                 return;
             }
 
-            // --- Asynchronous UI Update ---
-            const tempGifts = [];
+            // Optimistic UI update
+            const tempGiftData = [];
             for (let i = 0; i < quantity; i++) {
-                const tempGift = {
-                    instance_id: `temp_${generateUniqueId()}`,
+                const instanceId = generateUniqueId();
+                const newGift = {
+                    instance_id: instanceId,
                     owner_id: currentAccountTgId,
                     gift_type_id: id,
                     gift_name: name,
                     original_image_url: originalImage,
                     lottie_path: lottiePath,
-                    acquired_date: new Date().toISOString(),
                     is_collectible: false,
-                    is_pending: true
+                    is_hidden: false,
+                    is_pinned: false,
+                    is_worn: false,
+                    pin_order: null,
+                    acquired_date: new Date().toISOString()
                 };
-                tempGifts.push(tempGift);
+                tempGiftData.push(newGift);
+                ownedGifts.unshift(newGift); // Add to beginning for optimistic display
             }
-            ownedGifts.unshift(...tempGifts);
-            renderProfileGifts();
+            renderProfileGifts(); // Re-render with new gifts immediately
             showPage('profile-page');
             switchTab('gifts');
             tg.HapticFeedback.notificationOccurred('success');
-            // --- End Asynchronous UI Update ---
-            
+            const message = quantity > 1 ? `Adding ${quantity} "${name}" gifts...` : `Adding "${name}" gift...`;
+            tg.showAlert(message);
+
+            // Backend call in background
             try {
-                const promises = tempGifts.map((tempGift, index) => {
-                    const newInstanceId = generateUniqueId();
-                    return callBackend('/api/gifts', 'POST', {
-                        instance_id: newInstanceId,
-                        owner_id: tempGift.owner_id,
-                        gift_type_id: tempGift.gift_type_id,
-                        gift_name: tempGift.gift_name,
-                        original_image_url: tempGift.original_image_url,
-                        lottie_path: tempGift.lottie_path
-                    }).then(() => {
-                        const giftIndex = ownedGifts.findIndex(g => g.instance_id === tempGift.instance_id);
-                        if (giftIndex !== -1) {
-                            ownedGifts[giftIndex].instance_id = newInstanceId;
-                            delete ownedGifts[giftIndex].is_pending;
-                        }
+                for (const gift of tempGiftData) {
+                    await callBackend('/api/gifts', 'POST', {
+                        instance_id: gift.instance_id,
+                        owner_id: gift.owner_id,
+                        gift_type_id: gift.gift_type_id,
+                        gift_name: gift.gift_name,
+                        original_image_url: gift.original_image_url,
+                        lottie_path: gift.lottie_path
                     });
-                });
-                await Promise.all(promises);
-                await initializeTelegramUserAccount(); // Final sync with backend
+                }
+                // Re-fetch owned gifts from backend to ensure consistency and get real IDs/timestamps if necessary
+                await initializeTelegramUserAccount();
+                const successMessage = quantity > 1 ? `Added ${quantity} "${name}" gifts!` : `Added "${name}" gift!`;
+                // Show success only if previous alert is dismissed (or use a different UX)
+                // For now, it will just update the message.
+                // tg.showAlert(successMessage);
             } catch (error) {
+                // On failure, revert UI changes and notify user
                 tg.HapticFeedback.notificationOccurred('error');
-                await initializeTelegramUserAccount(); // Re-sync to remove failed gifts
+                tg.showAlert(`Failed to add gift(s): ${error.message || 'Unknown error'}`);
+                ownedGifts = ownedGifts.filter(g => !tempGiftData.includes(g)); // Remove failed optimistic additions
+                renderProfileGifts();
             }
         }
 
@@ -3246,14 +3402,20 @@
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
 
-            closeModal(buyMultipleModal);
+            confirmBuyMultipleButton.disabled = true;
+            confirmBuyMultipleButton.textContent = 'Buying...';
+
             await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
+
+            confirmBuyMultipleButton.disabled = false;
+            confirmBuyMultipleButton.textContent = 'Buy';
+            closeModal(buyMultipleModal);
             currentGiftToBuyMultiple = null;
         }
 
         function getGiftDeepLink(gift) {
-            const botUsername = "upgradeDemoBot";
-            const appShortName = "upgrade";
+            const botUsername = "upgradeDemoBot"; // Assuming bot username
+            const appShortName = "upgrade"; // Assuming web app short name
             const giftTypeIdForLink = gift.gift_type_id;
             const numberForLink = gift.collectible_number;
             return `https://t.me/${botUsername}/${appShortName}?startapp=gift${giftTypeIdForLink}-${numberForLink}`;
@@ -3281,15 +3443,12 @@
             try {
                 const payload = { instance_id: giftToUpgrade.instance_id };
                 if (customPattern) {
-                    if (customPattern.is_base64) {
-                        payload.custom_pattern_base64 = customPattern.data;
-                    } else {
-                        payload.custom_pattern = customPattern.data;
-                    }
+                    payload.custom_pattern = customPattern;
                 }
                 
                 const upgradedGiftData = await callBackend('/api/gifts/upgrade', 'POST', payload);
 
+                // Find and update the gift in ownedGifts array
                 const giftIndex = ownedGifts.findIndex(g => g.instance_id === upgradedGiftData.instance_id);
                 if(giftIndex !== -1) ownedGifts[giftIndex] = upgradedGiftData;
                 
@@ -3319,6 +3478,8 @@
                     tg.HapticFeedback.notificationOccurred('success');
                     closeModal(giftDetailModal);
                     openGiftDetailByInstanceId(gift.instance_id);
+                } else if (result.status === 'failed') {
+                    // Error is handled by callBackend
                 }
             } catch (error) {
                 console.error("Error during single gift upgrade:", error);
@@ -3349,10 +3510,12 @@
                 if (cardElement) cardElement.classList.remove('is-updating');
                 if (result.status === 'success') {
                     successCount++;
-                    renderProfileGifts();
+                    // No need to call renderProfileGifts in loop, will do once at the end
                 } else if (result.status === 'failed') failureCount++;
-                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
+                // Add a slight delay to make the upgrade animation more visible
+                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 100));
             }
+            await initializeTelegramUserAccount(); // Re-fetch all gifts to ensure state consistency after batch upgrade
 
             let summaryMessage = `Upgrade complete.\nSucceeded: ${successCount}`;
             if (failureCount > 0) summaryMessage += `\nFailed: ${failureCount}`;
@@ -3373,10 +3536,8 @@
                 populateCollectibleDetailModal(data);
             } else if (modalElement.id === 'giveaway-setup-modal') {
                  populateGiveawaySetupModal();
-            } else if (modalElement.id === 'subscription-modal' && data) {
-                loadSubscriptionState(data.tg_id);
-            } else if (modalElement.id === 'reaction-users-modal' && data) {
-                populateReactionUsersModal(data.postId, data.emoji);
+            } else if (modalElement.id === 'notification-settings-modal') { // New
+                // Logic handled in displayUserProfile for initial setup
             }
 
             modalElement.classList.add('active');
@@ -3397,6 +3558,7 @@
             }
             if (modalElement.id === 'custom-buy-modal') giftCreationQueue = [];
             if (modalElement.id === 'giveaway-setup-modal') selectedGiveawayGifts.clear();
+            if (modalElement.id === 'image-preview-modal') imagePreviewModalImg.src = ''; // Clear image
         }
 
         function populateGiftDetailModal(gift) {
@@ -3408,7 +3570,7 @@
                 modalGiftImageStatic.style.display = 'none'; modalLottieGiftOriginal.style.display = 'flex';
             } else {
                 modalGiftImageStatic.src = gift.original_image_url;
-                modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };
+                modalGiftImageStatic.onerror = function() { this.src = `https://via.placeholder.com/120?text=Error`; };
             }
             modalGiftDescription1.textContent = `Add "${gift.gift_name}" to your profile or upgrade it.`;
             modalGiftDescription2.textContent = "Only you can see the sender's name.";
@@ -3432,11 +3594,17 @@
             modalCollectibleMainName.textContent = cd.model?.name || gift.gift_name;
 
             const numberForLink = gift.collectible_number;
-            const authorUsername = cd.author || (CUSTOM_GIFTS_DATA[gift.gift_name] ? 'Vasiliy939' : null);
             
-            let subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
-            if (authorUsername) {
-                subtextHTML += ` by <a href="#" onclick="openTelegramProfile(event, '${authorUsername}')">@${authorUsername}</a>`;
+            const snoopGifts = ['Snoop Dogg', 'Swag Bag', 'Snoop Cigar', 'Low Rider', 'Westside Sign'];
+            const vasiliyGifts = ['Dildo', 'Skebob', "Baggin' Cat"];
+
+            let subtextHTML;
+            if (snoopGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'snoopdogg')">@snoopdogg</a>`;
+            } else if (vasiliyGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'Vasiliy939')">@Vasiliy939</a>`;
+            } else {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
             }
             modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">${subtextHTML}</a>`;
 
@@ -3446,6 +3614,9 @@
                     copyGiftLink(gift); 
                 }
             };
+
+            // Set up long press for the image/animation
+            setupImageLongPress(modalCollectibleVisual, cd.modelImage || gift.original_image_url);
 
             if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
 
@@ -3483,6 +3654,24 @@
                         const y = centerY + circleRadius * Math.sin(angle);
                         createPattern({ left: x, top: y, scale: 0.9 });
                     }
+
+                    const leftRowStartX = containerWidth * 0.15;
+                    const leftRowStartY = containerHeight * 0.2;
+                    const leftRowYStep = containerHeight * 0.18;
+                    for (let i = 0; i < 4; i++) {
+                        const x = leftRowStartX - (i * 5);
+                        const y = leftRowStartY + (i * leftRowYStep);
+                        createPattern({ left: x, top: y, scale: 0.85 });
+                    }
+
+                    const rightRowStartX = containerWidth * 0.85;
+                    const rightRowStartY = containerHeight * 0.2;
+                    const rightRowYStep = containerHeight * 0.18;
+                    for (let i = 0; i < 4; i++) {
+                        const x = rightRowStartX + (i * 5);
+                        const y = rightRowStartY + (i * rightRowYStep);
+                        createPattern({ left: x, top: y, scale: 0.85 });
+                    }
                 }, 50);
             }
 
@@ -3495,7 +3684,7 @@
                 modalLottieCollectibleModel.style.display = 'flex';
             } else {
                  modalCollectibleModelImgStatic.src = cd.modelImage || gift.original_image_url;
-                 modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
+                 modalCollectibleModelImgStatic.onerror = function() { this.src = `https://via.placeholder.com/160?text=Error`; };
             }
 
             let ownerName, ownerAvatar, ownerUsername;
@@ -3564,7 +3753,7 @@
                 menuPinAction.textContent = isPinned ? 'Unpin' : 'Pin';
                 menuPinAction.classList.toggle('disabled', !isOwner);
                 menuShareImageAction.classList.remove('hidden');
-                menuCopyLinkAction.classList.remove('hidden');
+                menuCopyLinkAction.classList.remove('hidden'); // Gift links are only for collectibles
                 menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
             }
 
@@ -3592,7 +3781,7 @@
             menuHideAction.classList.toggle('disabled', !isOwner);
             menuDeleteAction.classList.toggle('disabled', !isOwner);
             menuShareImageAction.classList.remove('hidden');
-            menuCopyLinkAction.classList.remove('hidden');
+            menuCopyLinkAction.classList.remove('hidden'); // Gift links are only for collectibles
             menuReorderAction.classList.toggle('hidden', !isPinned || !isOwner);
 
             const menuWidth = longPressMenu.offsetWidth || 220;
@@ -3652,7 +3841,7 @@
         }
 
         function handleHideAction() {
-            const giftToUpdate = currentLongPressGift || currentlySortedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId) || ownedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId);
+            const giftToUpdate = currentLongPressGift || ownedGifts.find(g => g.instance_id === collectibleDetailModal.dataset.instanceId);
             if (!giftToUpdate) return;
 
             if (giftToUpdate.owner_id !== currentAccountTgId) {
@@ -3663,6 +3852,8 @@
             const isCurrentlyHidden = giftToUpdate.is_hidden;
             longPressMenu.classList.add('hidden');
             closeModal(collectibleDetailModal);
+
+            const originalGiftState = { ...giftToUpdate }; // Save original state for rollback
 
             giftToUpdate.is_hidden = !isCurrentlyHidden;
             if (giftToUpdate.is_pinned && giftToUpdate.is_hidden) {
@@ -3677,8 +3868,15 @@
 
             callBackend(`/api/gifts/${giftToUpdate.instance_id}`, 'PUT', { action: 'hide', value: !isCurrentlyHidden })
                 .catch(error => {
-                    giftToUpdate.is_hidden = isCurrentlyHidden;
+                    // Rollback on error
+                    const index = ownedGifts.findIndex(g => g.instance_id === originalGiftState.instance_id);
+                    if (index !== -1) {
+                        ownedGifts[index] = originalGiftState;
+                    }
                     renderProfileGifts();
+                    applyWornGiftStyles();
+                    tg.HapticFeedback.notificationOccurred('error');
+                    tg.showAlert(`Failed to ${isCurrentlyHidden ? 'unhide' : 'hide'} gift: ${error.message || 'Unknown error'}`);
                 });
             currentLongPressGift = null;
         }
@@ -3693,7 +3891,7 @@
             longPressMenu.classList.add('hidden');
             closeModal(collectibleDetailModal);
 
-            tg.showConfirm("Are you sure you want to delete this gift? This action cannot be undone.", (confirmed) => {
+            tg.showConfirm("Are you sure you want to delete this gift? This action cannot be undone.", async (confirmed) => {
                 if (confirmed) {
                     const giftIndex = ownedGifts.findIndex(g => g.instance_id === giftToDelete.instance_id);
                     if (giftIndex === -1) return;
@@ -3702,39 +3900,48 @@
                     renderProfileGifts();
                     tg.HapticFeedback.notificationOccurred('success');
 
-                    callBackend(`/api/gifts/${giftToDelete.instance_id}`, 'DELETE')
-                        .catch(error => {
-                            tg.HapticFeedback.notificationOccurred('error');
-                            ownedGifts.splice(giftIndex, 0, removedGift);
-                            renderProfileGifts();
-                        });
+                    try {
+                        await callBackend(`/api/gifts/${giftToDelete.instance_id}`, 'DELETE');
+                    } catch (error) {
+                        tg.HapticFeedback.notificationOccurred('error');
+                        ownedGifts.splice(giftIndex, 0, removedGift);
+                        renderProfileGifts();
+                        tg.showAlert(`Failed to delete gift: ${error.message || 'Unknown error'}`);
+                    }
                 }
                 currentLongPressGift = null;
             });
         }
 
-        async function showTooManyPinsModal() {
+        function showTooManyPinsModal() {
             unpinSelectionGrid.innerHTML = '';
+
             const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden && g.owner_id === currentAccountTgId);
 
             pinnedGifts.forEach(pinnedGift => {
                 const card = createGiftCardDOM(pinnedGift);
-                card.onclick = null; // Remove default click
-                card.addEventListener('click', async () => {
+                // Custom click handler for this specific modal
+                card.onclick = async () => {
                     try {
+                        // Unpin the selected gift
                         await callBackend(`/api/gifts/${pinnedGift.instance_id}`, 'PUT', { action: 'pin', value: false });
+                        
+                        // Pin the new gift if there's one pending
                         if (currentLongPressGift && currentLongPressGift.is_collectible) {
                              await callBackend(`/api/gifts/${currentLongPressGift.instance_id}`, 'PUT', { action: 'pin', value: true });
                         }
+                        
+                        // Re-initialize to update all UI
                         await initializeTelegramUserAccount();
                         tg.HapticFeedback.impactOccurred('medium');
                     } catch (error) {
                        console.error(error);
+                       tg.showAlert(`Failed to update pinned gifts: ${error.message || 'Unknown error'}`);
                     } finally {
                         closeModal(tooManyPinsModal);
                         currentLongPressGift = null;
                     }
-                });
+                };
                 unpinSelectionGrid.appendChild(card);
                 observeLottieElement(card);
             });
@@ -3765,17 +3972,18 @@
                     if(previouslyWornGift) previouslyWornGift.is_worn = true;
                     collectibleActionWear.querySelector('.text').textContent = isCurrentlyWorn ? 'Take Off' : 'Wear';
                     applyWornGiftStyles();
+                    tg.HapticFeedback.notificationOccurred('error');
+                    tg.showAlert(`Failed to ${isCurrentlyWorn ? 'take off' : 'wear'} gift: ${error.message || 'Unknown error'}`);
                 });
         }
         
         function openFilterPopup() { 
             closeSidebar();
-            populateFilterOptions();
             openModal(filterPopup); 
         }
         
         function populateFilterOptions() {
-            const uniqueCollections = [...new Map(ownedGifts.map(item => [item.gift_type_id, {id: item.gift_type_id, name: item.gift_name, image: item.original_image_url}])).values()];
+            const uniqueCollections = [...new Map(ownedGifts.map(item => [item.gift_type_id, {id: item.gift_type_id, name: allGiftNamesById[item.gift_type_id] || item.gift_name, image: item.original_image_url}])).values()];
             renderFilterOptions(filterOptionsCollections, uniqueCollections, 'collection', (item) => `<img src="${item.image}" alt="${item.name}">`);
 
             if (activeFilters.collection) {
@@ -3829,27 +4037,19 @@
             tg.showConfirm(`Are you sure you want to delete all gifts and data for the CURRENT account? This cannot be undone.`, async (confirmed) => {
                 if (confirmed) {
                     try {
-                        for(const gift of [...ownedGifts]) {
-                            await callBackend(`/api/gifts/${gift.instance_id}`, 'DELETE');
-                        }
-
-                        const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-                        if (currentAccount && currentAccount.collectible_usernames) {
-                            for(const uname of [...currentAccount.collectible_usernames]) {
-                                await callBackend(`/api/collectible_usernames/${uname}`, 'DELETE', { owner_id: currentAccountTgId });
-                            }
-                        }
-
-                        await callBackend('/api/account', 'PUT', {
-                            tg_id: currentAccountTgId,
-                            phone_number: "Not specified",
-                            bio: "My first account!",
-                        });
-
+                        // Optimistically clear data on frontend
+                        ownedGifts = [];
+                        profilePosts = [];
+                        accounts = accounts.map(acc => acc.tg_id === currentAccountTgId ? { ...acc, collectible_usernames: [], phone_number: "Not specified", bio: "My first account!" } : acc);
+                        renderAll();
+                        
+                        await callBackend(`/api/account/${currentAccountTgId}`, 'DELETE', { clear_all: true }); // New endpoint for clearing
+                        
+                        // Re-initialize from scratch to ensure data is fresh from backend
                         await initializeTelegramUserAccount();
 
                         activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-                        animationsEnabled = true; showHiddenGifts = false;
+                        animationsEnabled = true; showHiddenGifts = false; fullscreenEnabled = false;
 
                         saveClientSideState();
                         saveClientSideAccounts();
@@ -3859,6 +4059,8 @@
                         closeModal(settingsModal);
                     } catch (error) {
                         tg.HapticFeedback.notificationOccurred('error');
+                        tg.showAlert(`Failed to clear data: ${error.message || 'Unknown error'}`);
+                        await initializeTelegramUserAccount(); // Revert to previous state if backend fails
                     }
                 }
             });
@@ -3867,18 +4069,18 @@
         async function handleClearAllAccountsData() {
             tg.showConfirm("Are you sure you want to delete ALL accounts and data from this simulator? This cannot be undone.", async (confirmed) => {
                 if (confirmed) {
-                    // This is a client-side only operation as requested
                     accounts = [];
                     currentAccountTgId = null;
 
                     activeFilters = { collection: null, model: null, backdrop: null, pattern: null };
-                    animationsEnabled = true; showHiddenGifts = false;
+                    animationsEnabled = true; showHiddenGifts = false; fullscreenEnabled = false;
 
                     localStorage.clear();
 
+                    // This will cause the app to re-initialize as if first launch
                     await initApp();
                     tg.HapticFeedback.notificationOccurred('success');
-                    tg.showAlert("All simulator data cleared. Please restart the app.");
+                    tg.showAlert("All simulator data cleared.");
                     closeModal(settingsModal);
                 }
             });
@@ -3891,23 +4093,35 @@
             saveClientSideState();
         }
 
-        function handleFullscreenToggle() {
-            fullscreenEnabled = fullscreenToggle.checked;
-            try {
-                if (fullscreenEnabled) {
-                    tg.requestFullscreen();
-                } else {
-                    tg.exitFullscreen();
-                }
-            } catch (e) { console.warn("Fullscreen API not available.", e); }
-            saveClientSideState();
-        }
-
         function handleShowHiddenToggle() {
             showHiddenGifts = showHiddenToggle.checked;
             tg.HapticFeedback.impactOccurred('light');
             renderProfileGifts();
             saveClientSideState();
+        }
+
+        async function handleFullscreenToggle() {
+            fullscreenEnabled = fullscreenToggle.checked;
+            tg.HapticFeedback.impactOccurred('light');
+            saveClientSideState();
+            if (fullscreenEnabled) {
+                try {
+                    await tg.requestViewportExpanded({ height: window.screen.height, is_state_stable: true });
+                } catch (e) {
+                    console.warn("Failed to enter fullscreen:", e);
+                    tg.showAlert("Failed to enter fullscreen mode. Your browser might restrict this.");
+                    fullscreenEnabled = false;
+                    fullscreenToggle.checked = false;
+                    saveClientSideState();
+                }
+            } else {
+                try {
+                    await tg.exitFromExpandedViewport();
+                } catch (e) {
+                    console.warn("Failed to exit fullscreen:", e);
+                    // Don't revert state on exit failure, as user probably wants it off
+                }
+            }
         }
         
         async function handleCustomGiftsToggle() {
@@ -3926,6 +4140,7 @@
             } catch (error) {
                 customGiftsEnabled = !isEnabling;
                 customGiftsToggle.checked = !isEnabling;
+                tg.showAlert(`Failed to update custom gifts setting: ${error.message || 'Unknown error'}`);
             }
         }
 
@@ -3960,14 +4175,16 @@
                     });
                 }
             } catch (error) {
-                tg.showAlert("Could not check access. Please try again.");
+                tg.showAlert(`Could not check access: ${error.message || 'Unknown error'}`);
             }
         }
 
         function addGiftToQueue() {
             const newGift = {
                 id: null, name: null, originalImage: null, lottiePath: null,
-                model: null, backdrop: null, pattern: null, quantity: 1, customPatternBase64: null
+                model: null, backdrop: null, pattern: null, quantity: 1,
+                optimistic: true, // Mark as optimistic
+                instance_id: generateUniqueId() // Assign temporary ID
             };
             giftCreationQueue.push(newGift);
             currentlyEditingGiftIndex = giftCreationQueue.length - 1;
@@ -3986,6 +4203,9 @@
                 populateBaseGiftOptions();
                 document.getElementById('custom-buy-base-gifts-grid').classList.remove('hidden');
             }
+            customPatternUploadInput.value = ''; // Clear file input
+            customPatternUploadInput.dataset.currentPattern = ''; // Clear stored data
+            customPatternUploadButton.textContent = 'Upload Pattern';
         }
 
         function populateBaseGiftOptions() {
@@ -4048,9 +4268,7 @@
         
         function editGiftInQueue(index) {
             if (currentlyEditingGiftIndex === index) return;
-            if (currentlyEditingGiftIndex > -1) {
-                giftCreationQueue[currentlyEditingGiftIndex].quantity = parseInt(customBuyQuantityInput.value, 10) || 1;
-            }
+            giftCreationQueue[currentlyEditingGiftIndex].quantity = parseInt(customBuyQuantityInput.value, 10) || 1;
             
             currentlyEditingGiftIndex = index;
             renderGiftQueue();
@@ -4060,13 +4278,19 @@
 
             const giftToEdit = giftCreationQueue[index];
             customBuyQuantityInput.value = giftToEdit.quantity || 1;
-            customPatternPreview.classList.toggle('hidden', !giftToEdit.customPatternBase64);
-            if (giftToEdit.customPatternBase64) customPatternPreview.src = giftToEdit.customPatternBase64;
             
             if (giftToEdit.id) {
                 selectCustomBaseGift(giftToEdit.id, giftToEdit.name, giftToEdit.originalImage, false);
             } else {
                 resetAndPrepareConfigArea();
+            }
+            // Restore custom pattern input if it was set for this gift
+            if (giftToEdit.pattern && giftToEdit.pattern.image && giftToEdit.pattern.image.startsWith('data:image')) {
+                customPatternUploadInput.dataset.currentPattern = giftToEdit.pattern.image;
+                customPatternUploadButton.textContent = 'Pattern: Custom Image (Click to change)';
+            } else {
+                customPatternUploadInput.dataset.currentPattern = '';
+                customPatternUploadButton.textContent = 'Upload Pattern';
             }
         }
         
@@ -4085,7 +4309,6 @@
                 currentGift.model = null;
                 currentGift.backdrop = null;
                 currentGift.pattern = null;
-                currentGift.customPatternBase64 = null;
             }
             updateCurrentGiftInQueue({ id, name, originalImage });
 
@@ -4121,9 +4344,12 @@
             populatePartSelector(id, name);
             
             if (resetParts && cachedCollectibleParts[id].patterns.length > 0) {
-                const randomPattern = getRandomElement(cachedCollectibleParts[id].patterns);
-                if (randomPattern) {
-                    selectCustomPart('pattern', randomPattern);
+                // If a custom pattern was previously selected for this gift, don't override it with a random one
+                if (!(currentGift.pattern && currentGift.pattern.image && currentGift.pattern.image.startsWith('data:image'))) {
+                    const randomPattern = getRandomElement(cachedCollectibleParts[id].patterns);
+                    if (randomPattern) {
+                        selectCustomPart('pattern', randomPattern);
+                    }
                 }
             }
         }
@@ -4165,10 +4391,6 @@
                         }
                         
                         itemEl.addEventListener('click', () => selectCustomPart(type, item));
-                        itemEl.addEventListener('contextmenu', (e) => {
-                            e.preventDefault();
-                            if (type !== 'backdrop') openImagePreview(imagePath);
-                        });
                         grid.appendChild(itemEl);
                     });
                 } else {
@@ -4190,13 +4412,55 @@
             Array.from(grid.children).forEach(el => el.classList.remove('selected'));
             const selectedElement = grid.querySelector(`[data-name="${data.name}"]`);
             if(selectedElement) selectedElement.classList.add('selected');
-            const updates = { [type]: data };
-            if (type === 'pattern') {
-                updates.customPatternBase64 = null;
-                customPatternPreview.src = '';
-                customPatternPreview.classList.add('hidden');
+            updateCurrentGiftInQueue({ [type]: data });
+
+            // Clear custom pattern upload info if a default pattern is selected
+            if (type === 'pattern' && !(data.image && data.image.startsWith('data:image'))) {
+                customPatternUploadInput.value = '';
+                customPatternUploadInput.dataset.currentPattern = '';
+                customPatternUploadButton.textContent = 'Upload Pattern';
             }
-            updateCurrentGiftInQueue(updates);
+        }
+
+        function handleCustomPatternUpload() {
+            customPatternUploadInput.click();
+        }
+
+        function processCustomPatternFile(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                // If user cancels file selection, revert to previous pattern if any
+                const currentPatternData = customPatternUploadInput.dataset.currentPattern;
+                if (currentPatternData) {
+                    selectCustomPart('pattern', { name: 'Custom Image', rarityPermille: 1, image: currentPatternData });
+                } else {
+                    // Clear selected custom pattern
+                    const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
+                    currentGift.pattern = null; // Clear selected pattern
+                    const patternsGrid = document.getElementById('custom-buy-patterns-grid');
+                    Array.from(patternsGrid.children).forEach(el => el.classList.remove('selected'));
+                    customPatternUploadButton.textContent = 'Upload Pattern';
+                    updateCreateButtonState();
+                }
+                return;
+            }
+
+            if (file.type !== 'image/png') {
+                tg.showAlert("Only PNG images are supported for custom patterns.");
+                customPatternUploadInput.value = ''; // Clear file input
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                const patternData = { name: 'Custom Image', rarityPermille: 1, image: dataUrl };
+                selectCustomPart('pattern', patternData);
+                customPatternUploadInput.dataset.currentPattern = dataUrl; // Store for future re-selection
+                customPatternUploadButton.textContent = 'Pattern: Custom Image (Click to change)';
+                tg.showAlert("Custom pattern applied!");
+            };
+            reader.readAsDataURL(file);
         }
         
         function updateCreateButtonState() {
@@ -4204,10 +4468,9 @@
                 if (!gift.id) return false;
                 const partsInfo = cachedCollectibleParts[gift.id];
                 if (!partsInfo) return false;
-                const patternIsValid = (partsInfo.patterns.length === 0 || !!gift.pattern || !!gift.customPatternBase64);
                 return (partsInfo.models.length === 0 || !!gift.model) &&
                        (partsInfo.backdrops.length === 0 || !!gift.backdrop) &&
-                       patternIsValid;
+                       (partsInfo.patterns.length === 0 || !!gift.pattern);
             });
             
             customBuyConfirmButton.disabled = !allGiftsValid;
@@ -4225,18 +4488,44 @@
             cloneGiftButton.disabled = true;
             cloneGiftButton.textContent = "Cloning...";
             try {
+                // Optimistic UI update
+                const tempGift = {
+                    instance_id: generateUniqueId(),
+                    owner_id: currentAccountTgId,
+                    gift_type_id: "temp_clone", // Placeholder
+                    gift_name: "Cloning...", // Placeholder
+                    original_image_url: 'https://via.placeholder.com/100?text=Cloning...',
+                    is_collectible: true,
+                    is_hidden: false,
+                    is_pinned: false,
+                    is_worn: false,
+                    acquired_date: new Date().toISOString()
+                };
+                ownedGifts.unshift(tempGift);
+                renderProfileGifts();
+                closeModal(customBuyModal);
+                showPage('profile-page');
+                switchTab('gifts');
+
                 const clonedGift = await callBackend('/api/gifts/clone', 'POST', {
                     url: userInput,
                     owner_id: currentAccountTgId
                 });
-                ownedGifts.unshift(clonedGift);
+                
+                // Replace optimistic item with real data
+                const index = ownedGifts.findIndex(g => g.instance_id === tempGift.instance_id);
+                if (index !== -1) {
+                    ownedGifts[index] = clonedGift;
+                }
                 renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert("Gift cloned successfully!");
-                closeModal(customBuyModal);
-                showPage('profile-page');
             } catch (error) {
-                 // Error is shown by callBackend
+                // On failure, remove optimistic gift
+                ownedGifts = ownedGifts.filter(g => g.instance_id !== tempGift.instance_id);
+                renderProfileGifts();
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert(`Failed to clone gift: ${error.message || 'Unknown error'}`);
             } finally {
                 cloneGiftButton.disabled = false;
                 cloneGiftButton.textContent = "Clone Gift";
@@ -4258,77 +4547,73 @@
 
             customBuyConfirmButton.disabled = true;
             customBuyConfirmButton.textContent = 'Creating...';
-            closeModal(customBuyModal); 
 
-            // --- Asynchronous UI Update ---
-            const allTempGifts = [];
-            giftCreationQueue.forEach(giftConfig => {
+            // Optimistic UI update
+            const optimisticGifts = [];
+            for (const giftConfig of giftCreationQueue) {
                 for (let i = 0; i < giftConfig.quantity; i++) {
-                    const tempGift = {
-                        instance_id: `temp_${generateUniqueId()}`,
+                    const newGift = {
+                        instance_id: generateUniqueId(),
                         owner_id: currentAccountTgId,
                         gift_type_id: giftConfig.id,
                         gift_name: giftConfig.name,
                         original_image_url: giftConfig.originalImage,
                         lottie_path: giftConfig.lottiePath,
+                        is_collectible: true, // Optimistically collectible
+                        collectible_data: { // Basic placeholder data
+                            modelImage: giftConfig.model?.image || giftConfig.originalImage,
+                            backdropColors: giftConfig.backdrop?.hex,
+                            patternImage: giftConfig.pattern?.image
+                        },
                         acquired_date: new Date().toISOString(),
-                        is_collectible: false,
-                        is_pending: true
+                        is_hidden: false, is_pinned: false, is_worn: false
                     };
-                    allTempGifts.push({ tempGift, config: giftConfig });
+                    optimisticGifts.push(newGift);
+                    ownedGifts.unshift(newGift); // Add to beginning
                 }
-            });
-
-            ownedGifts.unshift(...allTempGifts.map(item => item.tempGift));
+            }
             renderProfileGifts();
+            closeModal(customBuyModal); 
             showPage('profile-page');
+            switchTab('gifts');
             tg.HapticFeedback.notificationOccurred('success');
-            // --- End Asynchronous UI Update ---
+            tg.showAlert(`Creating ${totalToCreate} gift(s)...`);
 
             try {
-                const creationPromises = allTempGifts.map(({ tempGift, config }) => {
-                    const payload = {
-                        owner_id: tempGift.owner_id,
-                        gift_name: config.name,
-                        gift_type_id: config.id,
-                        custom_model: config.model,
-                        custom_backdrop: config.backdrop,
-                    };
-                    if (config.customPatternBase64) {
-                        payload.custom_pattern_base64 = config.customPatternBase64;
-                    } else {
-                        payload.custom_pattern = config.pattern;
-                    }
-                    return callBackend('/api/gifts/create_collectible', 'POST', payload);
+                // Batch create on backend
+                const results = await callBackend('/api/gifts/batch_create_custom', 'POST', {
+                    owner_id: currentAccountTgId,
+                    gift_configs: giftCreationQueue.map(gc => ({
+                        gift_type_id: gc.id,
+                        gift_name: gc.name,
+                        original_image_url: gc.originalImage,
+                        lottie_path: gc.lottiePath,
+                        custom_model: gc.model,
+                        custom_backdrop: gc.backdrop,
+                        custom_pattern: gc.pattern,
+                        quantity: gc.quantity
+                    }))
                 });
                 
-                await Promise.all(creationPromises);
-                await initializeTelegramUserAccount(); // Final sync
+                // Replace optimistic gifts with actual data from backend
+                // This assumes the backend returns the actual created gifts
+                ownedGifts = ownedGifts.filter(g => !optimisticGifts.includes(g)); // Remove all optimistic
+                ownedGifts.unshift(...results.created_gifts); // Add real gifts to the top
+                renderProfileGifts(); // Re-render with real data
+
+                tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert(`${totalToCreate} gift(s) created successfully!`);
 
             } catch (error) {
-                tg.showAlert('An error occurred while creating gifts. Your inventory will be re-synced.');
-                await initializeTelegramUserAccount();
+                // On failure, remove all optimistic gifts and revert
+                ownedGifts = ownedGifts.filter(g => !optimisticGifts.includes(g));
+                renderProfileGifts();
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert(`Failed to create gifts: ${error.message || 'Unknown error'}`);
+            } finally {
+                customBuyConfirmButton.disabled = false;
+                updateCreateButtonState();
             }
-        }
-
-        function handleCustomPatternUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64String = e.target.result;
-                customPatternPreview.src = base64String;
-                customPatternPreview.classList.remove('hidden');
-
-                // Deselect any existing pattern
-                const grid = document.getElementById('custom-buy-patterns-grid');
-                Array.from(grid.children).forEach(el => el.classList.remove('selected'));
-
-                updateCurrentGiftInQueue({ customPatternBase64: base64String, pattern: null });
-            };
-            reader.readAsDataURL(file);
         }
 
         function handleTripleTap(e, filterType, value) {
@@ -4349,7 +4634,7 @@
                 if (!url) { resolve(); return; }
                 const img = new Image(); img.crossOrigin = 'Anonymous'; img.src = url;
                 img.onload = resolve;
-                img.onerror = () => { console.warn(`Failed to preload image: ${url}`); resolve(); };
+                img.onerror = () => { console.warn(`Failed to preload image`:${url}'); resolve(); };
             });
         }
 
@@ -4395,6 +4680,7 @@
             } catch (error) {
                 sendGeneratedImageButton.disabled = false;
                 sendGeneratedImageButton.textContent = "Send to Me";
+                tg.showAlert(`Failed to send image: ${error.message || 'Unknown error'}`);
             }
         }
 
@@ -4497,8 +4783,9 @@
                 } else if (type === 'backdrop') {
                      innerHTML = `<div class="gradient-square" style="background: radial-gradient(circle, ${itemData.hex.centerColor}, ${itemData.hex.edgeColor});"></div><div class="label">${itemData.name}</div>`;
                 } else if (type === 'pattern') {
-                     const patternImage = `${CDN_BASE_URL}patterns/${encodeURIComponent(patternSourceName)}/png/${encodeURIComponent(itemData.name)}.png`;
-                     innerHTML = `<img src="${patternImage}" alt="${itemData.name}" loading="lazy"><div class="label">${itemData.name}</div>`;
+                    // Check if it's a custom pattern (data URI) or CDN pattern
+                    const patternImage = itemData.image && itemData.image.startsWith('data:image') ? itemData.image : `${CDN_BASE_URL}patterns/${encodeURIComponent(patternSourceName)}/png/${encodeURIComponent(itemData.name)}.png`;
+                    innerHTML = `<img src="${patternImage}" alt="${itemData.name}" loading="lazy"><div class="label">${itemData.name}</div>`;
                 }
                 optionEl.innerHTML = innerHTML;
                 optionEl.addEventListener('click', () => handleChanceSelection(optionEl, container, type, itemData));
@@ -4561,6 +4848,7 @@
             closeModal(collectibleDetailModal);
 
             sellGiftImage.src = gift.collectible_data.modelImage || gift.original_image_url;
+            sellGiftImage.onerror = function() { this.src = `https://via.placeholder.com/80?text=Error`; };
             sellGiftName.textContent = `${gift.gift_name} #${gift.collectible_number}`;
             sellPriceInput.value = '';
             sellReceiveAmount.textContent = 'You will receive...';
@@ -4609,6 +4897,7 @@
                 tg.HapticFeedback.notificationOccurred('error');
                 ownedGifts.splice(giftIndex, 0, removedGift);
                 renderProfileGifts();
+                tg.showAlert(`Failed to list gift for sale: ${error.message || 'Unknown error'}`);
             });
         }
 
@@ -4620,8 +4909,10 @@
 
             transferModalTitle.textContent = "Transfer Gift";
             transferGiftImage.src = gift.collectible_data.modelImage || gift.original_image_url;
+            transferGiftImage.onerror = function() { this.src = `https://via.placeholder.com/80?text=Error`; };
             transferGiftImage.classList.remove('hidden');
             transferGiftName.classList.remove('hidden');
+            transferGiftName.textContent = `${gift.gift_name} #${gift.collectible_number}`;
             transferUsernameInput.value = '';
             transferCommentInput.value = '';
             confirmTransferButton.disabled = true;
@@ -4669,27 +4960,33 @@
                 tg.HapticFeedback.notificationOccurred('error');
                 ownedGifts.splice(giftIndex, 0, removedGift);
                 renderProfileGifts();
+                tg.showAlert(`Failed to transfer gift: ${error.message || 'Unknown error'}`);
             });
         }
 
         // --- Collectible Numbers & Usernames ---
         async function handleOpenNumbersModal() {
-            numbersList.innerHTML = '<div class="spinner"></div>';
+            numbersList.innerHTML = `<div class="spinner"></div>`;
             closeSidebar();
             openModal(numbersModal);
-            // This is a mock implementation. For a real system, you'd fetch available numbers.
-            const response = await callBackend('/api/stats');
-            const availableNumbers = response?.general_metrics?.collectible_items || 1000;
-            
-            numbersList.innerHTML = '';
-            const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678"];
-            coolNumbers.forEach(num => {
-                const li = document.createElement('li');
-                li.className = 'collectible-list-item';
-                li.textContent = num;
-                li.addEventListener('click', () => buyNumber(num));
-                numbersList.appendChild(li);
-            });
+            try {
+                const availableNumbers = await callBackend('/api/numbers/available', 'GET', null, { limit: 20 });
+                numbersList.innerHTML = ''; // Clear spinner
+                if (availableNumbers.length === 0) {
+                    numbersList.innerHTML = '<p class="empty-grid-message">No numbers available.</p>';
+                } else {
+                    availableNumbers.forEach(num => {
+                        const li = document.createElement('li');
+                        li.className = 'collectible-list-item';
+                        li.textContent = num;
+                        li.addEventListener('click', () => buyNumber(num));
+                        numbersList.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                numbersList.innerHTML = '<p class="empty-grid-message">Failed to load numbers.</p>';
+                tg.showAlert(`Failed to load numbers: ${error.message || 'Unknown error'}`);
+            }
         }
 
         async function buyNumber(number) {
@@ -4706,7 +5003,8 @@
                         tg.showAlert(`Number ${number} purchased successfully!`);
                         closeModal(numbersModal);
                     } catch (error) {
-                         // Error is handled by callBackend
+                        tg.HapticFeedback.notificationOccurred('error');
+                        tg.showAlert(`Failed to purchase number: ${error.message || 'Unknown error'}`);
                     }
                 }
             });
@@ -4720,30 +5018,25 @@
         }
 
         async function populateUsernamesList(searchTerm = '') {
-            usernamesList.innerHTML = '<div class="spinner"></div>';
-            const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous", "market", "bank", "news", "pessi", "penaldo", "token", "exchange", "ceo", "founder", "investor"];
-            let listToShow = [];
-
-            if (searchTerm) {
-                listToShow = [searchTerm.toLowerCase().replace(/[^a-z0-9_]/g, '')].filter(Boolean);
-            } else {
-                const shuffled = [...coolUsernames].sort(() => 0.5 - Math.random());
-                listToShow = shuffled.slice(0, 25);
+            usernamesList.innerHTML = `<div class="spinner"></div>`;
+            try {
+                const availableUsernames = await callBackend('/api/collectible_usernames/available', 'GET', null, { q: searchTerm, limit: 25 });
+                usernamesList.innerHTML = ''; // Clear spinner
+                if (availableUsernames.length === 0) {
+                    usernamesList.innerHTML = '<p class="empty-grid-message">No usernames available.</p>';
+                } else {
+                    availableUsernames.forEach(uname => {
+                        const li = document.createElement('li');
+                        li.className = 'collectible-list-item';
+                        li.innerHTML = `<span class="at-symbol">@</span>${uname}`;
+                        li.addEventListener('click', () => buyUsername(uname));
+                        usernamesList.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                usernamesList.innerHTML = '<p class="empty-grid-message">Failed to load usernames.</p>';
+                tg.showAlert(`Failed to load usernames: ${error.message || 'Unknown error'}`);
             }
-            
-            usernamesList.innerHTML = '';
-            if (listToShow.length === 0 && !searchTerm) {
-                usernamesList.innerHTML = '<p class="empty-grid-message">No usernames available.</p>';
-                return;
-            }
-            
-            listToShow.forEach(uname => {
-                const li = document.createElement('li');
-                li.className = 'collectible-list-item';
-                li.innerHTML = `<span class="at-symbol">@</span>${uname}`;
-                li.addEventListener('click', () => buyUsername(uname));
-                usernamesList.appendChild(li);
-            });
         }
 
         async function buyUsername(username) {
@@ -4766,7 +5059,8 @@
                         tg.showAlert(`Username @${username} purchased successfully!`);
                         closeModal(usernamesModal);
                     } catch (error) {
-                         // Error is handled by callBackend
+                        tg.HapticFeedback.notificationOccurred('error');
+                        tg.showAlert(`Failed to purchase username: ${error.message || 'Unknown error'}`);
                     }
                 }
             });
@@ -4781,7 +5075,8 @@
                         tg.HapticFeedback.notificationOccurred('success');
                         tg.showAlert(`Username @${username} has been deleted.`);
                     } catch (error) {
-                        // Error handled by callBackend
+                        tg.HapticFeedback.notificationOccurred('error');
+                        tg.showAlert(`Failed to delete username: ${error.message || 'Unknown error'}`);
                     }
                 }
             });
@@ -4791,12 +5086,13 @@
             const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
             if (!currentAccount) return;
             const newBio = prompt("Enter your new bio:", currentAccount.bio);
-            if (newBio !== null) {
+            if (newBio !== null) { // User clicked OK or entered text
                 try {
                     await callBackend('/api/account', 'PUT', { tg_id: currentAccountTgId, bio: newBio });
                     await initializeTelegramUserAccount();
                 } catch (error) {
                     console.error(error);
+                    tg.showAlert(`Failed to update bio: ${error.message || 'Unknown error'}`);
                 }
             }
         }
@@ -4811,6 +5107,7 @@
                     await initializeTelegramUserAccount();
                 } catch (error) {
                     console.error(error);
+                    tg.showAlert(`Failed to upload avatar: ${error.message || 'Unknown error'}`);
                 }
             };
             reader.readAsDataURL(file);
@@ -4820,6 +5117,7 @@
             [giftsTabButton, postsTabButton, buyGiftsTabButton].forEach(btn => btn.classList.remove('active'));
             [giftsContent, postsContent].forEach(content => content.classList.remove('active'));
             newPostFab.classList.add('hidden');
+            buyGiftsTabButton.disabled = !viewingOwnProfile; // Disable if not own profile
 
             if (tabName === 'gifts') {
                 giftsTabButton.classList.add('active');
@@ -4829,13 +5127,17 @@
                 postsContent.classList.add('active');
                 if (viewingOwnProfile) newPostFab.classList.remove('hidden');
             } else if (tabName === 'buy-gifts') {
-                buyGiftsTabButton.classList.add('active');
-                giftsContent.classList.add('active'); 
+                // This tab itself doesn't become active, instead it triggers page switch
+                buyGiftsTabButton.classList.add('active'); 
                 showPage('buy-gifts-page');
             }
         }
 
         function openSettingsModal() { openModal(settingsModal); }
+
+        function handleTermsOfServiceClick() {
+            tg.openTelegramLink("https://telegra.ph/Terms-of-Use-for-Gift-Upgrade-Demo-08-10");
+        }
 
         function copyGiftLink(gift) {
             const link = getGiftDeepLink(gift);
@@ -4860,7 +5162,7 @@
 
             sortableInstance = new Sortable(giftsGrid, {
                 animation: 150,
-                filter: '.gift-card:not([data-pinned="true"])',
+                filter: '.gift-card:not([data-pinned="true"])', // Only allow dragging pinned gifts
                 preventOnFilter: true
             });
         }
@@ -4872,21 +5174,32 @@
             exitReorderModeButton.classList.add('hidden');
             giftsGrid.classList.remove('reordering');
             
+            // Get the new order of only the pinned gifts
             const newOrderIds = Array.from(giftsGrid.querySelectorAll('.gift-card[data-pinned="true"]')).map(el => el.dataset.instanceId);
-            newOrderIds.forEach((id, index) => {
-                const gift = ownedGifts.find(g => g.instance_id === id);
-                if (gift) gift.pin_order = index;
-            });
             
-            renderProfileGifts();
-        
+            // Update the local ownedGifts array with new pin_order
+            ownedGifts.forEach(gift => {
+                const newIndex = newOrderIds.indexOf(gift.instance_id);
+                if (newIndex !== -1) {
+                    gift.pin_order = newIndex;
+                } else if (gift.is_pinned) {
+                    // This case should ideally not happen if only pinned items are sortable
+                    // But if a pinned item somehow wasn't in newOrderIds, clear its pin_order
+                    gift.pin_order = null;
+                }
+            });
+
+            renderProfileGifts(); // Re-render to show updated order correctly
+
             try {
                 await callBackend('/api/gifts/reorder', 'POST', {
                     owner_id: currentAccountTgId,
                     ordered_instance_ids: newOrderIds
                 });
             } catch (error) {
+                // On error, re-fetch from backend to revert local state
                 await initializeTelegramUserAccount();
+                tg.showAlert(`Failed to save new order: ${error.message || 'Unknown error'}`);
             }
         }
 
@@ -4946,8 +5259,13 @@
             tg.showConfirm(`Are you sure you want to hide ${idsToHide.length} selected gifts?`, async (confirmed) => {
                 if (confirmed) {
                     const originalGifts = JSON.parse(JSON.stringify(ownedGifts));
+                    // Optimistically update UI
                     ownedGifts.forEach(g => {
-                        if (idsToHide.includes(g.instance_id)) g.is_hidden = true;
+                        if (idsToHide.includes(g.instance_id)) {
+                            g.is_hidden = true;
+                            g.is_pinned = false; // Hidden gifts cannot be pinned
+                            g.is_worn = false;   // Hidden gifts cannot be worn
+                        }
                     });
                     renderProfileGifts();
                     tg.HapticFeedback.notificationOccurred('success');
@@ -4958,11 +5276,13 @@
                             instance_ids: idsToHide,
                             owner_id: currentAccountTgId
                         });
+                        // Re-fetch to ensure backend state is reflected accurately
                         await initializeTelegramUserAccount();
                     } catch (error) {
                         tg.HapticFeedback.notificationOccurred('error');
-                        ownedGifts = originalGifts;
+                        ownedGifts = originalGifts; // Rollback UI on error
                         renderProfileGifts();
+                        tg.showAlert(`Failed to hide gifts: ${error.message || 'Unknown error'}`);
                     }
                 }
             });
@@ -4987,6 +5307,13 @@
                  confirmTransferButton.disabled = true;
                  confirmTransferButton.textContent = 'Transferring...';
 
+                 const originalGifts = JSON.parse(JSON.stringify(ownedGifts)); // For rollback
+                 const giftsTransferring = ownedGifts.filter(g => idsToTransfer.includes(g.instance_id));
+                 ownedGifts = ownedGifts.filter(g => !idsToTransfer.includes(g)); // Optimistically remove from sender's view
+                 renderProfileGifts();
+                 closeModal(transferGiftModal);
+                 exitSelectionMode();
+
                  try {
                      await callBackend('/api/gifts/batch_action', 'POST', {
                          action: 'transfer',
@@ -4997,12 +5324,12 @@
                      });
                      tg.HapticFeedback.notificationOccurred('success');
                      tg.showAlert(`${idsToTransfer.length} gifts transferred successfully!`);
-                     await initializeTelegramUserAccount();
+                     await initializeTelegramUserAccount(); // Re-fetch to ensure consistency
                  } catch (error) {
-                     console.error(error);
-                 } finally {
-                     closeModal(transferGiftModal);
-                     exitSelectionMode();
+                     tg.HapticFeedback.notificationOccurred('error');
+                     ownedGifts = originalGifts; // Rollback UI on error
+                     renderProfileGifts();
+                     tg.showAlert(`Failed to transfer gifts: ${error.message || 'Unknown error'}`);
                  }
             };
         }
@@ -5018,7 +5345,7 @@
             selectedGiveawayGifts.clear();
             confirmGiveawaySetupButton.disabled = true;
 
-            const collectibleGifts = ownedGifts.filter(g => g.is_collectible && !g.is_hidden);
+            const collectibleGifts = ownedGifts.filter(g => g.is_collectible && !g.is_hidden && g.owner_id === currentAccountTgId);
             if (collectibleGifts.length === 0) {
                 giveawayGiftSelectionGrid.innerHTML = '<p class="empty-grid-message">You have no collectible gifts to give away.</p>';
                 return;
@@ -5060,7 +5387,7 @@
                 tg.HapticFeedback.notificationOccurred('success');
                 tg.showAlert("Giveaway saved! Please return to your chat with the bot to complete the setup.");
             } catch (error) {
-                 // error handled by callBackend
+                tg.showAlert(`Failed to create giveaway: ${error.message || 'Unknown error'}`);
             } finally {
                 confirmGiveawaySetupButton.disabled = false;
                 confirmGiveawaySetupButton.textContent = "Start Setup in Bot";
@@ -5085,12 +5412,13 @@
 
             const nextGift = swipableGifts[nextIndex];
             if (nextGift && nextGift.instance_id !== currentInstanceId) {
+                // Close then re-open to trigger transition and re-populate
                 closeModal(collectibleDetailModal);
                 setTimeout(() => openGiftDetailByInstanceId(nextGift.instance_id), 50);
             }
         }
         
-        // --- Wall/Posts/Reactions Logic ---
+        // --- Wall/Posts Logic ---
         function renderPosts() {
             postsContent.innerHTML = '';
             if (profilePosts.length === 0) {
@@ -5100,23 +5428,168 @@
             profilePosts.forEach(post => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
-                card.dataset.postId = post.id;
 
-                const menuButton = viewingOwnProfile ? `<button class="post-menu-button">${MENU_DOTS_SVG}</button>` : '';
+                let menuButtonHTML = '';
+                if (viewingOwnProfile) { // Only show delete button on own posts
+                    menuButtonHTML = `<button class="post-menu" data-post-id="${post.id}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg></button>`;
+                }
 
                 card.innerHTML = `
-                    ${menuButton}
-                    <div class="post-content">${parsePostContent(post.content)}</div>
+                    ${menuButtonHTML}
+                    <div class="post-content" data-post-id="${post.id}">${parsePostContent(post.content)}</div>
                     <div class="post-footer">
-                        <div class="post-reactions-container"></div>
-                        <span class="post-meta">${new Date(post.created_at).toLocaleDateString()} &nbsp; 👁️ ${post.views}</span>
+                        <span>${new Date(post.created_at).toLocaleString()}</span>
+                        <span>👁️ ${post.views || 0}</span>
                     </div>
+                    <div class="post-reactions" data-post-id="${post.id}"></div>
                 `;
                 postsContent.appendChild(card);
-                renderPostReactions(card, post.id, post.reactions);
+
+                // Add reactions
+                const reactionsContainer = card.querySelector('.post-reactions');
+                const availableEmojis = ['❤️', '💯', '🏆', '🔥', '👍', '🤗', '💔', '😭', '💋', '🍆', '🍑', '🤬', '🙄']; // Keep consistent emojis
+                const reactionPicker = document.createElement('div');
+                reactionPicker.className = 'reaction-emoji-picker';
+                availableEmojis.forEach(emoji => {
+                    const emojiOption = document.createElement('span');
+                    emojiOption.className = 'emoji-option';
+                    emojiOption.textContent = emoji;
+                    emojiOption.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handlePostReaction(post.id, emoji);
+                        reactionPicker.classList.remove('active');
+                    });
+                    reactionPicker.appendChild(emojiOption);
+                });
+                reactionsContainer.appendChild(reactionPicker);
+
+                // Initial render of existing reactions
+                renderPostReactions(reactionsContainer, post.reactions || {}, post.viewer_reactions || []);
                 
+                // Event listener to toggle emoji picker on post content tap
+                card.querySelector('.post-content').addEventListener('click', (e) => {
+                    if (e.target.tagName === 'A') return; // Don't open picker if clicking a link
+                    // Toggle the picker. Close others if open.
+                    document.querySelectorAll('.reaction-emoji-picker.active').forEach(picker => {
+                        if (picker !== reactionPicker) picker.classList.remove('active');
+                    });
+                    reactionPicker.classList.toggle('active');
+                    e.stopPropagation(); // Prevent document click from closing immediately
+                });
+
+                // Event listener for post menu (delete)
+                const postMenuButton = card.querySelector('.post-menu');
+                if (postMenuButton) {
+                    postMenuButton.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent post content click
+                        handleDeletePost(post.id);
+                    });
+                }
+                
+                // Increment view count, but not for own posts
                 if (!viewingOwnProfile) {
-                    callBackend(`/api/posts/${post.id}/view`, 'POST').catch(e => console.warn("Failed to increment view count", e));
+                    // Debounce/throttle this if it's too frequent
+                    callBackend(`/api/posts/${post.id}/view`, 'POST', { post_id: post.id });
+                }
+            });
+            // Close emoji picker if clicking outside
+            document.addEventListener('click', (e) => {
+                document.querySelectorAll('.reaction-emoji-picker.active').forEach(picker => {
+                    if (!picker.contains(e.target)) picker.classList.remove('active');
+                });
+            });
+        }
+
+        function renderPostReactions(reactionsContainer, reactionsData, viewerReactions) {
+            // Remove all existing reaction bubbles before re-rendering
+            Array.from(reactionsContainer.children).forEach(child => {
+                if (!child.classList.contains('reaction-emoji-picker')) {
+                    child.remove();
+                }
+            });
+
+            // Sort reactions by count descending, then emoji for consistency
+            const sortedReactions = Object.entries(reactionsData).sort((a, b) => b[1].count - a[1].count);
+
+            sortedReactions.forEach(([emoji, data]) => {
+                const bubble = document.createElement('span');
+                bubble.className = 'reaction-bubble';
+                if (viewerReactions.includes(emoji)) {
+                    bubble.classList.add('selected'); // Optionally style user's own reactions
+                }
+                bubble.textContent = `${emoji} ${data.count}`;
+                bubble.dataset.emoji = emoji;
+                bubble.dataset.users = JSON.stringify(data.users); // Store users for later display
+                bubble.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent post content click
+                    openReactionUsersModal(emoji, data.users);
+                });
+                reactionsContainer.prepend(bubble); // Add to the left of the picker
+            });
+        }
+
+        async function handlePostReaction(postId, emoji) {
+            try {
+                const response = await callBackend(`/api/posts/${postId}/react`, 'POST', {
+                    user_id: currentAccountTgId,
+                    emoji: emoji
+                });
+                
+                // Update local post data and re-render posts
+                const postIndex = profilePosts.findIndex(p => p.id === postId);
+                if (postIndex !== -1) {
+                    profilePosts[postIndex].reactions = response;
+                    // Update viewer_reactions manually or re-fetch profile
+                    const viewerReactions = profilePosts[postIndex].viewer_reactions || [];
+                    if (response[emoji] && response[emoji].users.includes(accounts.find(a => a.tg_id === currentAccountTgId).username)) {
+                        if (!viewerReactions.includes(emoji)) viewerReactions.push(emoji);
+                    } else {
+                        profilePosts[postIndex].viewer_reactions = viewerReactions.filter(e => e !== emoji);
+                    }
+                    renderPosts(); // Re-render all posts to update counts
+                }
+                tg.HapticFeedback.impactOccurred('light');
+            } catch (error) {
+                tg.showAlert(`Failed to react: ${error.message || 'Unknown error'}`);
+            }
+        }
+
+        function openReactionUsersModal(emoji, users) {
+            reactionUsersModalTitle.textContent = `${emoji} Reactions`;
+            reactionUsersList.innerHTML = '';
+            if (users && users.length > 0) {
+                users.forEach(username => {
+                    const li = document.createElement('li');
+                    li.className = 'collectible-list-item'; // Reuse styling
+                    li.textContent = `@${username}`;
+                    li.addEventListener('click', () => {
+                        displayUserProfile(username);
+                        closeModal(reactionUsersModal);
+                    });
+                    reactionUsersList.appendChild(li);
+                });
+            } else {
+                reactionUsersList.innerHTML = '<p class="empty-grid-message">No users found.</p>';
+            }
+            openModal(reactionUsersModal);
+        }
+
+        async function handleDeletePost(postId) {
+            tg.showConfirm("Are you sure you want to delete this post? This cannot be undone.", async (confirmed) => {
+                if (confirmed) {
+                    try {
+                        // Optimistic update
+                        profilePosts = profilePosts.filter(p => p.id !== postId);
+                        renderPosts();
+                        tg.HapticFeedback.notificationOccurred('success');
+
+                        await callBackend(`/api/posts/${postId}`, 'DELETE', { owner_id: currentAccountTgId });
+                    } catch (error) {
+                        tg.HapticFeedback.notificationOccurred('error');
+                        tg.showAlert(`Failed to delete post: ${error.message || 'Unknown error'}`);
+                        // Re-fetch posts to restore on error
+                        await initializeTelegramUserAccount();
+                    }
                 }
             });
         }
@@ -5124,24 +5597,38 @@
         function parsePostContent(content) {
             let html = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             
+            // Bold
             html = html.replace(/\*(.*?)\*/g, '<b>$1</b>');
+            // Demonic Red
             html = html.replace(/&(.*?)&/g, '<span class="text-demonic">$1</span>');
+            // Pink
             html = html.replace(/♡(.*?)♡/g, '<span class="text-pink">$1</span>');
+            // Green
             html = html.replace(/\$(.*?)\$/g, '<span class="text-green">$1</span>');
+            // Blue
             html = html.replace(/%(.*?)%/g, '<span class="text-blue">$1</span>');
+            // Username (assuming profile display for current user is handled by JS)
             html = html.replace(/@([a-zA-Z0-9_]{5,32})/g, '<a href="#" class="user-link" data-username="$1">@$1</a>');
-            html = html.replace(/([A-Za-z\s']{3,20})-([0-9]{1,6})/g, (match, name, number) => {
-                const giftTypeId = Object.keys(allAvailableGifts).find(key => allAvailableGifts[key].toLowerCase() === name.trim().toLowerCase());
-                if (giftTypeId) {
-                     return `<a href="#" class="gift-link" data-gift-type-id="${giftTypeId}" data-gift-number="${number}">${match}</a>`;
+            // Gift Name and Number
+            html = html.replace(/([A-Za-z\s']{3,20})-([0-9]{1,12})/g, (match, name, number) => {
+                // Find gift_type_id from allGiftNamesById (map name to ID)
+                let giftTypeId = null;
+                for (const id in allGiftNamesById) {
+                    if (allGiftNamesById[id].toLowerCase() === name.toLowerCase().replace(/\s/g, '')) {
+                        giftTypeId = id;
+                        break;
+                    }
                 }
-                return match; // Return original text if not found
+                if (giftTypeId) {
+                    return `<a href="#" class="gift-link" data-gift-type-id="${giftTypeId}" data-gift-number="${number}">${match}</a>`;
+                }
+                return match; // If no giftTypeId found, don't make it a link
             });
 
             return html;
         }
 
-        async function handleWallClick(e) {
+        function handleWallClick(e) {
             const userLink = e.target.closest('.user-link');
             if (userLink) {
                 e.preventDefault();
@@ -5151,28 +5638,11 @@
             const giftLink = e.target.closest('.gift-link');
             if (giftLink) {
                 e.preventDefault();
-                const { giftTypeId, giftNumber } = giftLink.dataset;
-                if (giftTypeId && giftNumber) {
-                     await displayDeepLinkedGift(giftTypeId, parseInt(giftNumber));
+                const giftTypeId = giftLink.dataset.giftTypeId;
+                const giftNumber = parseInt(giftLink.dataset.giftNumber, 10);
+                if (giftTypeId && !isNaN(giftNumber)) {
+                     displayDeepLinkedGift(giftTypeId, giftNumber);
                 }
-                return;
-            }
-            const postMenu = e.target.closest('.post-menu-button');
-            if (postMenu) {
-                e.preventDefault();
-                const postCard = postMenu.closest('.post-card');
-                handleDeletePost(postCard.dataset.postId);
-                return;
-            }
-            const postContent = e.target.closest('.post-content');
-            if (postContent) {
-                const postCard = postContent.closest('.post-card');
-                openReactionPopup(postCard, e);
-            }
-
-            const reactionChip = e.target.closest('.reaction-chip');
-            if (reactionChip) {
-                openReactionUsersModal(reactionChip.dataset.postId, reactionChip.dataset.emoji);
             }
         }
         
@@ -5190,234 +5660,149 @@
                     owner_id: currentAccountTgId,
                     content: content
                 });
-                profilePosts.unshift(newPost);
+                profilePosts.unshift(newPost); // Add to top
                 renderPosts();
                 closeModal(newPostModal);
             } catch (error) {
-                 // Error handled by callBackend
+                 tg.showAlert(`Failed to create post: ${error.message || 'Unknown error'}`);
             } finally {
                 submitNewPostButton.disabled = false;
                 submitNewPostButton.textContent = "Submit";
                 newPostContent.value = '';
             }
         }
-        
-        async function handleDeletePost(postId) {
-            tg.showConfirm("Are you sure you want to delete this post?", async (confirmed) => {
-                if(confirmed) {
-                    try {
-                        await callBackend(`/api/posts/${postId}`, 'DELETE', { owner_id: currentAccountTgId });
-                        profilePosts = profilePosts.filter(p => p.id !== parseInt(postId));
-                        renderPosts();
-                        tg.HapticFeedback.notificationOccurred('success');
-                    } catch (error) {
-                        tg.HapticFeedback.notificationOccurred('error');
-                    }
+
+        async function handleNotificationSettingsButton() {
+            if (!currentAccountTgId || !profileName.textContent) return;
+
+            // Fetch current subscription status for the viewing user from the displayed profile
+            // This assumes profileData.viewer_subscriptions is populated by get_user_profile
+            const targetProfile = accounts.find(a => a.tg_id === currentAccountTgId); // Assuming current user is viewing their own profile settings
+            if (!targetProfile) return;
+
+            let subscriptions = {};
+            if (!viewingOwnProfile) { // If viewing someone else's profile, fetch their actual subscriptions
+                try {
+                    const profile = await callBackend(`/api/profile/${profileUsername.textContent.substring(1)}`, 'GET', null, { viewer_id: currentAccountTgId });
+                    subscriptions = profile.viewer_subscriptions || {};
+                } catch (e) {
+                    console.error("Failed to fetch subscriptions for target user:", e);
+                    tg.showAlert("Could not load subscription settings.");
+                    return;
                 }
-            });
-        }
-        
-        function openReactionPopup(postCard, event) {
-            currentlyReactingPost = postCard;
-            const rect = postCard.getBoundingClientRect();
-            reactionPopup.style.top = `${rect.bottom - 15}px`;
-            reactionPopup.style.left = `${event.clientX - reactionPopup.offsetWidth / 2}px`;
-            reactionPopup.classList.add('visible');
-
-            // Hide after a delay or on next click
-            setTimeout(() => {
-                document.addEventListener('click', () => reactionPopup.classList.remove('visible'), { once: true });
-            }, 100);
-        }
-
-        async function handleReaction(emoji) {
-            if (!currentlyReactingPost) return;
-            const postId = currentlyReactingPost.dataset.postId;
-            reactionPopup.classList.remove('visible');
-
-            const post = profilePosts.find(p => p.id === parseInt(postId));
-            if (!post) return;
-            post.reactions = post.reactions || {};
-
-            const existingReactionChip = currentlyReactingPost.querySelector(`.reaction-chip[data-emoji="${emoji}"]`);
-            const userHasReacted = existingReactionChip && existingReactionChip.classList.contains('user-reacted');
-
-            try {
-                if (userHasReacted) {
-                    // Remove reaction
-                    await callBackend(`/api/posts/${postId}/react`, 'DELETE', { user_id: currentAccountTgId, reaction: emoji });
-                    post.reactions[emoji]--;
-                    if (post.reactions[emoji] <= 0) delete post.reactions[emoji];
-                } else {
-                    // Add reaction
-                    await callBackend(`/api/posts/${postId}/react`, 'POST', { user_id: currentAccountTgId, reaction: emoji });
-                    post.reactions[emoji] = (post.reactions[emoji] || 0) + 1;
-                }
-                renderPostReactions(currentlyReactingPost, postId, post.reactions);
-            } catch(error) {
-                 // Error handled by callBackend
-            } finally {
-                currentlyReactingPost = null;
+            } else { // If viewing own profile, subscriptions are not to self, so they are not fetched
+                subscriptions = {}; 
             }
-        }
-        
-        function renderPostReactions(postCard, postId, reactions) {
-            const container = postCard.querySelector('.post-reactions-container');
-            container.innerHTML = '';
-            if (!reactions) return;
+            
+            notificationTargetUsername.textContent = profileName.textContent;
+            notificationTargetUsernameMentions.textContent = profileName.textContent;
+            notifyNewPostsToggle.checked = subscriptions.posts || false;
+            notifyMentionsToggle.checked = subscriptions.mentions || false;
 
-            for(const emoji in reactions) {
-                const count = reactions[emoji];
-                const chip = document.createElement('span');
-                chip.className = 'reaction-chip';
-                chip.dataset.emoji = emoji;
-                chip.dataset.postId = postId;
-                chip.textContent = `${emoji} ${count > 1 ? count : ''}`;
-                container.appendChild(chip);
-            }
-        }
-        
-        async function populateReactionUsersModal(postId, emoji) {
-            reactionUsersTitle.textContent = `Reacted with ${emoji}`;
-            reactionUsersList.innerHTML = '<div class="spinner"></div>';
-            try {
-                const users = await callBackend(`/api/posts/${postId}/reactions/${emoji}`);
-                reactionUsersList.innerHTML = '';
-                if (users.length === 0) {
-                     reactionUsersList.innerHTML = '<li class="empty-grid-message">No one yet.</li>';
-                     return;
-                }
-                users.forEach(user => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `<img src="${user.avatar_url}" alt=""><span>${user.full_name || user.username}</span>`;
-                    li.onclick = () => {
-                        closeModal(reactionUsersModal);
-                        displayUserProfile(user.username);
-                    };
-                    reactionUsersList.appendChild(li);
-                });
-            } catch (error) {
-                reactionUsersList.innerHTML = '<li class="empty-grid-message">Could not load users.</li>';
-            }
+            openModal(notificationSettingsModal);
         }
 
-        async function openSubscriptionModal(targetUserId) {
-            openModal(subscriptionModal, {tg_id: targetUserId});
-        }
-        async function loadSubscriptionState(targetUserId) {
+        async function handleSubscriptionToggle(subscriptionType, toggleElement) {
+            const isSubscribing = toggleElement.checked;
+            const targetUsername = profileUsername.textContent.substring(1); // Get username from profile header
+            let targetUserId;
+
+            // Need target_id for the subscription, which is the viewed profile's ID
+            // If viewing own profile, notification settings button is hidden.
+            // So we only reach here if viewing a different public profile.
             try {
-                const sub = await callBackend(`/api/subscriptions/${targetUserId}`, 'GET', null, { subscriber_id: currentAccountTgId });
-                mentionsToggle.checked = sub.on_mention;
-                newPostsToggle.checked = sub.on_new_post;
+                const targetProfile = await callBackend('/api/profile_by_collectible/' + targetUsername);
+                targetUserId = targetProfile.username; // Endpoint returns username now, need to fix to return full profile to get tg_id
+                // Re-fetch profile for the user ID if not available
+                 const fullTargetProfile = await callBackend(`/api/profile/${targetUserId}`);
+                 targetUserId = fullTargetProfile.tg_id;
+
             } catch (e) {
-                console.error("Failed to load subscription state", e);
+                tg.showAlert(`Could not set subscription. Target user not found.`);
+                toggleElement.checked = !isSubscribing; // Revert UI
+                return;
             }
-        }
-        async function saveSubscriptionState() {
-            const targetUserId = subscriptionModal.dataset.instanceId;
+
             try {
-                await callBackend('/api/subscriptions', 'POST', {
+                await callBackend('/api/users/subscribe', 'POST', {
                     subscriber_id: currentAccountTgId,
-                    target_user_id: targetUserId,
-                    on_mention: mentionsToggle.checked,
-                    on_new_post: newPostsToggle.checked
+                    target_id: targetUserId,
+                    subscription_type: subscriptionType,
+                    action: isSubscribing ? 'subscribe' : 'unsubscribe'
                 });
                 tg.HapticFeedback.notificationOccurred('success');
-            } catch (e) {
-                tg.HapticFeedback.notificationOccurred('error');
-            }
-        }
-        
-        async function handleAdminLogin() {
-            const username = prompt("Enter username to log in as:");
-            if (!username) return;
-
-            try {
-                const userData = await callBackend(`/api/user_data/${username}`, 'GET', null, { requesting_user_id: ADMIN_TG_ID });
-                
-                const existingAccountIndex = accounts.findIndex(acc => acc.tg_id === userData.tg_id);
-                if (existingAccountIndex > -1) {
-                    accounts[existingAccountIndex] = userData;
-                } else {
-                    accounts.push(userData);
-                }
-                
-                await switchAccount(userData.tg_id);
-                closeSidebar();
+                tg.showAlert(`Notifications for ${subscriptionType} ${isSubscribing ? 'enabled' : 'disabled'}!`);
             } catch (error) {
-                console.error("Admin login failed:", error);
+                tg.HapticFeedback.notificationOccurred('error');
+                toggleElement.checked = !isSubscribing; // Revert UI on error
+                tg.showAlert(`Failed to update notifications: ${error.message || 'Unknown error'}`);
             }
         }
 
-        function openImagePreview(src) {
-            if (!src) return;
-            const img = imagePreviewModal.querySelector('img');
-            img.src = src;
-            openModal(imagePreviewModal);
-        }
-        
-        function setupSearch() {
-            sidebarSearchInput.addEventListener('input', () => {
-                clearTimeout(searchDebounceTimer);
-                searchDebounceTimer = setTimeout(handleSearchInput, 300);
-            });
-            document.addEventListener('click', (e) => {
-                if (!sidebarSearchContainer.contains(e.target)) {
-                    sidebarSearchResults.classList.add('hidden');
-                }
-            });
+        // --- Image Preview Modal (for long-press on gift images) ---
+        function setupImageLongPress(element, imageUrl) {
+            let longPressTimer;
+            element.oncontextmenu = (e) => { e.preventDefault(); }; // Prevent default context menu
+            element.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); // Prevent parent handlers
+                longPressTimer = setTimeout(() => {
+                    openImagePreviewModal(imageUrl);
+                }, 500); // 500ms long press
+            }, { passive: true });
+            element.addEventListener('touchend', () => clearTimeout(longPressTimer));
+            element.addEventListener('touchmove', () => clearTimeout(longPressTimer));
         }
 
-        async function handleSearchInput() {
-            const query = sidebarSearchInput.value.trim();
-            if (query.length < 2) {
-                sidebarSearchResults.classList.add('hidden');
-                return;
-            }
+        function openImagePreviewModal(imageUrl) {
+            imagePreviewModalImg.src = imageUrl;
+            imagePreviewModalImg.onerror = function() { this.src = `https://via.placeholder.com/300?text=Error`; };
+            imagePreviewModal.classList.add('active');
+        }
+
+        // --- Admin Impersonate Functionality ---
+        async function handleAdminImpersonate() {
+            closeSidebar();
+            openModal(adminImpersonateModal);
+            impersonateUsernameInput.value = '';
+            confirmImpersonateButton.disabled = true;
+        }
+
+        async function confirmAdminImpersonate() {
+            const username = impersonateUsernameInput.value.trim().toLowerCase().replace('@', '');
+            if (!username) { tg.showAlert("Please enter a username."); return; }
+
+            confirmImpersonateButton.disabled = true;
+            confirmImpersonateButton.textContent = 'Logging in...';
+
             try {
-                const results = await callBackend('/api/search', 'GET', null, { q: query });
-                renderSearchResults(results);
-            } catch(e) {
-                console.error("Search failed", e);
+                const targetAccount = await callBackend('/api/admin/get_impersonation_data', 'POST', {
+                    requester_id: currentAccountTgId, // Send admin's ID for verification
+                    target_username: username
+                });
+
+                // Add to accounts list locally and switch
+                let existingAccount = accounts.find(acc => acc.tg_id === targetAccount.tg_id);
+                if (existingAccount) {
+                    Object.assign(existingAccount, targetAccount);
+                } else {
+                    accounts.push(targetAccount);
+                }
+                saveClientSideAccounts(); // Save the updated list
+
+                await switchAccount(targetAccount.tg_id);
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Logged in as @${username}`);
+                closeModal(adminImpersonateModal);
+
+            } catch (error) {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert(`Failed to login: ${error.message || 'User not found or access denied.'}`);
+            } finally {
+                confirmImpersonateButton.disabled = false;
+                confirmImpersonateButton.textContent = 'Login';
             }
         }
 
-        function renderSearchResults(results) {
-            sidebarSearchResults.innerHTML = '';
-            if (!results || (!results.users?.length && !results.gift)) {
-                sidebarSearchResults.innerHTML = '<div class="search-result-item">No results found</div>';
-                sidebarSearchResults.classList.remove('hidden');
-                return;
-            }
-
-            results.users.forEach(user => {
-                const item = document.createElement('div');
-                item.className = 'search-result-item';
-                item.innerHTML = `<img src="${user.avatar_url}" alt=""><span>${user.full_name} (@${user.username})</span>`;
-                item.onclick = () => {
-                    displayUserProfile(user.username);
-                    closeSidebar();
-                    sidebarSearchResults.classList.add('hidden');
-                    sidebarSearchInput.value = '';
-                };
-                sidebarSearchResults.appendChild(item);
-            });
-            
-            if (results.gift) {
-                const item = document.createElement('div');
-                item.className = 'search-result-item';
-                item.innerHTML = `<span>🎁 Gift Found: ${sidebarSearchInput.value}</span>`;
-                item.onclick = async () => {
-                    await displayDeepLinkedGift(results.gift.gift_type_id, results.gift.collectible_number);
-                    closeSidebar();
-                    sidebarSearchResults.classList.add('hidden');
-                    sidebarSearchInput.value = '';
-                };
-                sidebarSearchResults.appendChild(item);
-            }
-
-            sidebarSearchResults.classList.remove('hidden');
-        }
 
         function setupEventListeners() {
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
@@ -5429,7 +5814,8 @@
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
 
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
-            profileAvatar.addEventListener('contextmenu', (e) => { e.preventDefault(); if (viewingOwnProfile) avatarUploadInput.click(); });
+            // Add long press to avatar for upload, prevent default context menu
+            profileAvatar.oncontextmenu = (e) => { e.preventDefault(); if (viewingOwnProfile) avatarUploadInput.click(); };
 
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
@@ -5450,7 +5836,11 @@
             document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
-            
+            document.getElementById('close-reaction-users-modal').addEventListener('click', () => closeModal(reactionUsersModal)); // New
+            document.getElementById('close-notification-settings-modal').addEventListener('click', () => closeModal(notificationSettingsModal)); // New
+            imagePreviewModal.addEventListener('click', () => closeModal(imagePreviewModal)); // New, close on backdrop click
+
+
             submitNewPostButton.addEventListener('click', handleNewPostSubmit);
             document.getElementById('cancel-new-post-button').addEventListener('click', () => closeModal(newPostModal));
             document.getElementById('formatting-help-toggle').addEventListener('click', (e) => {
@@ -5502,21 +5892,22 @@
 
             settingsModal.querySelector('.modal-button.secondary')?.addEventListener('click', () => closeModal(settingsModal));
             animationToggle.addEventListener('change', handleAnimationToggle);
-            fullscreenToggle.addEventListener('change', handleFullscreenToggle);
             customGiftsToggle.addEventListener('change', handleCustomGiftsToggle);
             showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
-            termsOfServiceButton.addEventListener('click', () => tg.openLink('https://telegra.ph/Terms-of-Use-for-Gift-Upgrade-Demo-08-10'));
+            fullscreenToggle.addEventListener('change', handleFullscreenToggle); // New
             hideMultipleButton.addEventListener('click', () => enterSelectionMode('hide'));
             transferMultipleButton.addEventListener('click', () => enterSelectionMode('transfer'));
             clearCurrentAccountDataButton.addEventListener('click', handleClearCurrentAccountData);
             clearAllAccountsDataButton.addEventListener('click', handleClearAllAccountsData);
+            termsOfServiceButton.addEventListener('click', handleTermsOfServiceClick); // New
 
             customizeGiftButton.addEventListener('click', openCustomBuyModal);
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             cloneGiftButton.addEventListener('click', handleCloneGift);
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
-            customPatternUploadInput.addEventListener('change', handleCustomPatternUpload);
+            customPatternUploadButton.addEventListener('click', handleCustomPatternUpload); // New
+            customPatternUploadInput.addEventListener('change', processCustomPatternFile); // New
 
             sellPriceInput.addEventListener('input', updateSellPriceDetails);
             confirmSellButton.addEventListener('click', handleConfirmSell);
@@ -5538,20 +5929,59 @@
             createGiveawayButton.addEventListener('click', openGiveawaySetupModal);
             confirmGiveawaySetupButton.addEventListener('click', handleConfirmGiveawaySetup);
 
-            reactionPopup.addEventListener('click', (e) => {
-                if (e.target.classList.contains('reaction-emoji')) {
-                    handleReaction(e.target.textContent);
+            notificationSettingsButton.addEventListener('click', handleNotificationSettingsButton); // New
+            notifyNewPostsToggle.addEventListener('change', (e) => handleSubscriptionToggle('posts', e.target)); // New
+            notifyMentionsToggle.addEventListener('change', (e) => handleSubscriptionToggle('mentions', e.target)); // New
+
+            // Admin Impersonate
+            adminImpersonateButton.addEventListener('click', handleAdminImpersonate); // New
+            impersonateUsernameInput.addEventListener('input', () => { confirmImpersonateButton.disabled = impersonateUsernameInput.value.trim() === ''; }); // New
+            confirmImpersonateButton.addEventListener('click', confirmAdminImpersonate); // New
+            cancelImpersonateButton.addEventListener('click', () => closeModal(adminImpersonateModal)); // New
+
+            // Sidebar search logic
+            sidebarSearchInput.addEventListener('input', async (e) => {
+                const query = e.target.value.trim();
+                clearTimeout(searchTimeout);
+                if (query.length > 0) {
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            const results = await callBackend('/api/search', 'GET', null, { q: query });
+                            searchResultsList.innerHTML = '';
+                            if (results.length > 0) {
+                                results.forEach(item => {
+                                    const li = document.createElement('li');
+                                    li.className = 'search-result-item';
+                                    if (item.type === 'user') {
+                                        li.innerHTML = `<img src="${item.avatar_url}" alt="Avatar"> <div class="info"><span class="name">@${item.username}</span><span class="details">${item.full_name}</span></div>`;
+                                        li.onclick = () => { displayUserProfile(item.username); closeSidebar(); };
+                                    } else if (item.type === 'gift') {
+                                        li.innerHTML = `<img src="${item.thumb_url || 'https://via.placeholder.com/40?text=🎁'}" alt="Gift"> <div class="info"><span class="name">${item.gift_name} #${item.collectible_number}</span><span class="details">Gift</span></div>`;
+                                        li.onclick = () => { displayDeepLinkedGift(item.gift_type_id, item.collectible_number); closeSidebar(); };
+                                    }
+                                    searchResultsList.appendChild(li);
+                                });
+                                accountsList.classList.add('hidden');
+                                searchResultsList.classList.remove('hidden');
+                            } else {
+                                searchResultsList.innerHTML = `<li style="text-align: center; color: var(--tg-theme-hint-color);">No results found.</li>`;
+                                accountsList.classList.add('hidden');
+                                searchResultsList.classList.remove('hidden');
+                            }
+                        } catch (error) {
+                            console.error("Search failed:", error);
+                            searchResultsList.innerHTML = `<li style="text-align: center; color: var(--tg-theme-hint-color);">Error searching.</li>`;
+                            accountsList.classList.add('hidden');
+                            searchResultsList.classList.remove('hidden');
+                        }
+                    }, 300); // Debounce search input
+                } else {
+                    searchResultsList.classList.add('hidden');
+                    accountsList.classList.remove('hidden');
                 }
             });
 
-            wallSubscriptionButton.addEventListener('click', () => openSubscriptionModal(currentlyViewedProfile));
-            mentionsToggle.addEventListener('change', saveSubscriptionState);
-            newPostsToggle.addEventListener('change', saveSubscriptionState);
-            document.getElementById('close-subscription-modal').addEventListener('click', () => closeModal(subscriptionModal));
-            document.getElementById('close-reaction-users-modal').addEventListener('click', () => closeModal(reactionUsersModal));
-            
-            adminLoginButton.addEventListener('click', handleAdminLogin);
-            
+
             let touchStartX = 0; const swipeEdgeThreshold = 50;
             appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
             appContainer.addEventListener('touchend', e => {
@@ -5563,11 +5993,30 @@
                 if (touchStartX < swipeEdgeThreshold && deltaX > swipeEdgeThreshold) { 
                     openSidebar(); 
                 }
+                else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold) {
+                    switchTab('buy-gifts');
+                }
             }, { passive: true });
 
             sidebarOverlay.addEventListener('click', closeSidebar);
             addAccountButton.addEventListener('click', handleAddAccount);
-            setupSearch();
+
+            // Disable long press default context menu on all images to allow custom preview
+            document.body.addEventListener('contextmenu', (e) => {
+                if (e.target.tagName === 'IMG' || e.target.classList.contains('lottie-animation-container')) {
+                    e.preventDefault();
+                }
+            });
+            // Setup general image long press for preview modal
+            document.body.addEventListener('touchstart', (e) => {
+                if (e.target.tagName === 'IMG' || e.target.classList.contains('lottie-animation-container')) {
+                    let src = e.target.src || (e.target.lottieInstance && e.target.lottieInstance.path);
+                    if (src && !src.startsWith('data:image')) { // Avoid showing data URIs for now if they're not fully supported by modal
+                        setupImageLongPress(e.target, src);
+                    }
+                }
+            }, { passive: true });
+
 
             collectibleDetailModal.addEventListener('touchstart', (e) => {
                 modalSwipeState.startX = e.touches[0].clientX;
@@ -5584,21 +6033,6 @@
                 }
                 modalSwipeState.isSwiping = false;
             }, { passive: true });
-            
-            document.addEventListener('contextmenu', e => {
-                if (e.target.closest('.modal-collectible-visual img') || e.target.closest('#custom-buy-modal .filter-option img')) {
-                    e.preventDefault();
-                }
-            });
-            document.addEventListener('touchstart', (e) => {
-                if (e.target.closest('.modal-collectible-visual, #custom-buy-modal .filter-option')) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = setTimeout(() => openImagePreview(e.target.src), 500);
-                }
-            }, { passive: true });
-            document.addEventListener('touchend', () => clearTimeout(longPressTimer));
-            document.addEventListener('touchmove', () => clearTimeout(longPressTimer));
-            imagePreviewModal.addEventListener('click', () => closeModal(imagePreviewModal));
         }
 
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
@@ -5608,10 +6042,10 @@
             document.addEventListener('DOMContentLoaded', () => {
                 tg.initDataUnsafe = {
                     user: {
-                        id: 5146625949, // Mocking as admin for local testing
+                        id: 123456789,
                         first_name: "Mock",
-                        last_name: "Admin",
-                        username: "mock_admin",
+                        last_name: "User",
+                        username: "mock_user",
                         photo_url: "https://i.pravatar.cc/140?img=1"
                     }
                 };
@@ -5623,16 +6057,15 @@
                     notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
                 };
                 tg.openTelegramLink = (url) => { console.log(`Opening TG Link: ${url}`); window.open(url, '_blank'); };
-                tg.openLink = (url) => { console.log(`Opening Link: ${url}`); window.open(url, '_blank'); };
-                tg.requestFullscreen = () => console.log("Requesting fullscreen");
-                tg.exitFullscreen = () => console.log("Exiting fullscreen");
                 tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
                 tg.SettingsButton = { isVisible: false, onClick: (cb) => {tg._settingsCb = cb}, show: () => console.log("Settings Button Show"), hide: () => console.log("Settings Button Hide") };
                 tg.BackButton = { isVisible: false, onClick: (cb) => {tg._backCb = cb}, offClick: (cb) => {}, show: () => console.log("Back button shown"), hide: () => console.log("Back button hidden") };
+                tg.requestViewportExpanded = async (opts) => { console.log('requestViewportExpanded', opts); };
+                tg.exitFromExpandedViewport = async () => { console.log('exitFromExpandedViewport'); };
 
                 initApp();
             });
         }
     </script>
 </body>
-    </html>
+</html>
