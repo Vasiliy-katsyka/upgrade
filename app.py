@@ -194,7 +194,7 @@ CUSTOM_GIFTS_DATA = {
     },
     "Keychain Dog": {
         "id": "custom_keychain_dog",
-        "defaultImage": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225502804.png?raw=true",
+        "defaultImage": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/IMG_20250814_001025_847.png?raw=true",
         "models": [
             {"name": "Eyes Closed", "rarityPermille": 1, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224650949.png?raw=true"},
             {"name": "Golden Dog", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224121131.png?raw=true"},
