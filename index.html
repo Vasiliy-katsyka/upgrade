@@ -60,38 +60,6 @@
             overflow-x: hidden;
         }
 
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--tg-theme-bg-color);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            transition: opacity 0.3s ease-out;
-        }
-
-        #loading-overlay h1 {
-            font-size: 1.5em;
-            margin-bottom: 5px;
-        }
-
-        #loading-overlay p {
-            color: var(--tg-theme-hint-color);
-            margin-bottom: 20px;
-        }
-
-        #loading-animation-container {
-            width: 150px;
-            height: 150px;
-            margin-bottom: 20px;
-        }
-
         .app-container {
             max-width: 600px;
             margin: 0 auto;
@@ -134,19 +102,6 @@
         .sidebar-header .name {
             font-size: 1.1em;
             font-weight: 500;
-        }
-        .sidebar-search-container {
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
-        }
-        #sidebar-search-input {
-            width: 100%;
-            padding: 10px;
-            background-color: var(--tg-theme-secondary-bg-color);
-            border: 1px solid var(--tg-theme-hint-color);
-            border-radius: 8px;
-            color: var(--tg-theme-text-color);
-            font-size: 1em;
         }
         .accounts-list {
             list-style: none;
@@ -371,12 +326,6 @@
             align-items: center;
             justify-content: center;
         }
-        .profile-tabs button svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-            margin-right: 6px;
-        }
         #gifts-tab-button .gift-preview-container {
             display: flex;
             align-items: center;
@@ -416,17 +365,6 @@
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 12px;
-            position: relative;
-        }
-        .post-menu-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: var(--tg-theme-hint-color);
-            cursor: pointer;
-            padding: 5px;
         }
         .post-content {
             font-size: 1em;
@@ -563,10 +501,6 @@
             filter: grayscale(80%);
         }
         .buy-gift-item { aspect-ratio: 1/1.1; }
-        .buy-gift-item.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
         .gift-card.is-updating { transform: scale(0.95); opacity: 0.7; }
         .sortable-chosen, .sortable-ghost {
             cursor: grabbing !important;
@@ -950,7 +884,7 @@
         }
         #filter-popup .clear-data-button svg { width: 20px; height: 20px; fill: currentColor; margin-right: 8px; }
 
-        #filter-popup .settings-row, #notifications-modal .settings-row, #settings-modal .settings-row {
+        #filter-popup .settings-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1157,10 +1091,10 @@
             border-bottom: 1px solid var(--tg-theme-bg-color);
         }
         #settings-modal .settings-row:last-of-type { border-bottom: none; }
-        #settings-modal .settings-row button, #settings-modal .settings-row a {
+        #settings-modal .settings-row button {
             background: none; border: none; color: var(--tg-theme-link-color);
             font-size: 1em; cursor: pointer; text-align: left;
-            padding: 0; width: auto; font-weight: 400; text-decoration: none;
+            padding: 0; width: auto; font-weight: 400;
         }
         #settings-modal .settings-row.danger button {
             color: var(--app-clear-data-color);
@@ -1254,19 +1188,10 @@
     </style>
 </head>
 <body>
-    <div id="loading-overlay">
-        <div id="loading-animation-container"></div>
-        <h1>Gift Upgrade Bot</h1>
-        <p>@giftUpgradeRU</p>
-        <div class="spinner"></div>
-    </div>
     <div class="account-sidebar" id="account-sidebar">
         <div class="sidebar-header">
             <img id="sidebar-current-avatar" src="" alt="Avatar">
             <span id="sidebar-current-name" class="name"></span>
-        </div>
-        <div class="sidebar-search-container">
-            <input type="text" id="sidebar-search-input" placeholder="Search @user or Gift-123...">
         </div>
         <ul class="accounts-list" id="accounts-list"></ul>
         <div class="sidebar-footer">
@@ -1487,13 +1412,6 @@
                         </label>
                     </div>
                     <div class="settings-row">
-                        <label>Fullscreen</label>
-                        <label class="switch">
-                            <input type="checkbox" id="fullscreen-toggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="settings-row">
                         <label>Custom Gifts</label>
                         <label class="switch">
                             <input type="checkbox" id="custom-gifts-toggle">
@@ -1512,9 +1430,6 @@
                     </div>
                     <div class="settings-row">
                         <button id="transfer-multiple-button" class="full-width">Transfer Multiple</button>
-                    </div>
-                    <div class="settings-row">
-                        <a href="https://telegra.ph/Terms-of-Use-for-Gift-Upgrade-Demo-08-10" target="_blank" rel="noopener noreferrer" style="width: 100%; text-align: center;">Terms of Service</a>
                     </div>
                     <div class="settings-row">
                         <button id="clear-current-account-data-button" class="full-width">Clear Current Account Data</button>
@@ -1764,33 +1679,6 @@
             </div>
         </div>
 
-        <div id="notifications-modal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header-bar">
-                    <h3>Notifications for @<span id="notifications-username"></span></h3>
-                </div>
-                <div class="modal-scrollable-content">
-                    <div class="settings-row">
-                        <label>Mentions</label>
-                        <label class="switch">
-                            <input type="checkbox" id="mentions-toggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="settings-row">
-                        <label>New Posts</label>
-                        <label class="switch">
-                            <input type="checkbox" id="new-posts-toggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-buttons-footer">
-                    <button id="close-notifications-modal" class="modal-button">Done</button>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <div id="long-press-menu" class="hidden">
@@ -1806,7 +1694,7 @@
     <script>
         const BACKEND_BASE_URL = "https://upgrade-a57g.onrender.com";
 
-        const APP_VERSION_SUFFIX = '_v16'; // Increment to reset UI preferences on major changes
+        const APP_VERSION_SUFFIX = '_v15'; // Increment to reset UI preferences on major changes
         const CDN_BASE_URL = "https://cdn.changes.tg/gifts/";
         const GIFTS_JSON_URL = `${CDN_BASE_URL}id-to-name.json`;
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
@@ -1822,8 +1710,6 @@
         const CROWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>crown</title><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" /></svg>`;
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
-        const BELL_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 21H14C14 22.1 13.1 23 12 23S10 22.1 10 21M21 19V20H3V19L5 17V11C5 7.9 7 5.2 10 4.3V4C10 2.9 10.9 2 12 2S14 2.9 14 4V4.3C17 5.2 19 7.9 19 11V17L21 19M17 11C17 8.2 14.8 6 12 6S7 8.2 7 11V18H17V11Z"/></svg>`;
-
 
         // --- CUSTOM GIFT DATA ---
         const CUSTOM_GIFTS_DATA = {
@@ -1833,6 +1719,33 @@
                 "models": [
                     {"name": "She Wants", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011319484.png"},
                     {"name": "Anal Games", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004252351.png"},
+                    {"name": "Romance", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011244151.png"},
+                    {"name": "Ma Boi", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012725065.png"},
+                    {"name": "Twins 18", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004029718.png"},
+                    {"name": "Golden Sex", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004223973.png"},
+                    {"name": "Pixels", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012914349.png"},
+                    {"name": "Penis Sword", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014719027.png"},
+                    {"name": "Water One", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004351728.png"},
+                    {"name": "Woman Place", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004416012.png"},
+                    {"name": "Volcano", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011343633.png"},
+                    {"name": "Telegram", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012648445.png"},
+                    {"name": "Pinkie Twinkie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004004128.png"},
+                    {"name": "Silver Glass", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004200179.png"},
+                    {"name": "Plush", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011552827.png"},
+                    {"name": "Plush Cuttie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011623951.png"},
+                    {"name": "Spider Fun", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012003197.png"},
+                    {"name": "Horse", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012355663.png"},
+                    {"name": "Hand", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013039090.png"},
+                    {"name": "Ancient", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014521352.png"},
+                    {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014626463.png"},
+                    {"name": "Skinny Boi", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004055652.png"},
+                    {"name": "Rainbow", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004125778.png"},
+                    {"name": "Russian Wood", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011527878.png"},
+                    {"name": "Afterparty", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011822289.png"},
+                    {"name": "Neon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012439323.png"},
+                    {"name": "Black Jack", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013144671.png"},
+                    {"name": "Galaxy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014555528.png"},
+                    {"name": "Hell Red", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014650858.png"}
                 ],
                 "backdrops_source": "Astral Shard",
                 "patterns_source": "Astral Shard"
@@ -1843,6 +1756,33 @@
                 "models": [
                     {"name": "Nikitka", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/refs/heads/main/BackgroundEraser_20250718_145212143.png"},
                     {"name": "Gold", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220944840-min.png"},
+                    {"name": "Plushy", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221053786-min.png"},
+                    {"name": "XXXTentacion", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222249990-min.png"},
+                    {"name": "Cactus King", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013002213-min.png"},
+                    {"name": "354 KANON", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013042799-min.png"},
+                    {"name": "Duck", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014036288-min.png"},
+                    {"name": "Spider King", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220335725-min.png"},
+                    {"name": "Bitcoin", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012502725-min.png"},
+                    {"name": "Move To Heaven", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012612974-min.png"},
+                    {"name": "Frogie", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012824238-min.png"},
+                    {"name": "The King", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012931928-min.png"},
+                    {"name": "Fire On Fire", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013941593-min.png"},
+                    {"name": "Icy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220405846-min.png"},
+                    {"name": "Pick Me", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220906007-min.png"},
+                    {"name": "Black Bird", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221147963-min.png"},
+                    {"name": "Pavel Durov", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222706006-min.png"},
+                    {"name": "Banana", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013851152-min.png"},
+                    {"name": "Mummy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014247708-min.png"},
+                    {"name": "Police Man", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014319952-min.png"},
+                    {"name": "Electric BDSM", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014554522-min.png"},
+                    {"name": "Glassy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221020205-min.png"},
+                    {"name": "Ancient", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012541910-min.png"},
+                    {"name": "Business", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013214856-min.png"},
+                    {"name": "Spookie", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013308503-min.png"},
+                    {"name": "Minion", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013343118-min.png"},
+                    {"name": "Oh Shit", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013417326-min.png"},
+                    {"name": "Emo Girl", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014533870-min.png"},
+                    {"name": "Minecraft", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014750440-min.png"}
                 ],
                 "backdrops_source": "Snoop Dogg",
                 "patterns_source": "Snoop Dogg"
@@ -1853,6 +1793,32 @@
                 "models": [
                     {"name": "Redo", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154505502.png"},
                     {"name": "Bored Ape", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153421320.png"},
+                    {"name": "Snoop Dogg", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153800346.png"},
+                    {"name": "Austronaut", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153211676.png"},
+                    {"name": "Chinese Dragon", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153332160.png"},
+                    {"name": "Radioactive", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154437815.png"},
+                    {"name": "Pink Guard", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154725761.png"},
+                    {"name": "Angel", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155859028.png"},
+                    {"name": "Devil", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155937967.png"},
+                    {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153059849.png"},
+                    {"name": "Rainbow", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153251813.png"},
+                    {"name": "Spookie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153836181.png"},
+                    {"name": "Spider", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154055429.png"},
+                    {"name": "Dying Light", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154537813.png"},
+                    {"name": "Hippo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155053345.png"},
+                    {"name": "Poo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155200011.png"},
+                    {"name": "Pikachu", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155411045.png"},
+                    {"name": "XXXTentacion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155652114.png"},
+                    {"name": "Electric", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155830968.png"},
+                    {"name": "Glassy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160036747.png"},
+                    {"name": "Alien", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160243304.png"},
+                    {"name": "Piggy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160346910.png"},
+                    {"name": "Panda", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153136834.png"},
+                    {"name": "Capybara", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153629360.png"},
+                    {"name": "Dolphin", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155125393.png"},
+                    {"name": "Rabbit", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155341280.png"},
+                    {"name": "Elephant", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160003197.png"},
+                    {"name": "Bee", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160317620.png"}
                 ],
                 "backdrops_source": "Toy Bear",
                 "patterns_source": "Toy Bear"
@@ -1863,6 +1829,34 @@
                 "models": [
                     {"name": "Eyes Closed", "rarityPermille": 1, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224650949.png?raw=true"},
                     {"name": "Golden Dog", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224121131.png?raw=true"},
+                    {"name": "Sapphire", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224146402.png?raw=true"},
+                    {"name": "Pavel Du Rove", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224244337.png?raw=true"},
+                    {"name": "Dogugu", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224952768.png?raw=true"},
+                    {"name": "Fridge", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223539864.png?raw=true"},
+                    {"name": "Cabbage", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223714257.png?raw=true"},
+                    {"name": "Hot Peach", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223954489.png?raw=true"},
+                    {"name": "Emelard", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224215512.png?raw=true"},
+                    {"name": "Mathematics", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224336692.png?raw=true"},
+                    {"name": "Duck", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224759233.png?raw=true"},
+                    {"name": "Hop Nai-Ni-Nai", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225034482.png?raw=true"},
+                    {"name": "Hippo", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223609273.png?raw=true"},
+                    {"name": "Pikachu", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223642208.png?raw=true"},
+                    {"name": "Bad Doggy", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223841940.png?raw=true"},
+                    {"name": "Demonic Dog", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224026427.png?raw=true"},
+                    {"name": "Angelic Dog", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224054677.png?raw=true"},
+                    {"name": "Frogie", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224626535.png?raw=true"},
+                    {"name": "Pick Me", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224726881.png?raw=true"},
+                    {"name": "Dying Light", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224830054.png?raw=true"},
+                    {"name": "Halloween", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224929413.png?raw=true"},
+                    {"name": "Invisible", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225502804.png?raw=true"},
+                    {"name": "Kitten", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223514941.png?raw=true"},
+                    {"name": "Tiger", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223743205.png?raw=true"},
+                    {"name": "Spider", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223907805.png?raw=true"},
+                    {"name": "Elephant", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224405798.png?raw=true"},
+                    {"name": "Ghosty", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224443074.png?raw=true"},
+                    {"name": "Banana", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224857672.png?raw=true"},
+                    {"name": "Rainbow", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225055413.png?raw=true"},
+                    {"name": "I Don't Care", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225130675.png?raw=true"}
                 ],
                 "backdrops_source": "Toy Bear",
                 "patterns_source": "Toy Bear"
@@ -1885,7 +1879,6 @@
         let selectionAction = null;
         let reorderModeActive = false;
         let selectedGiftIds = new Set();
-        let fullscreenEnabled = false;
 
         let animationsEnabled = true;
         let showHiddenGifts = false;
@@ -1895,12 +1888,9 @@
         let tg = window.Telegram.WebApp;
 
         // --- DOM Elements ---
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const loadingAnimationContainer = document.getElementById('loading-animation-container');
         const appContainer = document.querySelector('.app-container');
         const accountSidebar = document.getElementById('account-sidebar');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const sidebarSearchInput = document.getElementById('sidebar-search-input');
         const sidebarCurrentAvatar = document.getElementById('sidebar-current-avatar');
         const sidebarCurrentName = document.getElementById('sidebar-current-name');
         const accountsList = document.getElementById('accounts-list');
@@ -2001,7 +1991,6 @@
 
         const settingsModal = document.getElementById('settings-modal');
         const animationToggle = document.getElementById('animation-toggle');
-        const fullscreenToggle = document.getElementById('fullscreen-toggle');
         const customGiftsToggle = document.getElementById('custom-gifts-toggle');
         const showHiddenToggle = document.getElementById('show-hidden-toggle');
         const hideMultipleButton = document.getElementById('hide-multiple-button');
@@ -2082,12 +2071,6 @@
         const newPostContent = document.getElementById('new-post-content');
         const submitNewPostButton = document.getElementById('submit-new-post-button');
 
-        const notificationsModal = document.getElementById('notifications-modal');
-        const notificationsUsername = document.getElementById('notifications-username');
-        const mentionsToggle = document.getElementById('mentions-toggle');
-        const newPostsToggle = document.getElementById('new-posts-toggle');
-        const closeNotificationsModal = document.getElementById('close-notifications-modal');
-
         const exitFilterModeButton = document.createElement('button');
         exitFilterModeButton.id = 'exit-filter-mode-button';
         exitFilterModeButton.className = 'action-button hidden';
@@ -2117,12 +2100,6 @@
         hideSelectedGiftsButton.className = 'action-button hidden';
         hideSelectedGiftsButton.textContent = 'Hide';
         profileGiftsActions.prepend(hideSelectedGiftsButton);
-        
-        const notificationsButton = document.createElement('button');
-        notificationsButton.id = 'notifications-button';
-        notificationsButton.className = 'action-button hidden';
-        notificationsButton.innerHTML = BELL_ICON_SVG;
-        profileGiftsActions.prepend(notificationsButton);
 
         const coolNumbers = ["+888 8888 8888", "+888 0000 0001", "+888 1234 5678", "+888 1111 1111", "+888 7777 7777", "+888 0707 6969", "+888 1337 1337", "+888 2024 2025", "+888 1000 0001", "+888 0808 0808"];
         const coolUsernames = ["durov", "admin", "king", "wallet", "crypto", "elon", "boss", "premium", "gift", "star", "diamond", "anonymous", "market", "bank", "news", "pessi", "penaldo", "token", "exchange", "ceo", "founder", "investor"];
@@ -2142,7 +2119,6 @@
         let sortableInstance = null;
         let modalSwipeState = { startX: 0, isSwiping: false };
         let selectedGiveawayGifts = new Set();
-        let currentlyViewedProfile = {};
 
         // --- API Utility Function ---
         async function callBackend(endpoint, method = 'GET', data = null, params = {}) {
@@ -2252,14 +2228,6 @@
 
         async function initApp() {
             tg.ready(); tg.expand();
-            bodymovin.loadAnimation({
-                container: loadingAnimationContainer,
-                path: 'https://cdn.changes.tg/gifts/models/Jolly%20Chimp/lottie/Toddler.json',
-                renderer: 'svg',
-                loop: true,
-                autoplay: true
-            });
-
             initLottieObserver();
 
             collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
@@ -2302,23 +2270,11 @@
             setupEventListeners();
             await fetchGiftPrices();
             await fetchAvailableGifts();
-            
-            loadingOverlay.style.opacity = '0';
-            setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
-
-            if (fullscreenEnabled) {
-                try {
-                    tg.requestFullscreen();
-                } catch (e) {
-                    console.warn("Failed to enter fullscreen:", e);
-                }
-            }
         }
 
         async function initializeTelegramUserAccount() {
             manageBackButton(false);
             viewingOwnProfile = true;
-            currentlyViewedProfile = {};
             const user = tg.initDataUnsafe?.user;
             let tg_id = user?.id;
 
@@ -2387,7 +2343,6 @@
              viewingOwnProfile = false;
              try {
                 const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
-                currentlyViewedProfile = profileData;
                 ownedGifts = profileData.owned_gifts || [];
                 profilePosts = profileData.posts || [];
 
@@ -2414,9 +2369,6 @@
                 profileBio.style.cursor = 'default';
                 profileBio.onclick = null;
                 profileAvatar.style.cursor = 'default';
-                
-                buyGiftsTabButton.classList.add('disabled');
-                buyGiftsTabButton.disabled = true;
 
                 renderAll();
             } catch (error) {
@@ -2462,10 +2414,50 @@
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
 
+        function loadUserData() {
+            const account = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            if (!account) return;
+
+            profileName.textContent = account.full_name || 'User';
+            profileAvatar.src = account.avatar_url || '';
+            profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
+            profileUsername.textContent = account.username ? `@${account.username}` : 'no username';
+            profileUsername.onclick = () => { if(account.username) displayUserProfile(account.username); };
+            profileBio.textContent = account.bio || "No bio yet";
+            profilePhone.textContent = account.phone_number || "Not specified";
+            profileBio.style.cursor = 'pointer';
+            profileAvatar.style.cursor = 'pointer';
+
+            collectibleUsernamesContainer.innerHTML = '';
+            if (account.collectible_usernames && account.collectible_usernames.length > 0) {
+                const alsoSpan = document.createElement('span');
+                alsoSpan.className = 'also-text';
+                alsoSpan.textContent = 'also';
+                collectibleUsernamesContainer.appendChild(alsoSpan);
+
+                account.collectible_usernames.forEach(uname => {
+                    const unameSpan = document.createElement('span');
+                    unameSpan.className = 'collectible-username-span';
+                    unameSpan.textContent = `@${uname}`;
+                    unameSpan.dataset.username = uname;
+                    unameSpan.addEventListener('click', () => displayUserProfile(uname));
+                    unameSpan.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        handleDeleteCollectibleUsername(uname);
+                    });
+
+                    collectibleUsernamesContainer.appendChild(unameSpan);
+                });
+            }
+
+            sidebarCurrentAvatar.src = account.avatar_url;
+            sidebarCurrentName.textContent = account.full_name;
+        }
+
+        // --- Account Management ---
         function loadClientSideState() {
             animationsEnabled = JSON.parse(localStorage.getItem('animationsEnabled' + APP_VERSION_SUFFIX)) ?? true;
             showHiddenGifts = JSON.parse(localStorage.getItem('showHiddenGifts' + APP_VERSION_SUFFIX)) ?? false;
-            fullscreenEnabled = JSON.parse(localStorage.getItem('fullscreenEnabled' + APP_VERSION_SUFFIX)) ?? false;
             activeFilters = JSON.parse(localStorage.getItem('activeFilters' + APP_VERSION_SUFFIX)) || { collection: null, model: null, backdrop: null, pattern: null };
             accounts = JSON.parse(localStorage.getItem('giftSimAccounts' + APP_VERSION_SUFFIX)) || [];
             currentAccountTgId = localStorage.getItem('giftSimCurrentAccountTgId' + APP_VERSION_SUFFIX);
@@ -2475,7 +2467,6 @@
             localStorage.setItem('activeFilters' + APP_VERSION_SUFFIX, JSON.stringify(activeFilters));
             localStorage.setItem('animationsEnabled' + APP_VERSION_SUFFIX, JSON.stringify(animationsEnabled));
             localStorage.setItem('showHiddenGifts' + APP_VERSION_SUFFIX, JSON.stringify(showHiddenGifts));
-            localStorage.setItem('fullscreenEnabled' + APP_VERSION_SUFFIX, JSON.stringify(fullscreenEnabled));
         }
 
         function saveClientSideAccounts() {
@@ -2525,15 +2516,9 @@
         function renderAll() {
             if (viewingOwnProfile) {
                 loadUserData();
-                buyGiftsTabButton.classList.remove('disabled');
-                buyGiftsTabButton.disabled = false;
-                notificationsButton.classList.add('hidden');
-            } else {
-                notificationsButton.classList.remove('hidden');
             }
             renderAccountsList();
             animationToggle.checked = animationsEnabled;
-            fullscreenToggle.checked = fullscreenEnabled;
             showHiddenToggle.checked = showHiddenGifts;
             customGiftsToggle.checked = customGiftsEnabled;
             applyWornGiftStyles();
@@ -2928,13 +2913,11 @@
 
             const showUpgradeAll = hasNonCollectible && viewingOwnProfile && !reorderModeActive && !selectionModeActive;
             const showFilterExit = hasActiveFilter && !reorderModeActive && !selectionModeActive;
-            const showNotifications = !viewingOwnProfile && !reorderModeActive && !selectionModeActive;
 
             upgradeAllGiftsButton.classList.toggle('hidden', !showUpgradeAll);
             exitFilterModeButton.classList.toggle('hidden', !showFilterExit);
-            notificationsButton.classList.toggle('hidden', !showNotifications);
 
-            const isAnyButtonVisible = showUpgradeAll || showFilterExit || showNotifications || reorderModeActive || selectionModeActive;
+            const isAnyButtonVisible = showUpgradeAll || showFilterExit || reorderModeActive || selectionModeActive;
             profileGiftsActionsWrapper.classList.toggle('hidden', !isAnyButtonVisible);
         }
 
@@ -2953,32 +2936,10 @@
                 return;
             }
 
-            // --- Instant Frontend Update ---
-            const tempGifts = [];
-            for (let i = 0; i < quantity; i++) {
-                const tempGift = {
-                    instance_id: `temp_${generateUniqueId()}`,
-                    owner_id: currentAccountTgId,
-                    gift_type_id: id,
-                    gift_name: name,
-                    original_image_url: originalImage,
-                    lottie_path: lottiePath,
-                    is_collectible: false,
-                    acquired_date: new Date().toISOString(),
-                };
-                tempGifts.push(tempGift);
-            }
-            ownedGifts.unshift(...tempGifts);
-            renderProfileGifts();
-            showPage('profile-page');
-            switchTab('gifts');
-            tg.HapticFeedback.notificationOccurred('success');
-            // --- End Instant Frontend Update ---
-
             try {
-                for (const tempGift of tempGifts) {
+                for (let i = 0; i < quantity; i++) {
                      await callBackend('/api/gifts', 'POST', {
-                        instance_id: tempGift.instance_id, // Use the same temp ID for now
+                        instance_id: generateUniqueId(),
                         owner_id: currentAccountTgId,
                         gift_type_id: id,
                         gift_name: name,
@@ -2986,14 +2947,17 @@
                         lottie_path: lottiePath
                     });
                 }
-                // Optionally, re-fetch to get the final correct data from the backend
-                // This can be done silently without a loading spinner
-                await initializeTelegramUserAccount(); 
+                
+                await initializeTelegramUserAccount();
+
+                renderProfileGifts();
+                tg.HapticFeedback.notificationOccurred('success');
+                const message = quantity > 1 ? `Added ${quantity} "${name}" gifts!` : `Added "${name}" gift!`;
+                tg.showAlert(message);
+                showPage('profile-page');
+                switchTab('gifts');
 
             } catch (error) {
-                // If backend fails, remove the temp gifts
-                ownedGifts = ownedGifts.filter(g => !g.instance_id.startsWith('temp_'));
-                renderProfileGifts();
                 tg.HapticFeedback.notificationOccurred('error');
             }
         }
@@ -3003,9 +2967,14 @@
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
             if (isNaN(quantity) || quantity < 1) { tg.showAlert("Please enter a valid quantity."); return; }
 
-            closeModal(buyMultipleModal);
+            confirmBuyMultipleButton.disabled = true;
+            confirmBuyMultipleButton.textContent = 'Buying...';
+
             await buyGift(currentGiftToBuyMultiple.id, currentGiftToBuyMultiple.name, currentGiftToBuyMultiple.originalImage, currentGiftToBuyMultiple.lottiePath, quantity);
-            
+
+            confirmBuyMultipleButton.disabled = false;
+            confirmBuyMultipleButton.textContent = 'Buy';
+            closeModal(buyMultipleModal);
             currentGiftToBuyMultiple = null;
         }
 
@@ -3129,8 +3098,6 @@
                 populateCollectibleDetailModal(data);
             } else if (modalElement.id === 'giveaway-setup-modal') {
                  populateGiveawaySetupModal();
-            } else if (modalElement.id === 'notifications-modal' && data) {
-                populateNotificationsModal(data);
             }
 
             modalElement.classList.add('active');
@@ -3498,8 +3465,7 @@
 
             pinnedGifts.forEach(pinnedGift => {
                 const card = createGiftCardDOM(pinnedGift);
-                card.onclick = async (e) => { // Use onclick to avoid double-triggering
-                    e.stopPropagation();
+                card.addEventListener('click', async () => {
                     try {
                         await callBackend(`/api/gifts/${pinnedGift.instance_id}`, 'PUT', { action: 'pin', value: false });
                         if (currentLongPressGift && currentLongPressGift.is_collectible) {
@@ -3513,7 +3479,7 @@
                         closeModal(tooManyPinsModal);
                         currentLongPressGift = null;
                     }
-                };
+                });
                 unpinSelectionGrid.appendChild(card);
                 observeLottieElement(card);
             });
@@ -3665,24 +3631,6 @@
             animationsEnabled = animationToggle.checked;
             tg.HapticFeedback.impactOccurred('light');
             updateAllAnimationsState();
-            saveClientSideState();
-        }
-
-        function handleFullscreenToggle() {
-            fullscreenEnabled = fullscreenToggle.checked;
-            try {
-                if (fullscreenEnabled) {
-                    tg.requestFullscreen();
-                } else {
-                    tg.exitFullscreen();
-                }
-            } catch (e) {
-                console.warn("Fullscreen API not available or failed:", e);
-                tg.showAlert("Fullscreen mode is not supported on your device.");
-                fullscreenEnabled = false;
-                fullscreenToggle.checked = false;
-            }
-            tg.HapticFeedback.impactOccurred('light');
             saveClientSideState();
         }
 
@@ -4845,15 +4793,7 @@
             profilePosts.forEach(post => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
-                card.dataset.postId = post.id;
-                
-                let menuButtonHTML = '';
-                if (viewingOwnProfile) {
-                    menuButtonHTML = `<button class="post-menu-button">${MENU_DOTS_SVG}</button>`;
-                }
-        
                 card.innerHTML = `
-                    ${menuButtonHTML}
                     <div class="post-content">${parsePostContent(post.content)}</div>
                     <div class="post-footer">
                         <span>${new Date(post.created_at).toLocaleString()}</span>
@@ -4861,22 +4801,13 @@
                     </div>
                 `;
                 postsContent.appendChild(card);
-                
-                if(viewingOwnProfile) {
-                    card.querySelector('.post-menu-button').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Here you would open a context menu with a delete option
-                        handleDeletePost(post.id);
-                    });
-                }
-                
                 // Increment view count, but not for own posts
                 if (!viewingOwnProfile) {
-                    callBackend(`/api/posts/${post.id}/view`, 'POST').catch(console.error);
+                    callBackend(`/api/posts/${post.id}/view`, 'POST');
                 }
             });
         }
-    
+        
         function parsePostContent(content) {
             let html = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             
@@ -4897,10 +4828,10 @@
                 const giftId = `${name.replace(/\s/g, '')}-${number}`;
                 return `<a href="#" class="gift-link" data-gift-id="${giftId}">${match}</a>`;
             });
-    
+
             return html;
         }
-    
+
         function handleWallClick(e) {
             const userLink = e.target.closest('.user-link');
             if (userLink) {
@@ -4926,7 +4857,7 @@
             }
             submitNewPostButton.disabled = true;
             submitNewPostButton.textContent = "Posting...";
-    
+
             try {
                 const newPost = await callBackend('/api/posts', 'POST', {
                     owner_id: currentAccountTgId,
@@ -4943,63 +4874,20 @@
                 newPostContent.value = '';
             }
         }
-    
-        async function handleDeletePost(postId) {
-            tg.showConfirm("Are you sure you want to delete this post?", async (confirmed) => {
-                if (confirmed) {
-                    try {
-                        await callBackend(`/api/posts/${postId}`, 'DELETE', { owner_id: currentAccountTgId });
-                        profilePosts = profilePosts.filter(p => p.id !== postId);
-                        renderPosts();
-                        tg.HapticFeedback.notificationOccurred('success');
-                    } catch (error) {
-                        tg.HapticFeedback.notificationOccurred('error');
-                    }
-                }
-            });
-        }
-        
-        function populateNotificationsModal(profileData) {
-            notificationsUsername.textContent = profileData.username;
-            mentionsToggle.checked = profileData.subscription_status?.mentions || false;
-            newPostsToggle.checked = profileData.subscription_status?.new_posts || false;
-        }
-    
-        async function handleSubscriptionChange(type, isSubscribing) {
-            if (viewingOwnProfile || !currentlyViewedProfile.tg_id) return;
-            try {
-                await callBackend('/api/users/subscribe', 'POST', {
-                    subscriber_id: currentAccountTgId,
-                    target_user_id: currentlyViewedProfile.tg_id,
-                    notification_type: type,
-                    is_subscribing: isSubscribing
-                });
-                tg.HapticFeedback.impactOccurred('light');
-            } catch (error) {
-                tg.showAlert('Failed to update subscription.');
-                // Revert toggle state
-                if (type === 'mentions') mentionsToggle.checked = !isSubscribing;
-                if (type === 'new_posts') newPostsToggle.checked = !isSubscribing;
-            }
-        }
-    
+
+
         function setupEventListeners() {
             giftsTabButton.addEventListener('click', () => switchTab('gifts'));
             postsTabButton.addEventListener('click', () => switchTab('posts'));
-            buyGiftsTabButton.addEventListener('click', () => {
-                if (buyGiftsTabButton.disabled) return;
-                switchTab('buy-gifts');
-            });
+            buyGiftsTabButton.addEventListener('click', () => switchTab('buy-gifts'));
             postsContent.addEventListener('click', handleWallClick);
             newPostFab.addEventListener('click', () => openModal(newPostModal));
-            notificationsButton.addEventListener('click', () => openModal(notificationsModal, currentlyViewedProfile));
-    
-    
+
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
-    
+
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
             profileAvatar.addEventListener('contextmenu', (e) => { e.preventDefault(); if (viewingOwnProfile) avatarUploadInput.click(); });
-    
+
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) closeModal(modal);
@@ -5007,7 +4895,7 @@
             });
             closeGiftDetailModalButton.addEventListener('click', () => closeModal(giftDetailModal));
             upgradeGiftDetailModalButton.addEventListener('click', (e) => handleSingleGiftUpgradeFromModal(e.target.dataset.instanceId));
-    
+
             document.getElementById('close-collectible-detail-modal').addEventListener('click', () => closeModal(collectibleDetailModal));
             document.getElementById('cancel-unpin-modal').addEventListener('click', () => closeModal(tooManyPinsModal));
             document.getElementById('cancel-buy-multiple').addEventListener('click', () => closeModal(buyMultipleModal));
@@ -5027,8 +4915,8 @@
                 content.classList.toggle('hidden');
                 e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
             });
-    
-    
+
+
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
                 const giftInstanceId = collectibleDetailModal.dataset.instanceId;
@@ -5049,93 +4937,87 @@
                 currentLongPressGift = gift;
                 handleHideAction();
             });
-    
+
             menuPinAction.addEventListener('click', handlePinAction);
             menuHideAction.addEventListener('click', handleHideAction);
             menuCopyLinkAction.addEventListener('click', () => { if(currentLongPressGift) copyGiftLink(currentLongPressGift); });
             menuDeleteAction.addEventListener('click', handleDeleteAction);
             menuShareImageAction.addEventListener('click', handleShareImageAction);
             menuReorderAction.addEventListener('click', enterReorderMode);
-    
+
             confirmBuyMultipleButton.addEventListener('click', handleConfirmBuyMultiple);
-    
+
             openFiltersButton.addEventListener('click', openFilterPopup);
             applyFiltersButton.addEventListener('click', handleApplyFilters);
             clearFiltersButton.addEventListener('click', handleClearFilters);
             exitFilterModeButton.addEventListener('click', handleClearFilters);
             exitReorderModeButton.addEventListener('click', exitReorderMode);
-    
+
             exitSelectionModeButton.addEventListener('click', exitSelectionMode);
             hideSelectedGiftsButton.addEventListener('click', handleHideMultiple);
             transferSelectedGiftsButton.addEventListener('click', handleTransferMultiple);
-    
+
             settingsModal.querySelector('.modal-button.secondary')?.addEventListener('click', () => closeModal(settingsModal));
             animationToggle.addEventListener('change', handleAnimationToggle);
-            fullscreenToggle.addEventListener('change', handleFullscreenToggle);
             customGiftsToggle.addEventListener('change', handleCustomGiftsToggle);
             showHiddenToggle.addEventListener('change', handleShowHiddenToggle);
             hideMultipleButton.addEventListener('click', () => enterSelectionMode('hide'));
             transferMultipleButton.addEventListener('click', () => enterSelectionMode('transfer'));
             clearCurrentAccountDataButton.addEventListener('click', handleClearCurrentAccountData);
             clearAllAccountsDataButton.addEventListener('click', handleClearAllAccountsData);
-    
+
             customizeGiftButton.addEventListener('click', openCustomBuyModal);
             customBuyConfirmButton.addEventListener('click', handleCustomBuyConfirm);
             cloneGiftButton.addEventListener('click', handleCloneGift);
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
-    
+
             sellPriceInput.addEventListener('input', updateSellPriceDetails);
             confirmSellButton.addEventListener('click', handleConfirmSell);
-    
+
             transferUsernameInput.addEventListener('input', () => { confirmTransferButton.disabled = transferUsernameInput.value.trim() === ''; });
             confirmTransferButton.addEventListener('click', handleConfirmTransfer);
-    
+
             avatarUploadInput.addEventListener('change', handleAvatarUpload);
-    
+
             wornGiftIconContainer.addEventListener('click', () => {
                 const wornGift = ownedGifts.find(g => g.is_worn);
                 if (wornGift) openGiftDetailByInstanceId(wornGift.instance_id);
             });
-    
+
             openNumbersButton.addEventListener('click', handleOpenNumbersModal);
             openUsernamesButton.addEventListener('click', handleOpenUsernamesModal);
             usernameSearchInput.addEventListener('input', (e) => populateUsernamesList(e.target.value));
-            sidebarSearchInput.addEventListener('input', (e) => { /* Add search logic here */ });
-    
+
             createGiveawayButton.addEventListener('click', openGiveawaySetupModal);
             confirmGiveawaySetupButton.addEventListener('click', handleConfirmGiveawaySetup);
-    
-            closeNotificationsModal.addEventListener('click', () => closeModal(notificationsModal));
-            mentionsToggle.addEventListener('change', (e) => handleSubscriptionChange('mentions', e.target.checked));
-            newPostsToggle.addEventListener('change', (e) => handleSubscriptionChange('new_posts', e.target.checked));
-    
+
             let touchStartX = 0; const swipeEdgeThreshold = 50;
-            appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches.screenX; }, { passive: true });
+            appContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
             appContainer.addEventListener('touchend', e => {
                 if (e.target.closest('.account-sidebar')) return;
-                const touchEndX = e.changedTouches.screenX;
+                const touchEndX = e.changedTouches[0].screenX;
                 const deltaX = touchEndX - touchStartX;
                 const currentPage = document.querySelector('.page.active');
                 
                 if (touchStartX < swipeEdgeThreshold && deltaX > swipeEdgeThreshold) { 
                     openSidebar(); 
                 }
-                else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold && !buyGiftsTabButton.disabled) {
+                else if (currentPage && currentPage.id === 'profile-page' && deltaX < -swipeEdgeThreshold) {
                     switchTab('buy-gifts');
                 }
             }, { passive: true });
-    
+
             sidebarOverlay.addEventListener('click', closeSidebar);
             addAccountButton.addEventListener('click', handleAddAccount);
-    
+
             collectibleDetailModal.addEventListener('touchstart', (e) => {
-                modalSwipeState.startX = e.touches.clientX;
+                modalSwipeState.startX = e.touches[0].clientX;
                 modalSwipeState.isSwiping = true;
             }, { passive: true });
             collectibleDetailModal.addEventListener('touchend', (e) => {
                 if (!modalSwipeState.isSwiping) return;
-                const endX = e.changedTouches.clientX;
+                const endX = e.changedTouches[0].clientX;
                 const deltaX = endX - modalSwipeState.startX;
                 const swipeThreshold = 50;
                 if (Math.abs(deltaX) > swipeThreshold) {
@@ -5145,7 +5027,7 @@
                 modalSwipeState.isSwiping = false;
             }, { passive: true });
         }
-    
+
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined) {
             initApp();
         } else {
@@ -5168,12 +5050,10 @@
                     notificationOccurred: (type) => console.log(`Haptic Notification: ${type}`),
                 };
                 tg.openTelegramLink = (url) => { console.log(`Opening TG Link: ${url}`); window.open(url, '_blank'); };
-                tg.requestFullscreen = () => document.documentElement.requestFullscreen();
-                tg.exitFullscreen = () => document.exitFullscreen();
                 tg.ready = () => {}; tg.expand = () => {}; tg.onEvent = () => {};
                 tg.SettingsButton = { isVisible: false, onClick: (cb) => {tg._settingsCb = cb}, show: () => console.log("Settings Button Show"), hide: () => console.log("Settings Button Hide") };
                 tg.BackButton = { isVisible: false, onClick: (cb) => {tg._backCb = cb}, offClick: (cb) => {}, show: () => console.log("Back button shown"), hide: () => console.log("Back button hidden") };
-    
+
                 initApp();
             });
         }
