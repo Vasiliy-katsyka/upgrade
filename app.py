@@ -279,6 +279,7 @@ def init_db():
             """)
             
             # --- FIX: ADDED MISSING TABLES FOR POSTS, REACTIONS, AND SUBSCRIPTIONS ---
+            # --- NEW TABLES ---
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
                     id SERIAL PRIMARY KEY,
@@ -1387,7 +1388,7 @@ def get_user_profile(username):
             if viewer_id:
                 cur.execute("SELECT notification_type FROM user_subscriptions WHERE subscriber_id = %s AND target_user_id = %s;", (viewer_id, user_id))
                 profile_data['subscription_status'] = {row['notification_type']: True for row in cur.fetchall()}
-
+            
             return jsonify(profile_data), 200
     except Exception as e:
         app.logger.error(f"Error fetching profile for {username}: {e}", exc_info=True)
@@ -1970,6 +1971,123 @@ def batch_gift_action():
     finally:
         if conn: put_db_connection(conn)
 
+@app.route('/api/users/subscribe', methods=['POST'])
+def handle_user_subscription():
+    data = request.get_json()
+    subscriber_id = data.get('subscriber_id')
+    target_user_id = data.get('target_user_id')
+    notification_type = data.get('notification_type')
+    is_subscribing = data.get('is_subscribing')
+
+    if not all([subscriber_id, target_user_id, notification_type, isinstance(is_subscribing, bool)]):
+        return jsonify({"error": "Missing or invalid parameters."}), 400
+    if notification_type not in ['mentions', 'new_posts']:
+        return jsonify({"error": "Invalid notification_type."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor() as cur:
+            if is_subscribing:
+                cur.execute("""
+                    INSERT INTO user_subscriptions (subscriber_id, target_user_id, notification_type)
+                    VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;
+                """, (subscriber_id, target_user_id, notification_type))
+            else:
+                cur.execute("""
+                    DELETE FROM user_subscriptions
+                    WHERE subscriber_id = %s AND target_user_id = %s AND notification_type = %s;
+                """, (subscriber_id, target_user_id, notification_type))
+            conn.commit()
+            return jsonify({"message": "Subscription updated."}), 200
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error updating subscription for {subscriber_id} to {target_user_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/posts/<int:post_id>/react', methods=['POST'])
+def react_to_post(post_id):
+    data = request.get_json()
+    user_id = data.get('user_id')
+    reaction_emoji = data.get('reaction_emoji')
+
+    if not all([user_id, reaction_emoji]):
+        return jsonify({"error": "user_id and reaction_emoji are required."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Check if user has already reacted with this emoji
+            cur.execute("SELECT id FROM post_reactions WHERE post_id = %s AND user_id = %s AND reaction_emoji = %s;", (post_id, user_id, reaction_emoji))
+            existing_reaction = cur.fetchone()
+
+            if existing_reaction:
+                # User is un-reacting
+                cur.execute("DELETE FROM post_reactions WHERE id = %s;", (existing_reaction['id'],))
+            else:
+                # User is adding a new reaction
+                # Check if user has reached the 3-reaction limit for this post
+                cur.execute("SELECT COUNT(DISTINCT reaction_emoji) FROM post_reactions WHERE post_id = %s AND user_id = %s;", (post_id, user_id))
+                reaction_count = cur.fetchone()[0]
+                if reaction_count >= 3:
+                    return jsonify({"error": "You can only use up to 3 different reactions per post."}), 403
+                
+                cur.execute("INSERT INTO post_reactions (post_id, user_id, reaction_emoji) VALUES (%s, %s, %s);", (post_id, user_id, reaction_emoji))
+
+            conn.commit()
+            
+            # Fetch updated reaction counts
+            cur.execute("""
+                SELECT reaction_emoji, COUNT(*) as count
+                FROM post_reactions WHERE post_id = %s
+                GROUP BY reaction_emoji;
+            """, (post_id,))
+            updated_reactions = {row['reaction_emoji']: row['count'] for row in cur.fetchall()}
+            
+            return jsonify({"message": "Reaction updated.", "reactions": updated_reactions}), 200
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error processing reaction for post {post_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    # In a real app, you'd verify ownership via a session or JWT token.
+    # Here we'll trust the owner_id sent from the frontend for simplicity.
+    data = request.get_json()
+    owner_id = data.get('owner_id')
+
+    if not owner_id:
+        return jsonify({"error": "owner_id is required"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor() as cur:
+            # First, delete associated reactions to maintain data integrity
+            cur.execute("DELETE FROM post_reactions WHERE post_id = %s;", (post_id,))
+            # Then, delete the post, ensuring the user owns it
+            cur.execute("DELETE FROM posts WHERE id = %s AND owner_id = %s;", (post_id, owner_id))
+            
+            if cur.rowcount == 0:
+                conn.rollback()
+                return jsonify({"error": "Post not found or you are not the owner."}), 404
+            
+            conn.commit()
+            return jsonify({"message": "Post deleted successfully."}), 204
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error deleting post {post_id} for user {owner_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
 @app.route('/api/gifts/transfer', methods=['POST'])
 def transfer_gift():
     data = request.get_json()
@@ -2082,7 +2200,7 @@ def create_post():
             # New post notifications
             cur.execute("SELECT subscriber_id FROM user_subscriptions WHERE target_user_id = %s AND notification_type = 'new_posts';", (owner_id,))
             for row in cur.fetchall():
-                send_telegram_message(row['subscriber_id'], f"@{poster_username} has a new post on their wall!") # Add a button later
+                send_telegram_message(row['subscriber_id'], f"🔔 @{poster_username} has a new post on their wall! Come check it out.") # Add a button later
 
             # Mention notifications
             mentioned_users = set(re.findall(r'@([a-zA-Z0-9_]{5,32})', content))
@@ -2090,9 +2208,10 @@ def create_post():
                 cur.execute("SELECT tg_id FROM accounts WHERE username = %s;", (username,))
                 mentioned_user = cur.fetchone()
                 if mentioned_user:
+                     # Check if the mentioned user is subscribed to the poster for mentions
                     cur.execute("SELECT subscriber_id FROM user_subscriptions WHERE target_user_id = %s AND notification_type = 'mentions' AND subscriber_id = %s;", (owner_id, mentioned_user['tg_id']))
                     if cur.fetchone():
-                        send_telegram_message(mentioned_user['tg_id'], f"You were mentioned on @{poster_username}'s wall!")
+                        send_telegram_message(mentioned_user['tg_id'], f"🔔 You were mentioned on @{poster_username}'s wall!")
 
             return jsonify(new_post), 201
     except Exception as e:
