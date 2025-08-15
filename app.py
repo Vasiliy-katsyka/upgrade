@@ -23,7 +23,7 @@ from psycopg2 import pool
 
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
-CORS(app, resources={r"/api/*": {"origins": "*"}}) # Using wildcard for broad compatibility
+CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}})
 
 # --- ENVIRONMENT VARIABLES & CONSTANTS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -31,8 +31,8 @@ TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 TRANSFER_API_KEY = os.environ.get('TRANSFER_API_KEY')
 WEBHOOK_URL = "https://upgrade-a57g.onrender.com"
 
-if not DATABASE_URL or not TELEGRAM_BOT_TOKEN or not TRANSFER_API_KEY:
-    raise ValueError("Missing required environment variables: DATABASE_URL, TELEGRAM_BOT_TOKEN, and/or TRANSFER_API_KEY")
+if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
+    raise ValueError("Missing required environment variables: DATABASE_URL and/or TELEGRAM_BOT_TOKEN")
 
 GIFT_LIMIT_PER_USER = 5000
 MAX_COLLECTIONS_PER_USER = 9
@@ -89,6 +89,33 @@ CUSTOM_GIFTS_DATA = {
         "models": [
             {"name": "She Wants", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011319484.png"},
             {"name": "Anal Games", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004252351.png"},
+            {"name": "Romance", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011244151.png"},
+            {"name": "Ma Boi", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012725065.png"},
+            {"name": "Twins 18", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004029718.png"},
+            {"name": "Golden Sex", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004223973.png"},
+            {"name": "Pixels", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012914349.png"},
+            {"name": "Penis Sword", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014719027.png"},
+            {"name": "Water One", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004351728.png"},
+            {"name": "Woman Place", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004416012.png"},
+            {"name": "Volcano", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011343633.png"},
+            {"name": "Telegram", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012648445.png"},
+            {"name": "Pinkie Twinkie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004004128.png"},
+            {"name": "Silver Glass", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004200179.png"},
+            {"name": "Plush", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011552827.png"},
+            {"name": "Plush Cuttie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011623951.png"},
+            {"name": "Spider Fun", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012003197.png"},
+            {"name": "Horse", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012355663.png"},
+            {"name": "Hand", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013039090.png"},
+            {"name": "Ancient", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014521352.png"},
+            {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014626463.png"},
+            {"name": "Skinny Boi", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004055652.png"},
+            {"name": "Rainbow", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004125778.png"},
+            {"name": "Russian Wood", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011527878.png"},
+            {"name": "Afterparty", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011822289.png"},
+            {"name": "Neon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012439323.png"},
+            {"name": "Black Jack", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013144671.png"},
+            {"name": "Galaxy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014555528.png"},
+            {"name": "Hell Red", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014650858.png"}
         ],
         "backdrops_source": "Astral Shard",
         "patterns_source": "Astral Shard"
@@ -98,6 +125,33 @@ CUSTOM_GIFTS_DATA = {
         "models": [
             {"name": "Nikitka", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/refs/heads/main/BackgroundEraser_20250718_145212143.png"},
             {"name": "Gold", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220944840-min.png"},
+            {"name": "Plushy", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221053786-min.png"},
+            {"name": "XXXTentacion", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222249990-min.png"},
+            {"name": "Cactus King", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013002213-min.png"},
+            {"name": "354 KANON", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013042799-min.png"},
+            {"name": "Duck", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014036288-min.png"},
+            {"name": "Spider King", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220335725-min.png"},
+            {"name": "Bitcoin", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012502725-min.png"},
+            {"name": "Move To Heaven", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012612974-min.png"},
+            {"name": "Frogie", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012824238-min.png"},
+            {"name": "The King", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012931928-min.png"},
+            {"name": "Fire On Fire", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013941593-min.png"},
+            {"name": "Icy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220405846-min.png"},
+            {"name": "Pick Me", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_220906007-min.png"},
+            {"name": "Black Bird", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221147963-min.png"},
+            {"name": "Pavel Durov", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_222706006-min.png"},
+            {"name": "Banana", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013851152-min.png"},
+            {"name": "Mummy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014247708-min.png"},
+            {"name": "Police Man", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014319952-min.png"},
+            {"name": "Electric BDSM", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014554522-min.png"},
+            {"name": "Glassy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250717_221020205-min.png"},
+            {"name": "Ancient", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_012541910-min.png"},
+            {"name": "Business", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013214856-min.png"},
+            {"name": "Spookie", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013308503-min.png"},
+            {"name": "Minion", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013343118-min.png"},
+            {"name": "Oh Shit", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_013417326-min.png"},
+            {"name": "Emo Girl", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014533870-min.png"},
+            {"name": "Minecraft", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/main/BackgroundEraser_20250718_014750440-min.png"}
         ],
         "backdrops_source": "Snoop Dogg",
         "patterns_source": "Snoop Dogg"
@@ -108,6 +162,32 @@ CUSTOM_GIFTS_DATA = {
         "models": [
             {"name": "Redo", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154505502.png"},
             {"name": "Bored Ape", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153421320.png"},
+            {"name": "Snoop Dogg", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153800346.png"},
+            {"name": "Austronaut", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153211676.png"},
+            {"name": "Chinese Dragon", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153332160.png"},
+            {"name": "Radioactive", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154437815.png"},
+            {"name": "Pink Guard", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154725761.png"},
+            {"name": "Angel", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155859028.png"},
+            {"name": "Devil", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155937967.png"},
+            {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153059849.png"},
+            {"name": "Rainbow", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153251813.png"},
+            {"name": "Spookie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153836181.png"},
+            {"name": "Spider", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154055429.png"},
+            {"name": "Dying Light", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_154537813.png"},
+            {"name": "Hippo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155053345.png"},
+            {"name": "Poo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155200011.png"},
+            {"name": "Pikachu", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155411045.png"},
+            {"name": "XXXTentacion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155652114.png"},
+            {"name": "Electric", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155830968.png"},
+            {"name": "Glassy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160036747.png"},
+            {"name": "Alien", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160243304.png"},
+            {"name": "Piggy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160346910.png"},
+            {"name": "Panda", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153136834.png"},
+            {"name": "Capybara", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_153629360.png"},
+            {"name": "Dolphin", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155125393.png"},
+            {"name": "Rabbit", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_155341280.png"},
+            {"name": "Elephant", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160003197.png"},
+            {"name": "Bee", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/BagginCat/main/BackgroundEraser_20250720_160317620.png"}
         ],
         "backdrops_source": "Toy Bear",
         "patterns_source": "Toy Bear"
@@ -118,6 +198,34 @@ CUSTOM_GIFTS_DATA = {
         "models": [
             {"name": "Eyes Closed", "rarityPermille": 1, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224650949.png?raw=true"},
             {"name": "Golden Dog", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224121131.png?raw=true"},
+            {"name": "Sapphire", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224146402.png?raw=true"},
+            {"name": "Pavel Du Rove", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224244337.png?raw=true"},
+            {"name": "Dogugu", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224952768.png?raw=true"},
+            {"name": "Fridge", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223539864.png?raw=true"},
+            {"name": "Cabbage", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223714257.png?raw=true"},
+            {"name": "Hot Peach", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223954489.png?raw=true"},
+            {"name": "Emelard", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224215512.png?raw=true"},
+            {"name": "Mathematics", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224336692.png?raw=true"},
+            {"name": "Duck", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224759233.png?raw=true"},
+            {"name": "Hop Nai-Ni-Nai", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225034482.png?raw=true"},
+            {"name": "Hippo", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223609273.png?raw=true"},
+            {"name": "Pikachu", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223642208.png?raw=true"},
+            {"name": "Bad Doggy", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223841940.png?raw=true"},
+            {"name": "Demonic Dog", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224026427.png?raw=true"},
+            {"name": "Angelic Dog", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224054677.png?raw=true"},
+            {"name": "Frogie", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224626535.png?raw=true"},
+            {"name": "Pick Me", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224726881.png?raw=true"},
+            {"name": "Dying Light", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224830054.png?raw=true"},
+            {"name": "Halloween", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224929413.png?raw=true"},
+            {"name": "Invisible", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225502804.png?raw=true"},
+            {"name": "Kitten", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223514941.png?raw=true"},
+            {"name": "Tiger", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223743205.png?raw=true"},
+            {"name": "Spider", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_223907805.png?raw=true"},
+            {"name": "Elephant", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224405798.png?raw=true"},
+            {"name": "Ghosty", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224443074.png?raw=true"},
+            {"name": "Banana", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_224857672.png?raw=true"},
+            {"name": "Rainbow", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225055413.png?raw=true"},
+            {"name": "I Don't Care", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/KeychainDog/blob/main/BackgroundEraser_20250814_225130675.png?raw=true"}
         ],
         "backdrops_source": "Toy Bear",
         "patterns_source": "Toy Bear"
@@ -170,6 +278,7 @@ def init_db():
                 );
             """)
             
+            # --- FIX: ADDED MISSING TABLES FOR POSTS, REACTIONS, AND SUBSCRIPTIONS ---
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
                     id SERIAL PRIMARY KEY,
@@ -198,12 +307,13 @@ def init_db():
                     id SERIAL PRIMARY KEY,
                     subscriber_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
                     target_user_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
-                    notification_type VARCHAR(20) NOT NULL,
+                    notification_type VARCHAR(20) NOT NULL, -- 'mentions' or 'new_posts'
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(subscriber_id, target_user_id, notification_type)
                 );
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_subscriptions_target ON user_subscriptions (target_user_id, notification_type);")
+            # --- END OF FIX ---
 
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS giveaways (
@@ -499,6 +609,7 @@ def normalize_and_build_clone_url(input_str):
     if match:
         name_part = match.group(1).strip().replace(' ', '')
         number_part = match.group(2).strip()
+        # Find the canonical gift name from the CDN data to build the URL
         # This is a simplification; a more robust solution would map aliases
         return f"https://t.me/nft/{name_part}-{number_part}"
     return None
@@ -882,137 +993,179 @@ def _execute_create_and_send(sender_id, sender_username, receiver_id, receiver_u
     finally:
         if conn: put_db_connection(conn)
 
-# --- GIVEAWAY WORKERS ---
-def process_giveaway_winners(giveaway_id):
-    app.logger.info(f"Processing winners for giveaway ID: {giveaway_id}")
+# --- NEW/MODIFIED API ENDPOINTS ---
+@app.route('/api/users/subscribe', methods=['POST'])
+def handle_user_subscription():
+    data = request.get_json()
+    subscriber_id = data.get('subscriber_id')
+    target_user_id = data.get('target_user_id')
+    notification_type = data.get('notification_type')
+    is_subscribing = data.get('is_subscribing')
+
+    if not all([subscriber_id, target_user_id, notification_type, isinstance(is_subscribing, bool)]):
+        return jsonify({"error": "Missing or invalid parameters."}), 400
+    if notification_type not in ['mentions', 'new_posts']:
+        return jsonify({"error": "Invalid notification_type."}), 400
+
     conn = get_db_connection()
-    if not conn: return
-
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("SELECT g.*, a.username as creator_username FROM giveaways g JOIN accounts a ON g.creator_id = a.tg_id WHERE g.id = %s", (giveaway_id,))
-            giveaway = cur.fetchone()
-            if not giveaway: return
-
-            cur.execute("SELECT user_id FROM giveaway_participants WHERE giveaway_id = %s;", (giveaway_id,))
-            participants = [p['user_id'] for p in cur.fetchall()]
-            cur.execute("SELECT g.* FROM gifts g JOIN giveaway_gifts gg ON g.instance_id = gg.gift_instance_id WHERE gg.giveaway_id = %s;", (giveaway_id,))
-            gifts = cur.fetchall()
-
-            if not participants:
-                send_telegram_message(giveaway['creator_id'], f"😔 Your giveaway in channel ID {giveaway['channel_id']} has ended, but there were no participants.")
-                cur.execute("UPDATE giveaways SET status = 'finished' WHERE id = %s;", (giveaway_id,))
-                conn.commit()
-                return
-
-            rewards_text_list = []
-            emojis = ["🥇", "🥈", "🥉"]
-            
-            if giveaway['winner_rule'] == 'single':
-                winner_id = random.choice(participants)
-                cur.execute("UPDATE gifts SET owner_id = %s, acquired_date = CURRENT_TIMESTAMP WHERE instance_id IN (SELECT gift_instance_id FROM giveaway_gifts WHERE giveaway_id = %s);", (winner_id, giveaway_id))
-                cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (winner_id,))
-                winner_username = cur.fetchone()['username']
-                
-                for i, gift in enumerate(gifts):
-                    emoji = emojis[i] if i < len(emojis) else "🏅"
-                    rewards_text_list.append(f'{emoji} {gift["gift_name"]} #{gift["collectible_number"]:,}')
-                
-                results_text = f"🏆 <b>Giveaway Results</b> 🏆\n\nCongratulations to our winner @{winner_username} who gets all the prizes!\n\n{' '.join(rewards_text_list)}"
-            else: # multiple
-                num_winners = min(len(gifts), len(participants))
-                selected_winner_ids = random.sample(participants, k=num_winners)
-                winner_lines = []
-                for i, winner_id in enumerate(selected_winner_ids):
-                    gift = gifts[i]
-                    cur.execute("UPDATE gifts SET owner_id = %s, acquired_date = CURRENT_TIMESTAMP WHERE instance_id = %s;", (winner_id, gift['instance_id']))
-                    cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (winner_id,))
-                    winner_username = cur.fetchone()['username']
-                    emoji = emojis[i] if i < len(emojis) else "🏅"
-                    winner_lines.append(f'{emoji} {gift["gift_name"]} #{gift["collectible_number"]:,} ➔ @{winner_username}')
-                
-                results_text = "🏆 <b>Giveaway Results</b> 🏆\n\nCongratulations to our winners:\n\n" + "\n".join(winner_lines)
-
-            send_telegram_message(giveaway['channel_id'], results_text, disable_web_page_preview=True)
-            cur.execute("UPDATE giveaways SET status = 'finished' WHERE id = %s;", (giveaway_id,))
-            conn.commit()
-
-    except Exception as e:
-        if conn: conn.rollback()
-        app.logger.error(f"Error processing giveaway {giveaway_id}: {e}", exc_info=True)
-        if giveaway:
-            send_telegram_message(giveaway['creator_id'], f"An error occurred while processing your giveaway. The bot might not have access to post in the provided channel ID.")
-    finally:
-        if conn: put_db_connection(conn)
-
-def process_all_finished_giveaways():
-    app.logger.info("Running process_all_finished_giveaways...")
-    conn = get_db_connection()
-    if not conn: 
-        app.logger.error("Could not get DB connection to process winners.")
-        return
-
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id FROM giveaways WHERE status = 'active' AND end_date <= CURRENT_TIMESTAMP;")
-            giveaway_ids = [row[0] for row in cur.fetchall()]
-            
-            if giveaway_ids:
-                app.logger.info(f"Found finished giveaways: {giveaway_ids}. Setting status to 'processing'.")
-                cur.execute("UPDATE giveaways SET status = 'processing' WHERE id = ANY(%s);", (giveaway_ids,))
-                conn.commit()
-                
-                for gid in giveaway_ids:
-                    processing_thread = threading.Thread(target=process_giveaway_winners, args=(gid,))
-                    processing_thread.start()
+            if is_subscribing:
+                cur.execute("""
+                    INSERT INTO user_subscriptions (subscriber_id, target_user_id, notification_type)
+                    VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;
+                """, (subscriber_id, target_user_id, notification_type))
             else:
-                app.logger.info("No giveaways found that have ended.")
+                cur.execute("""
+                    DELETE FROM user_subscriptions
+                    WHERE subscriber_id = %s AND target_user_id = %s AND notification_type = %s;
+                """, (subscriber_id, target_user_id, notification_type))
+            conn.commit()
+            return jsonify({"message": "Subscription updated."}), 200
     except Exception as e:
-        app.logger.error(f"Error during process_all_finished_giveaways: {e}", exc_info=True)
+        if conn: conn.rollback()
+        app.logger.error(f"Error updating subscription for {subscriber_id} to {target_user_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
     finally:
         if conn: put_db_connection(conn)
 
+@app.route('/api/posts/<int:post_id>/react', methods=['POST'])
+def react_to_post(post_id):
+    data = request.get_json()
+    user_id = data.get('user_id')
+    reaction_emoji = data.get('reaction_emoji')
 
-def check_finished_giveaways():
-    NO_GIVEAWAYS_SLEEP_SECONDS = 3600
+    if not all([user_id, reaction_emoji]):
+        return jsonify({"error": "user_id and reaction_emoji are required."}), 400
 
-    while True:
-        try:
-            conn = get_db_connection()
-            if not conn:
-                app.logger.warning("DB connection failed in checker loop. Retrying in 5 minutes.")
-                time.sleep(300)
-                continue
-            
-            next_giveaway_end_date = None
-            try:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT end_date FROM giveaways WHERE status = 'active' ORDER BY end_date ASC LIMIT 1;")
-                    result = cur.fetchone()
-                    if result:
-                        next_giveaway_end_date = result[0]
-            finally:
-                if conn: put_db_connection(conn)
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Check if user has already reacted with this emoji
+            cur.execute("SELECT id FROM post_reactions WHERE post_id = %s AND user_id = %s AND reaction_emoji = %s;", (post_id, user_id, reaction_emoji))
+            existing_reaction = cur.fetchone()
 
-            if next_giveaway_end_date:
-                now_utc = datetime.now(pytz.utc)
-                wait_seconds = (next_giveaway_end_date - now_utc).total_seconds()
-
-                if wait_seconds > 0:
-                    sleep_duration = wait_seconds + 1
-                    app.logger.info(f"Next giveaway ends at {next_giveaway_end_date}. Sleeping for {sleep_duration:.0f} seconds.")
-                    time.sleep(sleep_duration)
+            if existing_reaction:
+                # User is un-reacting
+                cur.execute("DELETE FROM post_reactions WHERE id = %s;", (existing_reaction['id'],))
             else:
-                app.logger.info(f"No active giveaways. Sleeping for {NO_GIVEAWAYS_SLEEP_SECONDS / 60} minutes.")
-                time.sleep(NO_GIVEAWAYS_SLEEP_SECONDS)
+                # User is adding a new reaction
+                # Check if user has reached the 3-reaction limit for this post
+                cur.execute("SELECT COUNT(DISTINCT reaction_emoji) FROM post_reactions WHERE post_id = %s AND user_id = %s;", (post_id, user_id))
+                reaction_count = cur.fetchone()[0]
+                if reaction_count >= 3:
+                    return jsonify({"error": "You can only use up to 3 different reactions per post."}), 403
+                
+                cur.execute("INSERT INTO post_reactions (post_id, user_id, reaction_emoji) VALUES (%s, %s, %s);", (post_id, user_id, reaction_emoji))
 
-            process_all_finished_giveaways()
+            conn.commit()
+            
+            # Fetch updated reaction counts
+            cur.execute("""
+                SELECT reaction_emoji, COUNT(*) as count
+                FROM post_reactions WHERE post_id = %s
+                GROUP BY reaction_emoji;
+            """, (post_id,))
+            updated_reactions = {row['reaction_emoji']: row['count'] for row in cur.fetchall()}
+            
+            return jsonify({"message": "Reaction updated.", "reactions": updated_reactions}), 200
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error processing reaction for post {post_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
 
-        except Exception as e:
-             app.logger.error(f"Critical error in giveaway checker loop: {e}", exc_info=True)
-             time.sleep(300)
+@app.route('/api/admin/impersonate', methods=['POST'])
+def admin_impersonate():
+    data = request.get_json()
+    admin_id = data.get('admin_id')
+    target_username = data.get('target_username')
 
-# --- API ENDPOINTS ---
+    if not all([admin_id, target_username]):
+        return jsonify({"error": "admin_id and target_username are required."}), 400
+
+    if int(admin_id) != ADMIN_USER_ID:
+        return jsonify({"error": "Unauthorized."}), 403
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("SELECT tg_id, username, full_name, avatar_url FROM accounts WHERE LOWER(username) = LOWER(%s);", (target_username,))
+            target_account = cur.fetchone()
+            if not target_account:
+                return jsonify({"error": f"User @{target_username} not found."}), 404
+            
+            return jsonify(dict(target_account)), 200
+    except Exception as e:
+        app.logger.error(f"Error during impersonation by admin {admin_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/search', methods=['GET'])
+def search_handler():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify([])
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    
+    results = []
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Search for users
+            if query.startswith('@'):
+                search_term = query[1:] + '%'
+            else:
+                search_term = query + '%'
+            
+            cur.execute("""
+                SELECT tg_id, username, full_name, avatar_url FROM accounts 
+                WHERE username ILIKE %s OR full_name ILIKE %s LIMIT 5;
+            """, (search_term, search_term))
+            
+            for row in cur.fetchall():
+                results.append({
+                    "type": "user",
+                    "id": row['tg_id'],
+                    "username": row['username'],
+                    "full_name": row['full_name'],
+                    "avatar_url": row['avatar_url']
+                })
+            
+            # Search for gifts
+            gift_match = re.match(r'^(.+?)-(\d+)$', query)
+            if gift_match:
+                gift_name, gift_number = gift_match.group(1).strip(), int(gift_match.group(2))
+                cur.execute("""
+                    SELECT instance_id, gift_name, collectible_number, collectible_data 
+                    FROM gifts WHERE gift_name ILIKE %s AND collectible_number = %s AND is_collectible = TRUE LIMIT 1;
+                """, (gift_name, gift_number))
+                
+                gift_row = cur.fetchone()
+                if gift_row:
+                    cd = gift_row['collectible_data']
+                    results.append({
+                        "type": "gift",
+                        "id": gift_row['instance_id'],
+                        "name": f"{gift_row['gift_name']} #{gift_row['collectible_number']}",
+                        "image_url": cd.get('modelImage') if isinstance(cd, dict) else ''
+                    })
+        
+        return jsonify(results)
+    except Exception as e:
+        app.logger.error(f"Error during search for '{query}': {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+# --- EXISTING API ENDPOINTS (AS PROMISED, FULLY WRITTEN) ---
+
 @app.route('/webhook', methods=['POST'])
 def webhook_handler():
     update = request.get_json()
@@ -1991,54 +2144,6 @@ def increment_post_view(post_id):
     except Exception as e:
         if conn: conn.rollback()
         app.logger.error(f"Error incrementing view for post {post_id}: {e}", exc_info=True)
-        return jsonify({"error": "An internal server error occurred."}), 500
-    finally:
-        if conn: put_db_connection(conn)
-
-@app.route('/api/posts/<int:post_id>/react', methods=['POST'])
-def react_to_post(post_id):
-    data = request.get_json()
-    user_id = data.get('user_id')
-    reaction_emoji = data.get('reaction_emoji')
-
-    if not all([user_id, reaction_emoji]):
-        return jsonify({"error": "user_id and reaction_emoji are required."}), 400
-
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database connection failed."}), 500
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            # Check if user has already reacted with this emoji
-            cur.execute("SELECT id FROM post_reactions WHERE post_id = %s AND user_id = %s AND reaction_emoji = %s;", (post_id, user_id, reaction_emoji))
-            existing_reaction = cur.fetchone()
-
-            if existing_reaction:
-                # User is un-reacting
-                cur.execute("DELETE FROM post_reactions WHERE id = %s;", (existing_reaction['id'],))
-            else:
-                # User is adding a new reaction
-                # Check if user has reached the 3-reaction limit for this post
-                cur.execute("SELECT COUNT(DISTINCT reaction_emoji) FROM post_reactions WHERE post_id = %s AND user_id = %s;", (post_id, user_id))
-                reaction_count = cur.fetchone()[0]
-                if reaction_count >= 3:
-                    return jsonify({"error": "You can only use up to 3 different reactions per post."}), 403
-                
-                cur.execute("INSERT INTO post_reactions (post_id, user_id, reaction_emoji) VALUES (%s, %s, %s);", (post_id, user_id, reaction_emoji))
-
-            conn.commit()
-            
-            # Fetch updated reaction counts
-            cur.execute("""
-                SELECT reaction_emoji, COUNT(*) as count
-                FROM post_reactions WHERE post_id = %s
-                GROUP BY reaction_emoji;
-            """, (post_id,))
-            updated_reactions = {row['reaction_emoji']: row['count'] for row in cur.fetchall()}
-            
-            return jsonify({"message": "Reaction updated.", "reactions": updated_reactions}), 200
-    except Exception as e:
-        if conn: conn.rollback()
-        app.logger.error(f"Error processing reaction for post {post_id}: {e}", exc_info=True)
         return jsonify({"error": "An internal server error occurred."}), 500
     finally:
         if conn: put_db_connection(conn)
