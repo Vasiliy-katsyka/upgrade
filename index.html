@@ -4966,7 +4966,7 @@
                 Telegram.WebApp.requestFullscreen();
                 localStorage.setItem('fullscreenEnabled' + APP_VERSION_SUFFIX, 'true');
             } else {
-                Telegram.WebApp.closeFullscreen();
+                Telegram.WebApp.exitFullscreen();
                 localStorage.setItem('fullscreenEnabled' + APP_VERSION_SUFFIX, 'false');
             }
         }
@@ -5095,12 +5095,26 @@
                 popup.appendChild(emojiSpan);
             });
         
+            // Make it fixed to handle scrolling while it's open
+            popup.style.position = 'fixed'; 
             document.body.appendChild(popup);
             
-            // Position the popup
-            const postRect = postElement.getBoundingClientRect();
-            popup.style.left = `${event.clientX - popup.offsetWidth / 2}px`;
-            popup.style.top = `${event.clientY - postRect.top - 40}px`; // 40px offset above cursor
+            // CORRECTED POSITIONING LOGIC
+            // Use clientX/Y which are relative to the viewport.
+            // This is simpler and works well with position: fixed.
+            let left = event.clientX - popup.offsetWidth / 2;
+            let top = event.clientY - 60; // 60px offset above the cursor
+        
+            // Boundary checks to prevent the popup from going off-screen
+            if (left < 10) left = 10;
+            if (top < 10) top = 10;
+            if (left + popup.offsetWidth > window.innerWidth - 10) {
+                left = window.innerWidth - popup.offsetWidth - 10;
+            }
+        
+            popup.style.left = `${left}px`;
+            popup.style.top = `${top}px`;
+            // --- END CORRECTION ---
         
             // Close when clicking outside
             setTimeout(() => {
