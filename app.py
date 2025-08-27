@@ -1638,16 +1638,20 @@ def upgrade_gift():
             selected_model = custom_model_data or select_weighted_random(parts_data.get('models', []))
             selected_backdrop = custom_backdrop_data or select_weighted_random(parts_data.get('backdrops', []))
             
+            pattern_image_url = None
             if custom_pattern_image:
                 selected_pattern = {"name": "Custom", "rarityPermille": 1}
-                pattern_image_url = custom_pattern_image # Assumes it's a data URL or a link
+                pattern_image_url = custom_pattern_image
             else:
                 selected_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
-                pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
-                pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+                if selected_pattern:
+                    pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+                    pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
 
-            if not all([selected_model, selected_backdrop, selected_pattern]): return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
-            
+            if not all([selected_model, selected_backdrop, selected_pattern]):
+                app.logger.error(f"Could not determine all parts for '{gift_name}'. Model: {selected_model is not None}, Backdrop: {selected_backdrop is not None}, Pattern: {selected_pattern is not None}")
+                return jsonify({"error": f"Could not determine all parts for '{gift_name}'. It might be missing model, backdrop, or pattern data."}), 500
+
             supply = random.randint(2000, 10000)
             model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
             lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
