@@ -1635,23 +1635,34 @@ def upgrade_gift():
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
             next_number = cur.fetchone()[0]
             parts_data = fetch_collectible_parts(gift_name)
+            
             selected_model = custom_model_data or select_weighted_random(parts_data.get('models', []))
             selected_backdrop = custom_backdrop_data or select_weighted_random(parts_data.get('backdrops', []))
             
+            # --- START OF ROBUST PATTERN LOGIC ---
+            selected_pattern = None
             pattern_image_url = None
+
             if custom_pattern_image:
                 selected_pattern = {"name": "Custom", "rarityPermille": 1}
                 pattern_image_url = custom_pattern_image
             else:
-                selected_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
-                if selected_pattern:
+                # First, determine the potential pattern
+                potential_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
+                
+                # NOW, check if a valid pattern was found before doing anything else
+                if potential_pattern:
+                    selected_pattern = potential_pattern
                     pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+                    # This is the line from the traceback. It's now safely inside the check.
                     pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
+            # --- END OF ROBUST PATTERN LOGIC ---
 
+            # Now, the critical check for all parts.
             if not all([selected_model, selected_backdrop, selected_pattern]):
                 app.logger.error(f"Could not determine all parts for '{gift_name}'. Model: {selected_model is not None}, Backdrop: {selected_backdrop is not None}, Pattern: {selected_pattern is not None}")
                 return jsonify({"error": f"Could not determine all parts for '{gift_name}'. It might be missing model, backdrop, or pattern data."}), 500
-
+            
             supply = random.randint(2000, 10000)
             model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
             lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
