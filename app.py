@@ -232,6 +232,7 @@ CUSTOM_GIFTS_DATA = {
     },
     "Taped Eggplant": {
         "id": "custom_taped_eggplant",
+        "defaultImage": "https://github.com/Vasiliy-katsyka/Taped-Eggplant/blob/main/PremiumGifts_AgADDgAD0HLwTA.png?raw=true",
         "models": [
             {"name": "Gold Sneaker", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/Taped-Eggplant/blob/main/BackgroundEraser_20250827_200715791.png?raw=true"},
             {"name": "Paul The Eggplant", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/Taped-Eggplant/blob/main/BackgroundEraser_20250827_201628865.png?raw=true"},
