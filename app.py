@@ -2007,42 +2007,6 @@ def batch_gift_action():
     finally:
         if conn: put_db_connection(conn)
 
-@app.route('/api/users/subscribe', methods=['POST'])
-def handle_user_subscription():
-    data = request.get_json()
-    subscriber_id = data.get('subscriber_id')
-    target_user_id = data.get('target_user_id')
-    notification_type = data.get('notification_type')
-    is_subscribing = data.get('is_subscribing')
-
-    if not all([subscriber_id, target_user_id, notification_type, isinstance(is_subscribing, bool)]):
-        return jsonify({"error": "Missing or invalid parameters."}), 400
-    if notification_type not in ['mentions', 'new_posts']:
-        return jsonify({"error": "Invalid notification_type."}), 400
-
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database connection failed."}), 500
-    try:
-        with conn.cursor() as cur:
-            if is_subscribing:
-                cur.execute("""
-                    INSERT INTO user_subscriptions (subscriber_id, target_user_id, notification_type)
-                    VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;
-                """, (subscriber_id, target_user_id, notification_type))
-            else:
-                cur.execute("""
-                    DELETE FROM user_subscriptions
-                    WHERE subscriber_id = %s AND target_user_id = %s AND notification_type = %s;
-                """, (subscriber_id, target_user_id, notification_type))
-            conn.commit()
-            return jsonify({"message": "Subscription updated."}), 200
-    except Exception as e:
-        if conn: conn.rollback()
-        app.logger.error(f"Error updating subscription for {subscriber_id} to {target_user_id}: {e}", exc_info=True)
-        return jsonify({"error": "An internal server error occurred."}), 500
-    finally:
-        if conn: put_db_connection(conn)
-
 @app.route('/api/posts/<int:post_id>/react', methods=['POST'])
 def react_to_post(post_id):
     data = request.get_json()
