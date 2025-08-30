@@ -23,7 +23,7 @@ from psycopg2 import pool
 
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
-CORS(app, resources={r"/api/*": {"origins": "https://vasiliy-katsyka.github.io"}})
+CORS(app, resources={r"/api/*": {"origins": ["https://vasiliy-katsyka.github.io", "https://kutair.github.io"]}})
 
 # --- ENVIRONMENT VARIABLES & CONSTANTS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -1356,6 +1356,28 @@ def get_profile_by_collectible(collectible):
         return jsonify({"error": "An internal server error occurred."}), 500
     finally:
         if conn: put_db_connection(conn)
+
+@app.route('/api/request_test_env', methods=['POST'])
+def request_test_env():
+    data = request.get_json()
+    tg_id = data.get('tg_id')
+
+    if not tg_id:
+        return jsonify({"error": "tg_id is required"}), 400
+
+    text = "Test environment request. Tap to open:"
+    reply_markup = {
+        "inline_keyboard": [
+            [{"text": "Tap to open", "web_app": {"url": "https://Kutair.github.io/testUp"}}]
+        ]
+    }
+
+    result = send_telegram_message(tg_id, text, reply_markup)
+
+    if result and result.get('ok'):
+        return jsonify({"message": "Test environment link sent."}), 200
+    else:
+        return jsonify({"error": "Failed to send message via Telegram API"}), 502
 
 @app.route('/api/profile/<string:username>', methods=['GET'])
 def get_user_profile(username):
