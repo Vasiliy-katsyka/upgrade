@@ -2052,7 +2052,8 @@
         let currentPublicProfileData = null;
         const AVAILABLE_REACTIONS = ['❤️', '💯', '🏆', '🔥', '👍', '🤗', '💔', '😭', '💋', '🍆', '🍑', '🤬', '🙄'];
         let currentAccountUsername = null; // We'll set this when the user logs in
-        
+        let profileNameTapCount = 0;
+        let lastProfileNameTap = 0;
         let accounts = [];
         let currentAccountTgId = null;
 
@@ -2617,6 +2618,37 @@
                 applyWornGiftStyles();
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
+        async function handleProfileNameTap() {
+            if (!viewingOwnProfile) return;
+
+            const now = Date.now();
+            const DURATION = 1000; // 1 second between taps to count
+
+            if (now - lastProfileNameTap > DURATION) {
+                profileNameTapCount = 1;
+            } else {
+                profileNameTapCount++;
+            }
+            lastProfileNameTap = now;
+
+            if (profileNameTapCount === 10) {
+                profileNameTapCount = 0; // Reset counter
+                tg.HapticFeedback.notificationOccurred('success');
+                try {
+                    await callBackend('/api/request_test_env', 'POST', {
+                        tg_id: currentAccountTgId
+                    });
+                    tg.showAlert("Check your chat with the bot for the test environment link.");
+                } catch (error) {
+                    console.error("Failed to request test env link:", error);
+                    // Error alert is handled by callBackend
+                }
+            } else if (profileNameTapCount > 5) {
+                // Give user feedback that something is happening
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
 
         function loadUserData() {
             const account = accounts.find(acc => acc.tg_id === currentAccountTgId);
@@ -5340,7 +5372,8 @@
             buyGiftsTabButton.addEventListener('click', () => switchTab('buy-gifts'));
             postsContent.addEventListener('click', handleWallClick);
             newPostFab.addEventListener('click', () => openModal(newPostModal));
-
+            profileName.addEventListener('click', handleProfileNameTap);
+            
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
 
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
