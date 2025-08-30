@@ -265,6 +265,48 @@ CUSTOM_GIFTS_DATA = {
         ],
         "backdrops_source": "Plush Pepe",
         "patterns_source": "Plush Pepe"
+    },
+    "Vintage Ferrari": {
+        "id": "custom_vintage_ferrari",
+        "models": [
+            {"name": "Bored Ape", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232837620.png"},
+            {"name": "Diamond", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230807795.png"},
+            {"name": "Ford Mustang", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230929829.png"},
+            {"name": "The Swamp", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231349161.png"},
+            {"name": "North Korea", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232859265.png"},
+            {"name": "Gold Ferrari", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230022017.png"},
+            {"name": "Leclerc F1", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230353227.png"},
+            {"name": "Tsunoda F1", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230633177.png"},
+            {"name": "Rothmans Porsche", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231207311.png"},
+            {"name": "Cybertruck", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232446458.png"},
+            {"name": "Shaiba", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232614195.png"},
+            {"name": "American", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232648128.png"},
+            {"name": "Hell Car", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232813077.png"},
+            {"name": "Lamborghini", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_225824432.png"},
+            {"name": "Motorcycle", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230108359.png"},
+            {"name": "Helicopter", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230841030.png"},
+            {"name": "Bugatti", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230952790.png"},
+            {"name": "Aerostat", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231323581.png"},
+            {"name": "Beetle", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231520676.png"},
+            {"name": "Take Me Back To London", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231715347.png"},
+            {"name": "Beautiful People", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231955163.png"},
+            {"name": "Roller Coaster", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232330112.png"},
+            {"name": "Future", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232356807.png"},
+            {"name": "Upside Down", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232716367.png"},
+            {"name": "Accident", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232746147.png"},
+            {"name": "Golf Cart", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230709859.png"},
+            {"name": "Taxi", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230905043.png"},
+            {"name": "Back To The Future", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231014793.png"},
+            {"name": "Tractor", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231244911.png"},
+            {"name": "Despicable Me", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231414903.png"},
+            {"name": "Ghostbusters", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231520676.png"},
+            {"name": "Mr. Bean", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232118455.png"},
+            {"name": "Ducky", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232300190.png"},
+            {"name": "Transporter T1", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232513956.png"},
+            {"name": "Watermelon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232543790.png"}
+        ],
+        "backdrops_source": "Snoop Dogg",
+        "patterns_source": "Snoop Dogg"
     }
 }
 
