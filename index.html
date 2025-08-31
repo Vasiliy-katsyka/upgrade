@@ -191,6 +191,9 @@
             position: absolute;
             top: 0; left:0; right:0;
             z-index: 100;
+            display: flex;
+            justify-content: space-between; /* Space out left/right icons */
+            width: 100%;
         }
         .page-header h2 {
             font-size: 1.15em;
@@ -203,12 +206,21 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            /* This rule might not exist, but add it if it does to ensure centering works */
+            align-items: center;
         }
+        
+        /* Replace .profile-top-section */
         .profile-top-section {
             position: relative;
             padding-top: 56px;
+            padding-bottom: 20px;
             background: var(--app-profile-gradient-fallback);
             transition: background 0.3s ease;
+            width: 100%;
+            /* This helps center the main content block */
+            display: flex;
+            justify-content: center;
         }
         .profile-header-pattern-overlay {
             position: absolute;
@@ -223,35 +235,58 @@
              position: relative; z-index: 1;
              padding: 0 15px;
         }
-        .profile-top-pinned-gifts {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            padding: 5px 0 8px 0;
-            min-height: 30px;
+        #profile-top-pinned-gifts {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 420px; /* A bit wider for the gift spread */
+            height: 320px; /* Taller to accommodate lower gifts */
+            pointer-events: none;
         }
+
+
         .profile-top-pinned-gifts .pinned-gift-item {
-            width: 30px; height: 30px;
-            border-radius: 8px;
+            width: 44px; height: 44px; /* Slightly larger gifts */
+            border-radius: 12px;
             background-color: rgba(0,0,0,0.1);
             overflow: hidden;
             cursor: pointer;
+            position: absolute;
+            /* We remove old positioning logic; it will be set by JS */
+            pointer-events: auto;
+            transition: transform 0.3s ease, top 0.3s ease, left 0.3s ease;
+            transform: translate(-50%, -50%); /* Center the item on its coordinates */
         }
+        /* Replace .profile-main-info */
         .profile-main-info {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            padding: 8px 0 20px 0;
+            margin-top: 45px; /* Drastically reduce top margin to remove empty space */
+            position: relative; 
+            z-index: 10;
         }
+        
+        /* Replace .profile-avatar */
         .profile-avatar {
-            width: 70px; height: 70px;
+            width: 130px; height: 130px; /* Even bigger avatar to match the image */
             border-radius: 50%;
             background-color: var(--tg-theme-hint-color);
-            margin-right: 15px;
+            margin-bottom: 15px;
             object-fit: cover;
-            border: 3px solid rgba(255,255,255,0.1);
+            border: none;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-        .profile-name-status { display: flex; flex-direction: column; }
+        
+        /* Replace .profile-name-status */
+        .profile-name-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center the name and status line */
+        }
         .profile-name-status .name-line { display: flex; align-items: center; }
         .profile-name-status h1 {
             font-size: 1.4em; font-weight: 600;
@@ -1287,6 +1322,116 @@
         .reaction-chip:hover {
              background-color: var(--tg-theme-hint-color);
         }
+
+        .profile-top-pinned-gifts .pinned-gift-item {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background-color: rgba(0,0,0,0.1);
+            overflow: hidden;
+            cursor: pointer;
+            position: absolute;
+            pointer-events: auto;
+            transition: transform 0.3s ease, top 0.3s ease, left 0.3s ease;
+            /* This centers the item on its given coordinates */
+            transform: translate(-50%, -50%); 
+        }
+        
+        #profile-status-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        
+        #profile-level-bubble {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background-color: var(--app-action-button-bg);
+            color: var(--tg-theme-text-color);
+            border-radius: 50%;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-right: 8px;
+            cursor: pointer; /* Make it clickable */
+        }
+        
+        #profile-status {
+            font-size: 0.95em;
+            color: var(--tg-theme-text-color);
+            opacity: 0.7;
+            margin-top: 0; /* Reset margin */
+        }
+        
+        .header-icons-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .header-icon-btn {
+            background: none;
+            border: none;
+            color: var(--tg-theme-text-color);
+            padding: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-icon-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* --- START: Add these new CSS rules --- */
+        
+        #level-modal-gift-count {
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 500;
+            color: var(--tg-theme-text-color);
+            margin-bottom: 20px;
+        }
+        
+        .level-info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .level-info-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            font-size: 1em;
+            border-bottom: 1px solid var(--tg-theme-bg-color);
+        }
+        
+        .level-info-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .level-info-list li span:last-child {
+            color: var(--tg-theme-hint-color);
+            font-weight: 400;
+        }
+        
+        .level-info-list li.current-level {
+            color: var(--tg-theme-link-color);
+            font-weight: 600;
+        }
+        
+        .level-info-list li.current-level span:last-child {
+            color: inherit; /* Inherit the link color for the current level's range */
+        }
+        
+        /* --- END: New CSS rules --- */
     </style>
 </head>
 <body>
@@ -1308,13 +1453,21 @@
 
     <div class="app-container">
         <div id="profile-page" class="page active">
-             <input type="file" id="avatar-upload-input" class="hidden" accept="image/*">
-             <div class="page-header"></div>
+            <input type="file" id="avatar-upload-input" class="hidden" accept="image/*">
+            <div class="page-header">
+                <div class="header-icons-left"></div> <!-- Placeholder for back button -->
+                <div class="header-icons-right">
+                    <button id="profile-edit-btn" class="header-icon-btn hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" /></svg>
+                    </button>
+                    <!-- The dots menu (SettingsButton) is controlled by Telegram's script -->
+                </div>
+            </div>
             <div class="profile-page-content">
                 <div id="profile-top-section" class="profile-top-section">
                     <div id="profile-header-pattern-overlay" class="profile-header-pattern-overlay"></div>
+                    <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div>
                     <div class="profile-header-content-wrapper">
-                        <div id="profile-top-pinned-gifts" class="profile-top-pinned-gifts"></div>
                         <div id="profile-main-info-block" class="profile-main-info">
                             <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
                             <div class="profile-name-status">
@@ -1322,10 +1475,11 @@
                                     <h1 id="profile-name">Name</h1>
                                     <div id="worn-gift-icon-container" class="hidden lottie-animation-container"></div>
                                 </div>
-                                <p id="profile-gift-count-subtext">0 gifts</p>
-                                <p id="profile-status" class="online">online</p>
+                                <div id="profile-status-line">
+                                    <span id="profile-level-bubble">0</span>
+                                    <span id="profile-status" class="online">online</span>
+                                </div>
                             </div>
-                            <button id="notification-bell-btn" class="hidden">🔔</button>
                         </div>
                     </div>
                 </div>
@@ -1701,6 +1855,25 @@
             </div>
         </div>
 
+        <!-- START: Add this new modal HTML -->
+        <div id="level-info-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar">
+                    <h3>User Level</h3>
+                </div>
+                <div class="modal-scrollable-content">
+                    <p id="level-modal-gift-count"></p>
+                    <ul id="level-modal-list" class="level-info-list">
+                        <!-- Level rows will be generated here by JS -->
+                    </ul>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="close-level-modal" class="modal-button">Close</button>
+                </div>
+            </div>
+        </div>
+        <!-- END: New modal HTML -->
+        
         <div id="numbers-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar"><h3>Anonymous Numbers +888</h3></div>
@@ -1818,7 +1991,7 @@
         <div id="loading-overlay" class="modal-overlay active" style="align-items: center; justify-content: center; background-color: var(--tg-theme-bg-color); z-index: 9999;">
             <div style="text-align: center; color: var(--tg-theme-text-color);">
                 <div id="loading-animation-container" style="width: 150px; height: 150px; margin: 0 auto;"></div>
-                <h2 style="font-weight: 500; margin-top: 15px;">Gift Upgrade Bot</h2>
+                <h2 style="font-weight: 500; margin-top: 15px;">Test Enviroment</h2>
                 <p style="color: var(--tg-theme-hint-color);">@giftUpgradeRU</p>
             </div>
         </div>
@@ -1848,6 +2021,8 @@
         const MAX_COLLECTIBLE_USERNAMES = 10;
         const MIN_SALE_PRICE = 125;
         const MAX_SALE_PRICE = 100000;
+        let profileNameTapCount = 0;
+        let lastProfileNameTap = 0;
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
@@ -2041,6 +2216,49 @@
                 ],
                 "backdrops_source": "Plush Pepe",
                 "patterns_source": "Plush Pepe"
+            },
+            "Vintage Ferrari": {
+                "id": "custom_vintage_ferrari",
+                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/099.png",
+                "models": [
+                    {"name": "Bored Ape", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232837620.png"},
+                    {"name": "Diamond", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230807795.png"},
+                    {"name": "Ford Mustang", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230929829.png"},
+                    {"name": "The Swamp", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231349161.png"},
+                    {"name": "North Korea", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232859265.png"},
+                    {"name": "Gold Ferrari", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230022017.png"},
+                    {"name": "Leclerc F1", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230353227.png"},
+                    {"name": "Tsunoda F1", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230633177.png"},
+                    {"name": "Rothmans Porsche", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231207311.png"},
+                    {"name": "Cybertruck", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232446458.png"},
+                    {"name": "Shaiba", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232614195.png"},
+                    {"name": "American", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232648128.png"},
+                    {"name": "Hell Car", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232813077.png"},
+                    {"name": "Lamborghini", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_225824432.png"},
+                    {"name": "Motorcycle", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230108359.png"},
+                    {"name": "Helicopter", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230841030.png"},
+                    {"name": "Bugatti", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230952790.png"},
+                    {"name": "Aerostat", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231323581.png"},
+                    {"name": "Beetle", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231520676.png"},
+                    {"name": "Take Me Back To London", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231715347.png"},
+                    {"name": "Beautiful People", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231955163.png"},
+                    {"name": "Roller Coaster", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232330112.png"},
+                    {"name": "Future", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232356807.png"},
+                    {"name": "Upside Down", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232716367.png"},
+                    {"name": "Accident", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232746147.png"},
+                    {"name": "Golf Cart", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230709859.png"},
+                    {"name": "Taxi", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_230905043.png"},
+                    {"name": "Back To The Future", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231014793.png"},
+                    {"name": "Tractor", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231244911.png"},
+                    {"name": "Despicable Me", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231414903.png"},
+                    {"name": "Ghostbusters", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_231520676.png"},
+                    {"name": "Mr. Bean", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232118455.png"},
+                    {"name": "Ducky", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232300190.png"},
+                    {"name": "Transporter T1", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232513956.png"},
+                    {"name": "Watermelon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/Vintage-Ferrari/main/BackgroundEraser_20250829_232543790.png"}
+                ],
+                "backdrops_source": "Snoop Dogg",
+                "patterns_source": "Snoop Dogg"
             }
         };
 
@@ -2052,8 +2270,7 @@
         let currentPublicProfileData = null;
         const AVAILABLE_REACTIONS = ['❤️', '💯', '🏆', '🔥', '👍', '🤗', '💔', '😭', '💋', '🍆', '🍑', '🤬', '🙄'];
         let currentAccountUsername = null; // We'll set this when the user logs in
-        let profileNameTapCount = 0;
-        let lastProfileNameTap = 0;
+        
         let accounts = [];
         let currentAccountTgId = null;
 
@@ -2341,6 +2558,117 @@
             }
         }
 
+        async function handleProfileNameTap() {
+            if (!viewingOwnProfile) return;
+
+            const now = Date.now();
+            const DURATION = 1000; // 1 second between taps to count
+
+            if (now - lastProfileNameTap > DURATION) {
+                profileNameTapCount = 1;
+            } else {
+                profileNameTapCount++;
+            }
+            lastProfileNameTap = now;
+
+            if (profileNameTapCount === 10) {
+                profileNameTapCount = 0; // Reset counter
+                tg.HapticFeedback.notificationOccurred('success');
+                try {
+                    await callBackend('/api/request_test_env', 'POST', {
+                        tg_id: currentAccountTgId
+                    });
+                    tg.showAlert("Check your chat with the bot for the test environment link.");
+                } catch (error) {
+                    console.error("Failed to request test env link:", error);
+                    // Error alert is handled by callBackend
+                }
+            } else if (profileNameTapCount > 5) {
+                // Give user feedback that something is happening
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+        
+        const LEVEL_THRESHOLDS = [
+            { level: 1, min: 0, max: 20 },
+            { level: 2, min: 20, max: 50 },
+            { level: 3, min: 50, max: 100 },
+            { level: 4, min: 100, max: 200 },
+            { level: 5, min: 200, max: 300 },
+            { level: 6, min: 300, max: 400 },
+            { level: 7, min: 400, max: 500 },
+            { level: 8, min: 500, max: 600 },
+            { level: 9, min: 600, max: 700 },
+            { level: 10, min: 700, max: 800 },
+            { level: 11, min: 800, max: 900 },
+            { level: 12, min: 900, max: 1000 },
+            // Add more levels as needed, following the pattern
+        ];
+        for (let i = 1; i < 10; i++) {
+            LEVEL_THRESHOLDS.push({level: 12 + i, min: i * 1000, max: (i + 1) * 1000});
+        }
+        // You can continue this pattern up to level 100
+        
+        const PINNED_GIFT_POSITIONS = [
+            // These coordinates are manually adjusted to match your image exactly
+            { top: '22%', left: '30%' },  // Position 1
+            { top: '45%', left: '15%' },  // Position 2
+            { top: '75%', left: '33%' },  // Position 3
+            { top: '22%', left: '70%' },  // Position 4
+            { top: '45%', left: '85%' },  // Position 5
+            { top: '75%', left: '67%' },  // Position 6
+        ];
+        
+        function calculateUserLevel(giftCount) {
+            for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+                if (giftCount >= LEVEL_THRESHOLDS[i].min) {
+                    return LEVEL_THRESHOLDS[i];
+                }
+            }
+            return LEVEL_THRESHOLDS[0];
+        }
+        
+        // --- START: Replace this entire function ---
+        function showLevelInfoPopup() {
+            const levelModal = document.getElementById('level-info-modal');
+            const giftCountEl = document.getElementById('level-modal-gift-count');
+            const levelListEl = document.getElementById('level-modal-list');
+        
+            const totalGiftCount = ownedGifts.length; // Includes hidden gifts
+            const currentLevelData = calculateUserLevel(totalGiftCount);
+            const currentIndex = LEVEL_THRESHOLDS.findIndex(l => l.level === currentLevelData.level);
+        
+            giftCountEl.textContent = `You have ${totalGiftCount.toLocaleString()} gifts!`;
+            levelListEl.innerHTML = ''; // Clear previous content
+        
+            const createLevelRow = (levelData, isCurrent = false) => {
+                const li = document.createElement('li');
+                if (isCurrent) {
+                    li.className = 'current-level';
+                }
+                const levelName = isCurrent ? `Your Level ${levelData.level}` : `Level ${levelData.level}`;
+                const giftRange = `${levelData.min.toLocaleString()}-${levelData.max.toLocaleString()} gifts`;
+                li.innerHTML = `<span>${levelName}</span><span>${giftRange}</span>`;
+                levelListEl.appendChild(li);
+            };
+        
+            // Previous Level
+            if (currentIndex > 0) {
+                createLevelRow(LEVEL_THRESHOLDS[currentIndex - 1]);
+            }
+        
+            // Current Level
+            createLevelRow(currentLevelData, true);
+        
+            // Next Level
+            if (currentIndex < LEVEL_THRESHOLDS.length - 1) {
+                createLevelRow(LEVEL_THRESHOLDS[currentIndex + 1]);
+            }
+            
+            openModal(levelModal);
+        }
+        // --- END: Function replacement ---
+        
         function getRandomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function generateUniqueId() { return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`; }
 
@@ -2476,7 +2804,6 @@
             const user = tg.initDataUnsafe?.user;
             let tg_id = user?.id;
 
-            document.getElementById('notification-bell-btn').classList.add('hidden');
             buyGiftsTabButton.style.display = 'flex';
             currentPublicProfileData = null; // Clear public profile data
             
@@ -2542,13 +2869,13 @@
                  await initializeTelegramUserAccount();
                  return;
              }
-
+        
              viewingOwnProfile = false;
              try {
                 const profileData = await callBackend(`/api/profile/${username}`, 'GET', null, { viewer_id: currentAccountTgId });
                 ownedGifts = profileData.owned_gifts || [];
                 profilePosts = profileData.posts || [];
-
+        
                 profileName.textContent = profileData.full_name || 'User';
                 profileAvatar.src = profileData.avatar_url || '';
                 profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
@@ -2556,9 +2883,9 @@
                 profileUsername.onclick = null;
                 profileBio.textContent = profileData.bio || "No bio yet";
                 profilePhone.textContent = profileData.phone_number || "Not specified";
-                document.getElementById('notification-bell-btn').classList.remove('hidden');
+                document.getElementById('profile-edit-btn').classList.add('hidden');
                 buyGiftsTabButton.style.display = 'none'; // Hide buy gifts button
-
+        
                 collectibleUsernamesContainer.innerHTML = '';
                 if (profileData.collectible_usernames && profileData.collectible_usernames.length > 0) {
                     const alsoSpan = document.createElement('span'); alsoSpan.className = 'also-text'; alsoSpan.textContent = 'also';
@@ -2568,13 +2895,13 @@
                         collectibleUsernamesContainer.appendChild(unameSpan);
                     });
                 }
-
+        
                 manageBackButton(true, () => initializeTelegramUserAccount());
-
+        
                 profileBio.style.cursor = 'default';
                 profileBio.onclick = null;
                 profileAvatar.style.cursor = 'default';
-
+        
                 renderAll();
             } catch (error) {
                 console.error("Error fetching user profile:", error);
@@ -2618,42 +2945,11 @@
                 applyWornGiftStyles();
             } else console.log("Using default CSS variables as themeParams are empty.");
         }
-        async function handleProfileNameTap() {
-            if (!viewingOwnProfile) return;
-
-            const now = Date.now();
-            const DURATION = 1000; // 1 second between taps to count
-
-            if (now - lastProfileNameTap > DURATION) {
-                profileNameTapCount = 1;
-            } else {
-                profileNameTapCount++;
-            }
-            lastProfileNameTap = now;
-
-            if (profileNameTapCount === 10) {
-                profileNameTapCount = 0; // Reset counter
-                tg.HapticFeedback.notificationOccurred('success');
-                try {
-                    await callBackend('/api/request_test_env', 'POST', {
-                        tg_id: currentAccountTgId
-                    });
-                    tg.showAlert("Check your chat with the bot for the test environment link.");
-                } catch (error) {
-                    console.error("Failed to request test env link:", error);
-                    // Error alert is handled by callBackend
-                }
-            } else if (profileNameTapCount > 5) {
-                // Give user feedback that something is happening
-                tg.HapticFeedback.impactOccurred('light');
-            }
-        }
-
 
         function loadUserData() {
             const account = accounts.find(acc => acc.tg_id === currentAccountTgId);
             if (!account) return;
-
+        
             profileName.textContent = account.full_name || 'User';
             profileAvatar.src = account.avatar_url || '';
             profileAvatar.onerror = () => { profileAvatar.src = `https://i.pravatar.cc/140?u=fallback${generateUniqueId()}`; };
@@ -2663,14 +2959,17 @@
             profilePhone.textContent = account.phone_number || "Not specified";
             profileBio.style.cursor = 'pointer';
             profileAvatar.style.cursor = 'pointer';
-
+            
+            document.getElementById('profile-edit-btn').classList.remove('hidden');
+            profileName.addEventListener('click', handleProfileNameTap);
+        
             collectibleUsernamesContainer.innerHTML = '';
             if (account.collectible_usernames && account.collectible_usernames.length > 0) {
                 const alsoSpan = document.createElement('span');
                 alsoSpan.className = 'also-text';
                 alsoSpan.textContent = 'also';
                 collectibleUsernamesContainer.appendChild(alsoSpan);
-
+        
                 account.collectible_usernames.forEach(uname => {
                     const unameSpan = document.createElement('span');
                     unameSpan.className = 'collectible-username-span';
@@ -2681,11 +2980,11 @@
                         e.preventDefault();
                         handleDeleteCollectibleUsername(uname);
                     });
-
+        
                     collectibleUsernamesContainer.appendChild(unameSpan);
                 });
             }
-
+        
             sidebarCurrentAvatar.src = account.avatar_url;
             sidebarCurrentName.textContent = account.full_name;
         }
@@ -2962,9 +3261,9 @@
         function renderProfileGifts() {
             Array.from(giftsGrid.children).forEach(child => unobserveLottieElement(child));
             giftsGrid.innerHTML = '';
-
+        
             const baseGifts = showHiddenGifts ? ownedGifts : ownedGifts.filter(g => !g.is_hidden);
-
+        
             const filteredGifts = baseGifts.filter(gift => {
                 if (activeFilters.collection && gift.gift_type_id !== activeFilters.collection) return false;
                 if (gift.is_collectible && gift.collectible_data) {
@@ -2974,7 +3273,7 @@
                 } else if (activeFilters.model || activeFilters.backdrop || activeFilters.pattern) return false;
                 return true;
             });
-
+        
             const sortedGifts = [...filteredGifts].sort((a, b) => {
                 const aIsPinned = a.is_pinned && a.pin_order != null;
                 const bIsPinned = b.is_pinned && b.pin_order != null;
@@ -2983,14 +3282,19 @@
                 if (bIsPinned) return 1;
                 return new Date(b.acquired_date) - new Date(a.acquired_date);
             });
-
+        
             currentlySortedGifts = sortedGifts;
-
-            profileGiftCountSubtext.textContent = getGiftCountText(filteredGifts.length);
-            if (ownedGifts.length > 0 && filteredGifts.length !== ownedGifts.length) {
-                profileGiftCountSubtext.textContent += ` of ${ownedGifts.length}`;
+        
+            const totalGiftCount = ownedGifts.length; // Count hidden gifts too for level
+            const userLevel = calculateUserLevel(totalGiftCount).level;
+            const levelBubble = document.getElementById('profile-level-bubble');
+            if (levelBubble) {
+                levelBubble.textContent = userLevel;
             }
-
+            
+            // Hide the old subtext element if it exists
+            if(profileGiftCountSubtext) profileGiftCountSubtext.classList.add('hidden');
+        
             if (currentlySortedGifts.length === 0) {
                 giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
                 let emptyMessage = "You don't have any gifts yet.";
@@ -3088,18 +3392,29 @@
             return card;
         }
 
+        // --- START: Replace this entire function ---
         function renderTopPinnedGiftsPreview() {
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
             profileTopPinnedGifts.innerHTML = '';
-
+        
             const pinnedGifts = ownedGifts.filter(g => g.is_pinned && !g.is_hidden)
-                                          .sort((a,b) => a.pin_order - b.pin_order);
-
-            pinnedGifts.slice(0, 7).forEach(gift => {
+                                          .sort((a,b) => (a.pin_order || 0) - (b.pin_order || 0));
+        
+            // Limit to the 6 positions you designed
+            const giftsToDisplay = pinnedGifts.slice(0, 6);
+            if (giftsToDisplay.length === 0) return;
+        
+            giftsToDisplay.forEach((gift, index) => {
+                const position = PINNED_GIFT_POSITIONS[index];
+                if (!position) return; // Failsafe if there are more than 6 gifts
+        
                 const container = document.createElement('div');
                 container.className = 'pinned-gift-item';
                 container.dataset.instanceId = gift.instance_id;
+                container.style.top = position.top;
+                container.style.left = position.left;
                 container.addEventListener('click', () => openGiftDetailByInstanceId(gift.instance_id));
+                
                 let lottiePathForPinned = null, imageForPinned = gift.original_image_url;
                 if (gift.is_collectible && gift.collectible_data) {
                     lottiePathForPinned = gift.collectible_data.lottieModelPath;
@@ -3107,15 +3422,18 @@
                 } else if (gift.lottie_path) {
                     lottiePathForPinned = gift.lottie_path;
                 }
+        
                 if (animationsEnabled && lottiePathForPinned) {
                     container.classList.add('lottie-animation-container');
                     playLottieAnimation(container, lottiePathForPinned, true);
                 } else {
                      container.innerHTML = `<img src="${imageForPinned}" alt="${gift.gift_name}" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML = '🎁'">`;
                 }
+                
                 profileTopPinnedGifts.appendChild(container);
             });
         }
+        // --- END: Function replacement ---
         
         function renderGiftsTabPreview() {
             giftsTabPreviewContainer.innerHTML = '';
@@ -5372,8 +5690,8 @@
             buyGiftsTabButton.addEventListener('click', () => switchTab('buy-gifts'));
             postsContent.addEventListener('click', handleWallClick);
             newPostFab.addEventListener('click', () => openModal(newPostModal));
-            profileName.addEventListener('click', handleProfileNameTap);
             
+
             if (upgradeAllGiftsButton) upgradeAllGiftsButton.addEventListener('click', handleUpgradeAllGifts);
 
             profileBio.addEventListener('click', () => { if (viewingOwnProfile) handleEditBio(); });
@@ -5398,6 +5716,9 @@
             document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
+            document.getElementById('profile-edit-btn').addEventListener('click', handleEditBio);
+            document.getElementById('profile-level-bubble').addEventListener('click', showLevelInfoPopup);
+            document.getElementById('close-level-modal').addEventListener('click', () => closeModal(document.getElementById('level-info-modal')));
             
             submitNewPostButton.addEventListener('click', handleNewPostSubmit);
             document.getElementById('cancel-new-post-button').addEventListener('click', () => closeModal(newPostModal));
@@ -5470,7 +5791,6 @@
             confirmTransferButton.addEventListener('click', handleConfirmTransfer);
 
             document.getElementById('fullscreen-toggle').addEventListener('change', handleFullscreenToggle);
-            document.getElementById('notification-bell-btn').addEventListener('click', openSubscriptionModal);
             document.getElementById('close-subscription-modal').addEventListener('click', () => closeModal(document.getElementById('subscription-modal')));
             document.getElementById('mentions-toggle').addEventListener('change', (e) => updateSubscription('mentions', e.target.checked));
             document.getElementById('new-posts-toggle').addEventListener('change', (e) => updateSubscription('new_posts', e.target.checked));
@@ -5556,4 +5876,4 @@
         }
     </script>
 </body>
-</html>
+                                </html>
