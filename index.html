@@ -3608,36 +3608,27 @@
             }
         }
 
-        // --- MODIFIED FUNCTION: To trigger the new animation ---
         async function handleSingleGiftUpgradeFromModal(instanceId) {
             const gift = ownedGifts.find(g => g.instance_id === instanceId);
             if (!gift || gift.is_collectible) return;
-        
+
             if (CUSTOM_GIFTS_DATA[gift.gift_name] && !customGiftsEnabled) {
                 tg.showAlert("Please enable Custom Gifts in settings to upgrade this item.");
                 return;
             }
-        
+
             upgradeGiftDetailModalButton.textContent = 'Upgrading...';
             upgradeGiftDetailModalButton.disabled = true;
-        
+
             try {
-                const upgradedGiftData = await upgradeSingleGiftLogic(gift);
-                
-                if (upgradedGiftData.status === 'success') {
-                    // Close the old modal
+                const result = await upgradeSingleGiftLogic(gift);
+                if (result.status === 'success') {
+                    renderProfileGifts();
+                    tg.HapticFeedback.notificationOccurred('success');
                     closeModal(giftDetailModal);
-                    
-                    // --- KEY CHANGE ---
-                    // Instead of just showing the result, play the animation
-                    await playUpgradeRouletteAnimation(upgradedGiftData);
-                    
-                    // Re-render the main grid in the background so it's updated when the modal closes
-                    renderProfileGifts(); 
-        
-                } else if (upgradedGiftData.status === 'failed') {
+                    openGiftDetailByInstanceId(gift.instance_id);
+                } else if (result.status === 'failed') {
                     // Error is handled by callBackend
-                    tg.showAlert('Upgrade failed. Please try again.');
                 }
             } catch (error) {
                 console.error("Error during single gift upgrade:", error);
@@ -3681,91 +3672,6 @@
             if (upgradeAllGiftsButton) { upgradeAllGiftsButton.textContent = originalButtonText; upgradeAllGiftsButton.disabled = false; }
         }
 
-        // --- NEW FUNCTION: To handle the upgrade roulette animation ---
-        async function playUpgradeRouletteAnimation(finalGiftData) {
-            // Step 1: Prepare the "blank slate" collectible modal and show it
-            populateCollectibleDetailModal(finalGiftData, true); // 'true' means pre-animation state
-            openModal(collectibleDetailModal, finalGiftData);
-        
-            const giftTypeId = finalGiftData.gift_type_id;
-            const giftName = finalGiftData.gift_name;
-        
-            // Ensure we have the parts data for the roulette
-            if (!cachedCollectibleParts[giftTypeId]) {
-                // This function fetches and caches the parts if they don't exist
-                await selectCustomBaseGift(giftTypeId, giftName);
-            }
-            const partsData = cachedCollectibleParts[giftTypeId];
-            if (!partsData) {
-                // Fallback: If parts can't be loaded, just show the final gift
-                populateCollectibleDetailModal(finalGiftData, false);
-                return;
-            }
-        
-            // A helper function to run a single roulette animation
-            const runRoulette = (itemsToCycle, finalItem, duration, updateFn, initialDelay = 0) => {
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        let intervalId = setInterval(() => {
-                            const randomItem = itemsToCycle[Math.floor(Math.random() * itemsToCycle.length)];
-                            updateFn(randomItem);
-                        }, 75); // Speed of the roulette cycle
-        
-                        setTimeout(() => {
-                            clearInterval(intervalId);
-                            updateFn(finalItem); // Land on the final item
-                            resolve();
-                        }, duration);
-                    }, initialDelay);
-                });
-            };
-        
-            // DOM elements for animation targets
-            const displayArea = collectibleDetailModal.querySelector('.collectible-display-area');
-            const modelImageEl = document.getElementById('modal-collectible-model-img-static');
-            const patternOverlayEl = document.getElementById('pattern-container-dynamic');
-            const modelNameEl = document.getElementById('modal-collectible-main-name');
-            const infoTableEl = document.getElementById('modal-collectible-info-table');
-        
-            // Step 2: Run the animation phases in sequence
-            // Phase I: Backdrop Roulette
-            if (partsData.backdrops && partsData.backdrops.length > 0) {
-                await runRoulette(partsData.backdrops, finalGiftData.collectible_data.backdrop, 1500, (item) => {
-                    displayArea.style.background = `radial-gradient(circle, ${item.hex.centerColor}, ${item.hex.edgeColor})`;
-                });
-            }
-        
-            // Phase II: Pattern/Symbol Roulette
-            if (partsData.patterns && partsData.patterns.length > 0) {
-                await runRoulette(partsData.patterns, finalGiftData.collectible_data.pattern, 2000, (item) => {
-                     const patternSourceName = CUSTOM_GIFTS_DATA[giftName]?.patterns_source || giftName;
-                     const patternUrl = `${CDN_BASE_URL}patterns/${encodeURIComponent(patternSourceName)}/png/${encodeURIComponent(item.name)}.png`;
-                     // We'll just show the pattern image in the center temporarily for effect
-                     patternOverlayEl.innerHTML = `<img src="${patternUrl}" class="dynamic-pattern-instance" style="opacity: 0.1; width: 80px; height: 80px; position:absolute; top:50%; left:50%; transform: translate(-50%, -50%);">`;
-                }, 200); // Start slightly after backdrop
-            }
-        
-            // Phase III: Model Roulette (The Main Event)
-            if (partsData.models && partsData.models.length > 0) {
-                await runRoulette(partsData.models, finalGiftData.collectible_data.model, 2500, (item) => {
-                     const imageUrl = item.image || `${CDN_BASE_URL}models/${encodeURIComponent(giftName)}/png/${encodeURIComponent(item.name)}.png`;
-                     modelImageEl.src = imageUrl;
-                     modelNameEl.textContent = item.name;
-                }, 300); // Start slightly after pattern
-            }
-        
-            // Step 3: Final reveal of all data and UI elements
-            tg.HapticFeedback.notificationOccurred('success');
-            populateCollectibleDetailModal(finalGiftData, false); // 'false' renders the final, complete state
-            
-            // Show the "Gift Upgraded" toast at the bottom
-            tg.showPopup({
-                title: 'Gift Upgraded',
-                message: `Your gift ${finalGiftData.gift_name} #${finalGiftData.collectible_number} now has unique attributes and can be transferred to others.`,
-                buttons: [{ type: 'ok' }]
-            });
-        }
-        
         function openModal(modalElement, data = null) {
             if (!modalElement) return;
 
@@ -3826,144 +3732,134 @@
             event.preventDefault();
             tg.openTelegramLink(`https://t.me/${username}`);
         }
-        
-        async function populateCollectibleDetailModal(gift, isPreAnimation = false) {
+
+        async function populateCollectibleDetailModal(gift) {
             const cd = gift.collectible_data;
-            if (!cd) {
-                console.error("Attempted to open collectible modal for a gift with no collectible_data.", gift);
-                return;
-            }
-        
-            // Get all DOM elements that will be manipulated
-            const modelNameEl = document.getElementById('modal-collectible-main-name');
-            const subtextEl = document.getElementById('modal-collectible-number-subtext');
-            const infoTableEl = document.getElementById('modal-collectible-info-table');
-            const actionButtonsEl = document.getElementById('modal-collectible-actions');
-            const menuButtonEl = document.getElementById('collectible-menu-button');
-            const footerMessageEl = collectibleDetailModal.querySelector('.modal-footer-message');
-            const modelImageEl = document.getElementById('modal-collectible-model-img-static');
-            const displayArea = collectibleDetailModal.querySelector('.collectible-display-area');
-            const patternContainer = document.getElementById('pattern-container-dynamic');
-        
-            if (isPreAnimation) {
-                // --- PRE-ANIMATION STATE ---
-                // Set placeholder text and hide detailed elements
-                modelNameEl.textContent = 'Upgrading...';
-                subtextEl.innerHTML = '&nbsp;'; // Use non-breaking space to maintain layout
-                infoTableEl.style.visibility = 'hidden';
-                actionButtonsEl.style.visibility = 'hidden';
-                menuButtonEl.style.visibility = 'hidden';
-                footerMessageEl.style.visibility = 'hidden';
-        
-                // Set a neutral background and clear any old patterns
-                displayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
-                patternContainer.innerHTML = '';
-                
-                // Show the original, non-collectible image as the starting point
-                modelImageEl.src = gift.original_image_url;
-                
-                // Ensure Lottie container is hidden and static image is visible
-                modalLottieCollectibleModel.style.display = 'none';
-                modelImageEl.style.display = 'block';
-        
-                return; // Exit here, no more rendering needed for the pre-animation state
-            }
-        
-            // --- FINAL RENDER STATE (The rest of the function) ---
-            // Make sure all elements are visible again
-            infoTableEl.style.visibility = 'visible';
-            actionButtonsEl.style.visibility = 'visible';
-            menuButtonEl.style.visibility = 'visible';
-            footerMessageEl.style.visibility = 'visible';
-        
-            // Populate main name and collectible number/author subtext
-            modelNameEl.textContent = cd.model?.name || gift.gift_name;
+            modalCollectibleMainName.textContent = cd.model?.name || gift.gift_name;
+
             const numberForLink = gift.collectible_number;
-            const authorUsername = getGiftAuthor(gift.gift_name);
-            let subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
-            if (authorUsername) {
-                subtextHTML += ` by <a href="#" onclick="openTelegramProfile(event, '${authorUsername}')">@${authorUsername}</a>`;
+            
+            const snoopGifts = ['Snoop Dogg', 'Swag Bag', 'Snoop Cigar', 'Low Rider', 'Westside Sign'];
+            const vasiliyGifts = ['Dildo', 'Skebob', "Baggin' Cat"];
+
+            let subtextHTML;
+            if (snoopGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'snoopdogg')">@snoopdogg</a>`;
+            } else if (vasiliyGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'Vasiliy939')">@Vasiliy939</a>`;
+            } else {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
             }
-            subtextEl.innerHTML = `<a id="collectible-link-copier" href="#">${subtextHTML}</a>`;
-        
-            // Add click handler to copy the gift link
-            document.getElementById('collectible-link-copier').onclick = (e) => {
-                // Allow clicking the author link, but copy on the rest of the subtext
-                if (!e.target.closest('a') || e.target.id === 'collectible-link-copier') {
-                    e.preventDefault();
-                    copyGiftLink(gift);
+            modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">${subtextHTML}</a>`;
+
+            document.getElementById('collectible-link-copier').onclick = (e) => { 
+                if (e.target.tagName !== 'A' || e.target.id === 'collectible-link-copier') {
+                    e.preventDefault(); 
+                    copyGiftLink(gift); 
                 }
             };
-        
-            // Set the final backdrop gradient
-            if (cd.backdropColors) {
-                displayArea.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
+
+            if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
+
+            if (collectibleDisplayArea && cd.backdropColors) {
+                collectibleDisplayArea.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
             } else {
-                displayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
+                collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
-        
-            // Render the final pattern overlay
-            patternContainer.innerHTML = ''; // Clear any animation remnants
-            if (cd.patternImage) {
-                const patternOverlay = document.createElement('div');
-                Object.assign(patternOverlay.style, {
-                    position: 'absolute', top: '0', left: '0',
-                    width: '100%', height: '100%',
-                    backgroundImage: `url('${cd.patternImage}')`,
-                    backgroundRepeat: 'repeat', backgroundSize: '30% auto',
-                    opacity: '0.07'
-                });
-                patternContainer.appendChild(patternOverlay);
+
+            if (cd.patternImage && patternContainerDynamic) {
+                setTimeout(() => {
+                    if(!patternContainerDynamic) return;
+                    const containerWidth = patternContainerDynamic.offsetWidth;
+                    const containerHeight = patternContainerDynamic.offsetHeight;
+                    const centerX = containerWidth / 2;
+                    const centerY = containerHeight / 2 - 30;
+
+                    const createPattern = (styles) => {
+                        const img = document.createElement('img');
+                        img.src = cd.patternImage;
+                        img.className = 'dynamic-pattern-instance';
+                        img.crossOrigin = 'Anonymous';
+                        const baseRotation = -25;
+                        img.style.transform = `translate(-50%, -50%) rotate(${baseRotation}deg) scale(${styles.scale || 0.9})`;
+                        img.style.left = `${styles.left}px`;
+                        img.style.top = `${styles.top}px`;
+                        patternContainerDynamic.appendChild(img);
+                    };
+
+                    const circleRadius = Math.min(containerWidth, containerHeight) / 3.2;
+                    const numCirclePatterns = 10;
+                    for (let i = 0; i < numCirclePatterns; i++) {
+                        const angle = (i / numCirclePatterns) * 2 * Math.PI;
+                        const x = centerX + circleRadius * Math.cos(angle);
+                        const y = centerY + circleRadius * Math.sin(angle);
+                        createPattern({ left: x, top: y, scale: 0.9 });
+                    }
+
+                    const leftRowStartX = containerWidth * 0.15;
+                    const leftRowStartY = containerHeight * 0.2;
+                    const leftRowYStep = containerHeight * 0.18;
+                    for (let i = 0; i < 4; i++) {
+                        const x = leftRowStartX - (i * 5);
+                        const y = leftRowStartY + (i * leftRowYStep);
+                        createPattern({ left: x, top: y, scale: 0.85 });
+                    }
+
+                    const rightRowStartX = containerWidth * 0.85;
+                    const rightRowStartY = containerHeight * 0.2;
+                    const rightRowYStep = containerHeight * 0.18;
+                    for (let i = 0; i < 4; i++) {
+                        const x = rightRowStartX + (i * 5);
+                        const y = rightRowStartY + (i * rightRowYStep);
+                        createPattern({ left: x, top: y, scale: 0.85 });
+                    }
+                }, 50);
             }
-        
-            // Display the final model image or Lottie animation
+
             destroyLottieAnimation(modalLottieCollectibleModel);
-            modelImageEl.style.display = 'block';
+            modalCollectibleModelImgStatic.style.display = 'block';
             modalLottieCollectibleModel.style.display = 'none';
             if (animationsEnabled && cd.lottieModelPath) {
                 playLottieAnimation(modalLottieCollectibleModel, cd.lottieModelPath, true);
-                modelImageEl.style.display = 'none';
+                modalCollectibleModelImgStatic.style.display = 'none';
                 modalLottieCollectibleModel.style.display = 'flex';
             } else {
-                modelImageEl.src = cd.modelImage || gift.original_image_url;
-                modelImageEl.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
+                 modalCollectibleModelImgStatic.src = cd.modelImage || gift.original_image_url;
+                 modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
             }
-        
-            // Determine owner details
-            const isOwner = (gift.owner_id === currentAccountTgId);
+
             let ownerName, ownerAvatar, ownerUsername;
-            if (isOwner) {
+            const isOwner = (gift.owner_id === currentAccountTgId);
+            if(isOwner) {
                 const myAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
                 ownerName = myAccount.full_name;
                 ownerAvatar = myAccount.avatar_url;
                 ownerUsername = myAccount.username;
             } else {
-                ownerName = gift.owner_name || 'User';
+                ownerName = gift.owner_name || 'Test Account';
                 ownerAvatar = gift.owner_avatar || `https://i.pravatar.cc/140?u=${generateUniqueId()}`;
                 ownerUsername = gift.owner_username;
             }
-        
+
             const ownerDisplayHTML = ownerUsername
                 ? `<a href="#" onclick="event.preventDefault(); displayUserProfile('${ownerUsername}')"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</a>`
                 : `<span><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span>`;
-        
-            // Build and inject the info table HTML
-            infoTableEl.innerHTML = `
+
+            modalCollectibleInfoTable.innerHTML = `
                 <div class="info-row"><span class="info-label">Owner</span><span class="info-value">${ownerDisplayHTML}</span></div>
                 <div class="info-row"><span class="info-label">Model</span><span id="collectible-model-value" class="info-value clickable-info">${cd.model?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.model?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Backdrop</span><span id="collectible-backdrop-value" class="info-value clickable-info">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.backdrop?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Supply</span><span class="info-value">${cd.supply?.toLocaleString() || 'N/A'} issued</span></div>`;
-        
-            // Show/hide owner-specific controls
-            actionButtonsEl.style.display = isOwner ? 'flex' : 'none';
-            menuButtonEl.style.display = isOwner ? 'flex' : 'none';
+
+            collectibleActionWear.style.display = isOwner ? 'flex' : 'none';
+            collectibleActionSell.style.display = isOwner ? 'flex' : 'none';
+            collectibleActionTransfer.style.display = isOwner ? 'flex' : 'none';
+            collectibleMenuButton.style.display = isOwner ? 'flex' : 'none';
             hideLinkInModal.style.display = isOwner ? 'inline' : 'none';
-            
-            // Update button states
-            actionButtonsEl.querySelector('#collectible-action-wear .text').textContent = (gift.is_worn === true) ? 'Take Off' : 'Wear';
-        
-            // Re-attach triple-tap event listeners since innerHTML was overwritten
+
+            collectibleActionWear.querySelector('.text').textContent = (gift.is_worn === true) ? 'Take Off' : 'Wear';
+
             const modelValueEl = document.getElementById('collectible-model-value');
             const backdropValueEl = document.getElementById('collectible-backdrop-value');
             const patternValueEl = document.getElementById('collectible-pattern-value');
