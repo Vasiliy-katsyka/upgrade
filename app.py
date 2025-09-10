@@ -56,25 +56,45 @@ CACHE_DURATION_SECONDS = 3600  # Cache for 1 hour
 # --- DATABASE CONNECTION POOL ---
 db_pool = None
 
+# In app.py, replace the entire get_db_connection function with this one.
+
 def get_db_connection():
-    """Gets a connection from the pool."""
+    """Gets a connection from the pool, ensuring it's alive and ready."""
     global db_pool
     if db_pool is None:
         try:
+            # SimpleConnectionPool is fine, we'll manage stale connections manually.
             db_pool = psycopg2.pool.SimpleConnectionPool(1, 10, dsn=DATABASE_URL)
             app.logger.info("Database connection pool created.")
         except psycopg2.OperationalError as e:
             app.logger.error(f"Could not create database connection pool: {e}", exc_info=True)
             return None
-    try:
-        return db_pool.getconn()
-    except Exception as e:
-        app.logger.error(f"Failed to get connection from pool: {e}", exc_info=True)
-        return None
+
+    # --- NEW ROBUST CONNECTION LOGIC ---
+    for attempt in range(3): # Try up to 3 times to get a working connection
+        try:
+            conn = db_pool.getconn()
+            # A simple, fast query to check if the connection is alive.
+            # If this fails, it will raise an exception.
+            with conn.cursor() as cur:
+                cur.execute('SELECT 1;')
+            # If we reach here, the connection is good.
+            return conn
+        except psycopg2.OperationalError as e:
+            app.logger.warning(f"Stale/dead database connection detected on attempt {attempt + 1}: {e}")
+            if conn:
+                # IMPORTANT: Close the bad connection so the pool can discard it.
+                # The `close=True` parameter tells the pool to not reuse it.
+                db_pool.putconn(conn, close=True) 
+            if attempt == 2: # If it's the last attempt
+                app.logger.error("Failed to get a valid database connection after 3 attempts.")
+                return None
+            time.sleep(0.1) # Small delay before retrying
+    return None # Should not be reached, but for safety
 
 def put_db_connection(conn):
-    """Puts a connection back into the pool."""
-    if db_pool and conn:
+    """Puts a connection back into the pool if it's not already closed."""
+    if db_pool and conn and not conn.closed:
         db_pool.putconn(conn)
 
 
