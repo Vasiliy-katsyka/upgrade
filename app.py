@@ -1870,8 +1870,8 @@ def get_public_available_custom_gifts():
         available_gifts = []
         for gift_name, gift_data in CUSTOM_GIFTS_DATA.items():
             # Exclude "Babuka" as requested
-            if gift_name == "Babuka":
-                continue
+            #if gift_name == "Babuka":
+            #    continue
 
             # Check if the gift is limited
             if 'limit' in gift_data:
