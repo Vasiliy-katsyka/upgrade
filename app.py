@@ -478,17 +478,17 @@ def init_db():
                 );
             """)
 
-            # NEW: Populate stock for limited gifts from CUSTOM_GIFTS_DATA
             for gift_name, gift_data in CUSTOM_GIFTS_DATA.items():
                 if 'limit' in gift_data:
                     gift_type_id = gift_data['id']
                     limit = gift_data['limit']
-                    # This query only inserts if the gift doesn't exist in the stock table
+                    # This query now also initializes stock based on existing collectibles, if any.
                     cur.execute("""
                         INSERT INTO limited_gifts_stock (gift_type_id, total_stock, remaining_stock)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (gift_type_id) DO NOTHING;
-                    """, (gift_type_id, limit, limit))
+                        SELECT %s, %s, %s - (SELECT COUNT(*) FROM gifts WHERE gift_type_id = %s)
+                        ON CONFLICT (gift_type_id) DO UPDATE
+                        SET total_stock = EXCLUDED.total_stock;
+                    """, (gift_type_id, limit, limit, gift_type_id))
 
             conn.commit()
             app.logger.info("Database initialized successfully.")
@@ -1909,6 +1909,8 @@ def clone_gift():
     finally:
         if conn: put_db_connection(conn)
 
+# In app.py, replace the entire get_limited_gift_stock function
+
 @app.route('/api/gifts/stock', methods=['GET'])
 def get_limited_gift_stock():
     conn = get_db_connection()
@@ -1916,9 +1918,28 @@ def get_limited_gift_stock():
         return jsonify({"error": "Database connection failed."}), 500
     try:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("SELECT gift_type_id, remaining_stock, total_stock FROM limited_gifts_stock;")
-            # Format data for easy frontend consumption
-            stock_data = {row['gift_type_id']: {'remaining': row['remaining_stock'], 'total': row['total_stock']} for row in cur.fetchall()}
+            # This single query fetches everything we need: total, remaining, and collectible counts.
+            cur.execute("""
+                SELECT 
+                    s.gift_type_id, 
+                    s.remaining_stock, 
+                    s.total_stock,
+                    COALESCE(c.collectible_count, 0) as collectible_count
+                FROM limited_gifts_stock s
+                LEFT JOIN (
+                    SELECT gift_type_id, COUNT(*) as collectible_count
+                    FROM gifts
+                    WHERE is_collectible = TRUE
+                    GROUP BY gift_type_id
+                ) c ON s.gift_type_id = c.gift_type_id;
+            """)
+            stock_data = {
+                row['gift_type_id']: {
+                    'remaining': row['remaining_stock'], 
+                    'total': row['total_stock'],
+                    'collectible_count': row['collectible_count']
+                } for row in cur.fetchall()
+            }
             return jsonify(stock_data), 200
     except Exception as e:
         app.logger.error(f"Error fetching limited gift stock: {e}", exc_info=True)
