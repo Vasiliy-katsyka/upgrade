@@ -1839,6 +1839,67 @@ def upgrade_gift():
     finally:
         if conn: put_db_connection(conn)
 
+@app.route('/api/public/available_custom_gifts', methods=['GET'])
+def get_public_available_custom_gifts():
+    """
+    Provides a public list of available custom gifts and their stock status.
+    Requires API key authentication.
+    Excludes "Babuka" and sold-out items.
+    """
+    # 1. API Key Authentication
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({"error": "Authorization header is missing or invalid. Expected 'Bearer <API_KEY>'"}), 401
+    
+    token = auth_header.split(' ')[1]
+    if not token or token != TRANSFER_API_KEY:
+        return jsonify({"error": "Unauthorized: Invalid API Key"}), 401
+
+    # 2. Database Connection
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed."}), 500
+
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # 3. Fetch all limited stock data in a single, efficient query
+            cur.execute("SELECT gift_type_id, remaining_stock FROM limited_gifts_stock;")
+            stock_map = {row['gift_type_id']: row['remaining_stock'] for row in cur.fetchall()}
+
+        # 4. Process gift availability in memory (very fast)
+        available_gifts = []
+        for gift_name, gift_data in CUSTOM_GIFTS_DATA.items():
+            # Exclude "Babuka" as requested
+            if gift_name == "Babuka":
+                continue
+
+            # Check if the gift is limited
+            if 'limit' in gift_data:
+                gift_type_id = gift_data['id']
+                remaining = stock_map.get(gift_type_id, 0) # Use .get() for safety
+                
+                # Only include the gift if it's not sold out
+                if remaining > 0:
+                    available_gifts.append({
+                        "name": gift_name,
+                        "availability": f"{remaining} Left"
+                    })
+            else:
+                # If 'limit' key is not present, it's unlimited
+                available_gifts.append({
+                    "name": gift_name,
+                    "availability": "Unlimited"
+                })
+        
+        return jsonify(available_gifts), 200
+
+    except Exception as e:
+        app.logger.error(f"Error in /api/public/available_custom_gifts: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn:
+            put_db_connection(conn)
+
 @app.route('/api/gifts/clone', methods=['POST'])
 def clone_gift():
     data = request.get_json()
