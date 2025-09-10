@@ -307,7 +307,17 @@ CUSTOM_GIFTS_DATA = {
         ],
         "backdrops_source": "Snoop Dogg",
         "patterns_source": "Snoop Dogg"
-    }
+    },
+    "Babuka": {
+        "id": "custom_babuka",
+        "limit": 10, # New field for total stock
+        "models": [
+            {"name": "Kupik", "rarityPermille": 30}, # 3.0%
+            {"name": "Upik", "rarityPermille": 10}   # 1.0%
+        ],
+        "backdrops_source": "Toy Bear", # Using existing assets for demo
+        "patterns_source": "Toy Bear"
+    },
 }
 
 
@@ -460,6 +470,28 @@ def init_db():
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_collections_owner_id ON collections (owner_id);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_gift_collections_collection_id ON gift_collections (collection_id);")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS limited_gifts_stock (
+                    gift_type_id VARCHAR(255) PRIMARY KEY,
+                    total_stock INT NOT NULL,
+                    remaining_stock INT NOT NULL
+                );
+            """)
+
+            # NEW: Populate stock for limited gifts from CUSTOM_GIFTS_DATA
+            for gift_name, gift_data in CUSTOM_GIFTS_DATA.items():
+                if 'limit' in gift_data:
+                    gift_type_id = gift_data['id']
+                    limit = gift_data['limit']
+                    # This query only inserts if the gift doesn't exist in the stock table
+                    cur.execute("""
+                        INSERT INTO limited_gifts_stock (gift_type_id, total_stock, remaining_stock)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (gift_type_id) DO NOTHING;
+                    """, (gift_type_id, limit, limit))
+
+            conn.commit()
+            app.logger.info("Database initialized successfully.")
 
             cur.execute("SELECT 1 FROM accounts WHERE tg_id = %s;", (TEST_ACCOUNT_TG_ID,))
             if not cur.fetchone():
@@ -1649,29 +1681,58 @@ def update_account_settings():
 def add_gift():
     data = request.get_json()
     required_fields = ['owner_id', 'gift_type_id', 'gift_name', 'original_image_url', 'instance_id']
-    if not all(field in data for field in required_fields): return jsonify({"error": "Missing data"}), 400
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing data"}), 400
+    
     owner_id = data['owner_id']
     gift_name = data['gift_name']
-    
+    gift_type_id = data['gift_type_id']
+
     conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database failed"}), 500
+    if not conn:
+        return jsonify({"error": "Database failed"}), 500
+    
     try:
         with conn.cursor() as cur:
+            # Check for custom gift permissions first
             if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
                 return jsonify({"error": "You must enable Custom Gifts in settings to acquire this item."}), 403
 
+            # Check general gift limit
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
-            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER: return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
+
+            # --- UPDATED: Limited Gift Stock Logic ---
+            is_limited = gift_type_id in [g['id'] for g in CUSTOM_GIFTS_DATA.values() if 'limit' in g]
+            if is_limited:
+                # Lock the row for update to prevent race conditions
+                cur.execute("SELECT remaining_stock FROM limited_gifts_stock WHERE gift_type_id = %s FOR UPDATE;", (gift_type_id,))
+                stock_row = cur.fetchone()
+                if not stock_row or stock_row[0] <= 0:
+                    conn.rollback() # Release the lock
+                    return jsonify({"error": "This limited gift is sold out."}), 403
+                
+                # Decrement stock
+                cur.execute("UPDATE limited_gifts_stock SET remaining_stock = remaining_stock - 1 WHERE gift_type_id = %s;", (gift_type_id,))
+            # --- END OF UPDATE ---
+
+            # Insert the gift
+            cur.execute("""
+                INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) 
+                VALUES (%s, %s, %s, %s, %s, %s);
+            """, (data['instance_id'], owner_id, gift_type_id, gift_name, data['original_image_url'], data.get('lottie_path')))
             
-            cur.execute("""INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) VALUES (%s, %s, %s, %s, %s, %s);""", (data['instance_id'], owner_id, data['gift_type_id'], gift_name, data['original_image_url'], data.get('lottie_path')))
             conn.commit()
             return jsonify({"message": "Gift added"}), 201
     except Exception as e:
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
         app.logger.error(f"Error adding gift for {owner_id}: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
     finally:
-        if conn: put_db_connection(conn)
+        if conn:
+            put_db_connection(conn)
 
 @app.route('/api/gifts/upgrade', methods=['POST'])
 def upgrade_gift():
@@ -1692,7 +1753,12 @@ def upgrade_gift():
             if not gift_row: return jsonify({"error": "Gift not found or already collectible."}), 404
             
             owner_id, gift_type_id, gift_name = gift_row['owner_id'], gift_row['gift_type_id'], gift_row['gift_name']
-
+            cur.execute("SELECT total_stock FROM limited_gifts_stock WHERE gift_type_id = %s;", (gift_type_id,))
+            stock_row = cur.fetchone()
+            if stock_row:
+                supply = stock_row[0]
+            else:
+                supply = random.randint(2000, 10000)
             if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
                 return jsonify({"error": "You must enable Custom Gifts in settings to upgrade this item."}), 403
 
@@ -1842,6 +1908,24 @@ def clone_gift():
         return jsonify({"error": "An internal error occurred during cloning."}), 500
     finally:
         if conn: put_db_connection(conn)
+
+@app.route('/api/gifts/stock', methods=['GET'])
+def get_limited_gift_stock():
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("SELECT gift_type_id, remaining_stock, total_stock FROM limited_gifts_stock;")
+            # Format data for easy frontend consumption
+            stock_data = {row['gift_type_id']: {'remaining': row['remaining_stock'], 'total': row['total_stock']} for row in cur.fetchall()}
+            return jsonify(stock_data), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching limited gift stock: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn:
+            put_db_connection(conn)
 
 @app.route('/api/gift/<string:gift_type_id>/<int:collectible_number>', methods=['GET'])
 def get_gift_by_details(gift_type_id, collectible_number):
