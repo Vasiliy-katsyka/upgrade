@@ -1839,6 +1839,53 @@ def upgrade_gift():
     finally:
         if conn: put_db_connection(conn)
 
+# In app.py, add this new endpoint function.
+
+@app.route('/api/public/gift_models', methods=['GET'])
+def get_public_gift_models():
+    """
+    Provides a public list of models and their image URLs for a specific custom gift.
+    The gift name is provided via a custom HTTP header.
+    Requires API key authentication.
+    """
+    # 1. API Key Authentication (re-using the same secure pattern)
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({"error": "Authorization header is missing or invalid. Expected 'Bearer <API_KEY>'"}), 401
+    
+    token = auth_header.split(' ')[1]
+    if not token or token != TRANSFER_API_KEY:
+        return jsonify({"error": "Unauthorized: Invalid API Key"}), 401
+
+    # 2. Get Gift Name from the Custom Header
+    gift_name = request.headers.get('X-Gift-Name')
+    if not gift_name:
+        return jsonify({"error": "Required header 'X-Gift-Name' is missing."}), 400
+
+    # 3. Look up the gift in the in-memory data (very fast)
+    # The lookup is case-sensitive, matching the keys in CUSTOM_GIFTS_DATA
+    gift_data = CUSTOM_GIFTS_DATA.get(gift_name)
+    if not gift_data:
+        return jsonify({"error": f"Gift with name '{gift_name}' not found."}), 404
+
+    # 4. Check if the gift has models defined
+    models_list = gift_data.get('models', [])
+    if not models_list:
+        # It's valid for a gift to have no models, so return an empty list.
+        return jsonify([]), 200
+
+    # 5. Format the response with the required fields
+    response_data = []
+    for model in models_list:
+        # Ensure the model has both a name and an image before adding it
+        if 'name' in model and 'image' in model:
+            response_data.append({
+                "name": model['name'],
+                "image_url": model['image']
+            })
+
+    return jsonify(response_data), 200
+
 @app.route('/api/public/available_custom_gifts', methods=['GET'])
 def get_public_available_custom_gifts():
     """
