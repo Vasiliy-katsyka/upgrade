@@ -1403,6 +1403,101 @@ def webhook_handler():
 
     return jsonify({"status": "ok"}), 200
 
+@app.route('/api/account/collection_price', methods=['GET'])
+def get_collection_price():
+    tg_id = request.args.get('tg_id')
+    if not tg_id:
+        return jsonify({"error": "tg_id is required"}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed."}), 500
+    
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Fetch all collectible gifts for the user
+            cur.execute("""
+                SELECT instance_id, gift_name, collectible_data
+                FROM gifts 
+                WHERE owner_id = %s AND is_collectible = TRUE;
+            """, (tg_id,))
+            user_gifts = cur.fetchall()
+
+        if not user_gifts:
+            return jsonify({"total_price": 0, "priced_gifts": []}), 200
+
+        total_price = 0.0
+        priced_gifts_details = []
+        filter_floors_cache = {} # Cache filterFloors results for the duration of this request
+
+        for gift in user_gifts:
+            gift_name = gift['gift_name']
+            cd = gift['collectible_data']
+            
+            # Ensure collectible data is valid
+            if not isinstance(cd, dict) or not all(k in cd for k in ['model', 'backdrop', 'pattern']):
+                continue
+
+            model = cd['model']['name']
+            backdrop = cd['backdrop']['name']
+            symbol = cd['pattern']['name']
+            gift_display_name = f"{gift_name} #{cd.get('collectible_number', '?')}"
+            
+            try:
+                # 1. Primary Method: Search for the exact item's floor price
+                search_result = search(
+                    gift_name=gift_name, model=model, backdrop=backdrop, symbol=symbol,
+                    sort="price_asc", limit=1, authData=PORTALS_AUTH_TOKEN
+                )
+
+                if search_result and isinstance(search_result, list) and len(search_result) > 0:
+                    item_price = float(search_result[0]['price'])
+                    total_price += item_price
+                    priced_gifts_details.append({
+                        "name": gift_display_name,
+                        "price": item_price,
+                        "source": "Direct Listing"
+                    })
+                else:
+                    # 2. Fallback Method: Estimate price from attribute floors
+                    if gift_name not in filter_floors_cache:
+                        app.logger.info(f"Cache miss for {gift_name}, fetching filter floors...")
+                        filter_floors_cache[gift_name] = filterFloors(gift_name=gift_name, authData=PORTALS_AUTH_TOKEN)
+                    
+                    floors_data = filter_floors_cache[gift_name]
+                    estimated_price = 0.0
+                    
+                    if floors_data and 'models' in floors_data and model in floors_data['models']:
+                        estimated_price += float(floors_data['models'][model]['floor'])
+                    if floors_data and 'backdrops' in floors_data and backdrop in floors_data['backdrops']:
+                        estimated_price += float(floors_data['backdrops'][backdrop]['floor'])
+                    if floors_data and 'symbols' in floors_data and symbol in floors_data['symbols']:
+                        estimated_price += float(floors_data['symbols'][symbol]['floor'])
+
+                    if estimated_price > 0:
+                        total_price += estimated_price
+                        priced_gifts_details.append({
+                            "name": gift_display_name,
+                            "price": estimated_price,
+                            "source": "Estimated Floor"
+                        })
+            
+            except Exception as e:
+                app.logger.error(f"Error pricing gift {gift_display_name}: {e}", exc_info=True)
+                # Skip this gift if the external API fails for it, but continue with others.
+
+        return jsonify({
+            "total_price": round(total_price, 2),
+            "priced_gifts": priced_gifts_details
+        }), 200
+
+    except Exception as e:
+        app.logger.error(f"Error in get_collection_price for user {tg_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn:
+            put_db_connection(conn)
+
 @app.route('/api/customization/check_access', methods=['GET'])
 def check_customization_access():
     user_id = request.args.get('user_id')
