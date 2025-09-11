@@ -1724,7 +1724,7 @@ def get_user_profile(username):
                 ORDER BY g.is_pinned DESC, g.pin_order ASC NULLS LAST, g.acquired_date DESC;
             """, (user_id,))
             gifts = [dict(row) for row in cur.fetchall()]
-            
+            gifts = _update_gifts_with_live_supply(cur, gifts)
             if not viewer_can_see_custom:
                 gifts = [g for g in gifts if not is_custom_gift(g['gift_name'])]
 
@@ -1812,6 +1812,8 @@ def get_or_create_account():
                 ORDER BY is_pinned DESC, pin_order ASC NULLS LAST, acquired_date DESC;
             """, (tg_id,))
             gifts = [dict(row) for row in cur.fetchall()]
+
+            gifts = _update_gifts_with_live_supply(cur, gifts)
 
             if not account_data.get('custom_gifts_enabled'):
                 gifts = [g for g in gifts if not is_custom_gift(g['gift_name'])]
@@ -1999,61 +2001,59 @@ def upgrade_gift():
             if not gift_row: return jsonify({"error": "Gift not found or already collectible."}), 404
             
             owner_id, gift_type_id, gift_name = gift_row['owner_id'], gift_row['gift_type_id'], gift_row['gift_name']
-            cur.execute("SELECT total_stock FROM limited_gifts_stock WHERE gift_type_id = %s;", (gift_type_id,))
-            stock_row = cur.fetchone()
-            if stock_row:
-                supply = stock_row[0]
-            else:
-                supply = random.randint(2000, 10000)
+
             if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
                 return jsonify({"error": "You must enable Custom Gifts in settings to upgrade this item."}), 403
 
+            # --- UPDATED SUPPLY LOGIC ---
+            # Mark the gift as collectible first to include it in the count
+            cur.execute("UPDATE gifts SET is_collectible = TRUE WHERE instance_id = %s;", (instance_id,))
+
+            # Now, get the live total count for this gift type
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE gift_type_id = %s AND is_collectible = TRUE;", (gift_type_id,))
+            live_supply_count = cur.fetchone()[0]
+            # --- END OF UPDATE ---
+            
             cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift_type_id,))
             next_number = cur.fetchone()[0]
+            
+            # ... (logic to select random or custom parts) ...
             parts_data = fetch_collectible_parts(gift_name)
-            
-            selected_model = custom_model_data or select_weighted_random(parts_data.get('models', []))
-            selected_backdrop = custom_backdrop_data or select_weighted_random(parts_data.get('backdrops', []))
-            
-            # --- START OF ROBUST PATTERN LOGIC ---
-            selected_pattern = None
-            pattern_image_url = None
+            selected_model = data.get('custom_model') or select_weighted_random(parts_data.get('models', []))
+            selected_backdrop = data.get('custom_backdrop') or select_weighted_random(parts_data.get('backdrops', []))
+            selected_pattern = data.get('custom_pattern') or select_weighted_random(parts_data.get('patterns', []))
 
-            if custom_pattern_image:
-                selected_pattern = {"name": "Custom", "rarityPermille": 1}
-                pattern_image_url = custom_pattern_image
-            else:
-                # First, determine the potential pattern
-                potential_pattern = custom_pattern_data or select_weighted_random(parts_data.get('patterns', []))
-                
-                # NOW, check if a valid pattern was found before doing anything else
-                if potential_pattern:
-                    selected_pattern = potential_pattern
-                    pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
-                    # This is the line from the traceback. It's now safely inside the check.
-                    pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
-            # --- END OF ROBUST PATTERN LOGIC ---
-
-            # Now, the critical check for all parts.
             if not all([selected_model, selected_backdrop, selected_pattern]):
-                app.logger.error(f"Could not determine all parts for '{gift_name}'. Model: {selected_model is not None}, Backdrop: {selected_backdrop is not None}, Pattern: {selected_pattern is not None}")
-                return jsonify({"error": f"Could not determine all parts for '{gift_name}'. It might be missing model, backdrop, or pattern data."}), 500
+                # Rollback the is_collectible change if parts are missing
+                conn.rollback()
+                app.logger.error(f"Could not determine all parts for '{gift_name}'.")
+                return jsonify({"error": f"Could not determine all parts for '{gift_name}'."}), 500
             
-            supply = random.randint(2000, 10000)
+            pattern_source_name = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
             model_image_url = selected_model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(selected_model['name'])}.png"
             lottie_model_path = selected_model.get('lottie') if selected_model.get('lottie') is not None else f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(selected_model['name'])}.json"
+            pattern_image_url = f"{CDN_BASE_URL}patterns/{quote(pattern_source_name)}/png/{quote(selected_pattern['name'])}.png"
             
             collectible_data = {
                 "model": selected_model, "backdrop": selected_backdrop, "pattern": selected_pattern,
                 "modelImage": model_image_url, "lottieModelPath": lottie_model_path,
                 "patternImage": pattern_image_url, "backdropColors": selected_backdrop.get('hex'), 
-                "supply": supply, "author": get_gift_author(gift_name)
+                "supply": live_supply_count, # Use the live count here
+                "author": get_gift_author(gift_name)
             }
-            cur.execute("""UPDATE gifts SET is_collectible = TRUE, collectible_data = %s, collectible_number = %s, lottie_path = NULL WHERE instance_id = %s;""", (json.dumps(collectible_data), next_number, instance_id))
-            if cur.rowcount == 0: 
-                conn.rollback()
-                return jsonify({"error": "Failed to update gift."}), 404
+            
+            cur.execute("""UPDATE gifts SET collectible_data = %s, collectible_number = %s, lottie_path = NULL WHERE instance_id = %s;""", (json.dumps(collectible_data), next_number, instance_id))
+            
             conn.commit()
+            
+            # Finally, update the supply for all other collectibles of the same type
+            cur.execute("""
+                UPDATE gifts
+                SET collectible_data = collectible_data || jsonb_build_object('supply', %s)
+                WHERE gift_type_id = %s AND is_collectible = TRUE;
+            """, (live_supply_count, gift_type_id))
+            conn.commit()
+
             cur.execute("SELECT * FROM gifts WHERE instance_id = %s;", (instance_id,))
             upgraded_gift = dict(cur.fetchone())
             if isinstance(upgraded_gift.get('collectible_data'), str): upgraded_gift['collectible_data'] = json.loads(upgraded_gift['collectible_data'])
@@ -2065,6 +2065,30 @@ def upgrade_gift():
     finally:
         if conn: put_db_connection(conn)
 
+def _update_gifts_with_live_supply(cur, gifts_list):
+    """Efficiently updates a list of gift dictionaries with the latest supply counts."""
+    if not gifts_list:
+        return []
+    
+    collectible_gift_types = list(set([g['gift_type_id'] for g in gifts_list if g['is_collectible']]))
+    if not collectible_gift_types:
+        return gifts_list
+
+    cur.execute("""
+        SELECT gift_type_id, COUNT(*) as live_count
+        FROM gifts
+        WHERE gift_type_id = ANY(%s) AND is_collectible = TRUE
+        GROUP BY gift_type_id;
+    """, (collectible_gift_types,))
+    
+    supply_map = {row['gift_type_id']: row['live_count'] for row in cur.fetchall()}
+
+    for gift in gifts_list:
+        if gift['is_collectible'] and gift['gift_type_id'] in supply_map:
+            # Update the supply in the gift's collectible_data
+            if isinstance(gift['collectible_data'], dict):
+                gift['collectible_data']['supply'] = supply_map[gift['gift_type_id']]
+    return gifts_list
 # In app.py, add this new endpoint function.
 
 @app.route('/api/public/gift_models', methods=['GET'])
