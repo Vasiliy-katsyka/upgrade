@@ -542,16 +542,26 @@
             opacity: 0.7;
         }
         .gift-card-bg-pattern, .buy-gift-item-bg-pattern {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-size: cover; pointer-events: none; z-index: 0;
+            position: absolute; 
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: cover; 
+            pointer-events: none; 
+            z-index: 0;
+            /* REMOVE overflow: hidden; and position: relative; */
         }
-        .gift-card-pattern-overlay, .buy-gift-item-pattern-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-repeat: repeat;
-            background-size: 30% auto;
-            background-position: center;
-            opacity: 0.1;
-            pointer-events: none; z-index: 1;
+        .dynamic-pattern-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            overflow: hidden; /* Keep symbols inside the card */
+            z-index: 1; /* Place it just above the background gradient */
+            pointer-events: none;
+        }
+        .card-pattern-symbol {
+            position: absolute;
+            /* --- UPDATED --- */
+            /* Lowered from 0.5 to 0.2 to make the pattern much fainter */
+            opacity: 0.2; 
+            transform-origin: center center; 
         }
         .image-container {
             width: 70%; height: 70%;
@@ -575,24 +585,35 @@
         /* Rotated Label - CORRECTED */
         .gift-card .top-right-label {
             position: absolute;
-            top: 10px; /* Adjusted for visual balance */
-            right: -28px; /* Adjusted for visual balance */
+            top: 10px;
+            right: -28px;
             transform: rotate(45deg);
             transform-origin: center;
-            background-color: rgba(0,0,0,0.35);
+            /* Updated background for a 3D feel */
+            background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.35));
             color: var(--tg-theme-text-color);
             font-size: 0.65em;
             padding: 1px 25px;
             z-index: 4;
             font-weight: 500;
             white-space: nowrap;
+            /* Subtle inner highlight for a beveled look */
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(0,0,0,0.2);
         }
 
         .gift-card .pin-indicator {
             position: absolute; top: 5px; left: 5px;
             z-index: 3; display: flex; align-items: center; justify-content: center;
         }
-        .gift-card .pin-indicator svg { width: 18px; height: 18px; fill: var(--tg-theme-link-color); opacity: 0.8; }
+        .gift-card .pin-indicator svg {
+            width: 18px; 
+            height: 18px; 
+            fill: #FFFFFF; /* Changed from variable to solid white */
+            opacity: 0.9;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); /* Adds depth */
+        }
 
         /* Selection Mode Checkbox */
         .gift-card .selection-checkbox {
@@ -1440,6 +1461,7 @@
         </div>
         <ul class="accounts-list" id="accounts-list"></ul>
         <div class="sidebar-footer">
+            <button id="calculate-collection-price-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.5,2C10.67,2 10,2.67 10,3.5V5.5H3.5C2.67,5.5 2,6.17 2,7V10.5C2,11.33 2.67,12 3.5,12H10V14H7.5C6.67,14 6,14.67 6,15.5V20.5C6,21.33 6.67,22 7.5,22H16.5C17.33,22 18,21.33 18,20.5V15.5C18,14.67 17.33,14 16.5,14H14V12H20.5C21.33,12 22,11.33 22,10.5V7C22,6.17 21.33,5.5 20.5,5.5H14V3.5C14,2.67 13.33,2 12.5,2H11.5M12,7A2,2 0 0,0 10,9A2,2 0 0,0 12,11A2,2 0 0,0 14,9A2,2 0 0,0 12,7Z" /></svg>My Collection Price</button>
             <button id="add-account-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,13.28L1,10.72L2.41,9.31L5,11.9L9.6,7.3L11,8.72L5,14.72Z" /></svg>Add Account</button>
             <button id="open-filters-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" /></svg>Filters</button>
             <button id="open-numbers-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>Numbers</button>
@@ -1984,6 +2006,27 @@
                 </div>
             </div>
         </div>
+
+        <div id="collection-price-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar">
+                    <h3>My Collection Price</h3>
+                </div>
+                <div class="modal-scrollable-content">
+                    <div id="collection-price-summary" style="text-align: center; margin-bottom: 20px;">
+                        <div class="spinner hidden" id="collection-price-spinner"></div>
+                        <h2 id="collection-price-total" style="font-size: 2em; font-weight: 600; color: var(--tg-theme-link-color);"></h2>
+                        <p id="collection-price-info" style="color: var(--tg-theme-hint-color);"></p>
+                    </div>
+                    <ul id="collection-price-list" class="level-info-list">
+                        <!-- Priced gifts will be listed here by JS -->
+                    </ul>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="close-collection-price-modal" class="modal-button">Close</button>
+                </div>
+            </div>
+        </div>
         
         <!-- Add this new modal for the loading screen -->
         <div id="loading-overlay" class="modal-overlay active" style="align-items: center; justify-content: center; background-color: var(--tg-theme-bg-color); z-index: 9999;">
@@ -2021,6 +2064,7 @@
         const MAX_SALE_PRICE = 100000;
         let profileNameTapCount = 0;
         let lastProfileNameTap = 0;
+        let limitedGiftStock = {};
 
         const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pin</title><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
         const DIAMOND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>diamond-stone</title><path d="M16,9H19L14,16M10,9H14L12,17M5,9H8L10,16M5,4H19L12,1.5L5,4ZM6,2L2,8L12,22L22,8L18,2H6Z" /></svg>`;
@@ -2257,7 +2301,139 @@
                 ],
                 "backdrops_source": "Snoop Dogg",
                 "patterns_source": "Snoop Dogg"
-            }
+            },
+            "Rich Frog": {
+                "id": "custom_rich_frog",
+                "limit": 300,
+                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/PremiumGifts_AgADCgADgyaRTA.png",
+                "models": [
+                    {"name": "Old Movie", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012742001.png"},
+                    {"name": "Diamond", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012429267.png"},
+                    {"name": "Red Diamond", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012455524.png"},
+                    {"name": "Business", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012520124.png"},
+                    {"name": "Telegram", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013004928.png"},
+                    {"name": "Pepe", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013048306.png"},
+                    {"name": "Galaxy", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013237557.png"},
+                    {"name": "Shaiba", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013427809.png"},
+                    {"name": "Silver", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012356530.png"},
+                    {"name": "From The Hell", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012409591.png"},
+                    {"name": "Old", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012443079.png"},
+                    {"name": "Soldier", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012558144.png"},
+                    {"name": "Poker", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012757225.png"},
+                    {"name": "Zombie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013004928.png"},
+                    {"name": "Satoshi Natokama", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013017488.png"},
+                    {"name": "The Open Network", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013033825.png"},
+                    {"name": "BDSM", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013107410.png"},
+                    {"name": "Angelic", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013121916.png"},
+                    {"name": "Rapper", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013335968.png"},
+                    {"name": "Mermaid", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013354933.png"},
+                    {"name": "Freddy's Frog", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013459472.png"},
+                    {"name": "Umbrella", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012540549.png"},
+                    {"name": "Wooden", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012623191.png"},
+                    {"name": "Bad Quality", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012643696.png"},
+                    {"name": "Pink", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012815025.png"},
+                    {"name": "Butterfly", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012831763.png"},
+                    {"name": "Rainbow", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012857269.png"},
+                    {"name": "Hawaii", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013140547.png"},
+                    {"name": "Gamer", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013207148.png"},
+                    {"name": "Pickme", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013221620.png"},
+                    {"name": "Watermelon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013250229.png"},
+                    {"name": "Cactus", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013304943.png"},
+                    {"name": "Red", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013441382.png"},
+                    {"name": "Snowy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013518774.png"},
+                    {"name": "Tiger", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_013900673.png"}
+                ],
+                "backdrops_source": "Snoop Dogg",
+                "patterns_source": "Snoop Dogg"
+            },
+            "Sheeran Guitar": {
+                "id": "custom_sheeran_guitar",
+                "limit": 500,
+                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/20250908_012216.png",
+                "models": [
+                    {"name": "Minion", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010828869.png"},
+                    {"name": "Darkness", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010917671.png"},
+                    {"name": "Sponge Bob", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011122889.png"},
+                    {"name": "Emelard", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011206969.png"},
+                    {"name": "Golden", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_022612251.png"},
+                    {"name": "Sapphire", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_022557588.png"},
+                    {"name": "Electric", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010415814.png"},
+                    {"name": "Watery", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010543207.png"},
+                    {"name": "Lava Stone", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010608356.png"},
+                    {"name": "Old", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010725595.png"},
+                    {"name": "Banjo", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010740321.png"},
+                    {"name": "Russian", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010843719.png"},
+                    {"name": "Slipknot", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010943972.png"},
+                    {"name": "Yellow Wood", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_005818708.png"},
+                    {"name": "Virus", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_005851841.png"},
+                    {"name": "Mathematics", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_005949661.png"},
+                    {"name": "Divide", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010004362.png"},
+                    {"name": "Multiply", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010049483.png"},
+                    {"name": "Plus", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010142885.png"},
+                    {"name": "Equals", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010221112.png"},
+                    {"name": "Subtract", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010314441.png"},
+                    {"name": "Emo", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010440657.png"},
+                    {"name": "Poopie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010630535.png"},
+                    {"name": "Stickers", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010654844.png"},
+                    {"name": "Mexican", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010756062.png"},
+                    {"name": "Chinese", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010810805.png"},
+                    {"name": "Fire On Fire", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011024645.png"},
+                    {"name": "Witch", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011107534.png"},
+                    {"name": "Hawaii", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011136893.png"},
+                    {"name": "Minecraft", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_005837327.png"},
+                    {"name": "Ancient", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_005913329.png"},
+                    {"name": "Greenwood", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_005933291.png"},
+                    {"name": "Fluffy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010330086.png"},
+                    {"name": "Electric Purple", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_010519545.png"},
+                    {"name": "Lego House", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011041563.png"}
+                ],
+                "backdrops_source": "Snoop Dogg",
+                "patterns_source": "Snoop Dogg"
+            },
+            "Dancing Cactus": {
+                "id": "custom_dancing_cactus",
+                "limit": 1000,
+                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/IMG_20250908_020437_814.png",
+                "models": [
+                    {"name": "Golden", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011316070.png"},
+                    {"name": "Diamonds", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011350480.png"},
+                    {"name": "Rainbow", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011445647.png"},
+                    {"name": "Drought", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011516035.png"},
+                    {"name": "Electric", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011559687.png"},
+                    {"name": "Silver", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011754280.png"},
+                    {"name": "Virus", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011906408.png"},
+                    {"name": "Milfa", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012304698.png"},
+                    {"name": "Arabic", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012318660.png"},
+                    {"name": "Plushy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011410903.png"},
+                    {"name": "Sky", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011626338.png"},
+                    {"name": "Egypt", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011640892.png"},
+                    {"name": "Chinese", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011707770.png"},
+                    {"name": "Greek", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011723289.png"},
+                    {"name": "Owww", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011821198.png"},
+                    {"name": "Business", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011834166.png"},
+                    {"name": "Skeleton", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011925666.png"},
+                    {"name": "Cabels", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011942350.png"},
+                    {"name": "Creepy", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012014199.png"},
+                    {"name": "Budni Cowboya", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012028668.png"},
+                    {"name": "Marble", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012132211.png"},
+                    {"name": "Hawaii", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012157170.png"},
+                    {"name": "Ed Sheeran", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012210326.png"},
+                    {"name": "Pandemic", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012223282.png"},
+                    {"name": "Play", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011302760.png"},
+                    {"name": "Ancient", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011335854.png"},
+                    {"name": "Wooden", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011500397.png"},
+                    {"name": "Pink", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011530016.png"},
+                    {"name": "In Pain", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011740171.png"},
+                    {"name": "Sandy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_011959216.png"},
+                    {"name": "Kissed", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012044125.png"},
+                    {"name": "Blue", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012059061.png"},
+                    {"name": "Robotic", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012112591.png"},
+                    {"name": "Sapphire", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012236420.png"},
+                    {"name": "Gray", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012250549.png"}
+                ],
+                "backdrops_source": "Snoop Dogg",
+                "patterns_source": "Snoop Dogg"
+            },
         };
 
 
@@ -2456,6 +2632,14 @@
         const confirmTransferButton = document.getElementById('confirm-transfer-button');
         const cancelTransferButton = document.getElementById('cancel-transfer-button');
 
+        const calculateCollectionPriceButton = document.getElementById('calculate-collection-price-button');
+        const collectionPriceModal = document.getElementById('collection-price-modal');
+        const collectionPriceSpinner = document.getElementById('collection-price-spinner');
+        const collectionPriceTotal = document.getElementById('collection-price-total');
+        const collectionPriceInfo = document.getElementById('collection-price-info');
+        const collectionPriceList = document.getElementById('collection-price-list');
+        const closeCollectionPriceModal = document.getElementById('close-collection-price-modal');
+        
         const numbersModal = document.getElementById('numbers-modal');
         const numbersList = document.getElementById('numbers-list');
 
@@ -2737,7 +2921,14 @@
                 if(lottieContainer) destroyLottieAnimation(lottieContainer);
             }
         }
-
+        async function fetchLimitedGiftStock() {
+            try {
+                limitedGiftStock = await callBackend('/api/gifts/stock');
+            } catch (error) {
+                console.error("Could not fetch limited gift stock:", error);
+                limitedGiftStock = {};
+            }
+        }
         async function initApp() {
             tg.ready(); tg.expand();
             initLottieObserver();
@@ -2791,6 +2982,7 @@
 
             setupEventListeners();
             await fetchGiftPrices();
+            await fetchLimitedGiftStock();
             await fetchAvailableGifts();
 
             document.getElementById('loading-overlay').classList.remove('active')
@@ -3167,41 +3359,57 @@
         function renderAvailableGifts() {
             buyGiftsGrid.innerHTML = '';
             let giftsToRender = { ...allAvailableGifts };
-
+        
             if (!customGiftsEnabled) {
                 giftsToRender = Object.fromEntries(
                     Object.entries(allAvailableGifts).filter(([id, name]) => !CUSTOM_GIFTS_DATA[name])
                 );
             }
-
+        
             if (Object.keys(giftsToRender).length === 0) {
                 buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">No gifts available right now.</p>`;
                 return;
             }
-
+        
             for (const id in giftsToRender) {
                 const name = giftsToRender[id];
+                const customGiftData = CUSTOM_GIFTS_DATA[name];
                 let originalImageUrl, lottiePath;
-
-                if (CUSTOM_GIFTS_DATA[name]) {
-                    originalImageUrl = CUSTOM_GIFTS_DATA[name].defaultImage;
+        
+                if (customGiftData) {
+                    originalImageUrl = customGiftData.defaultImage;
                     lottiePath = null;
                 } else {
                     originalImageUrl = `${CDN_BASE_URL}originals/${id}/Original.png`;
                     lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`;
                 }
-
+        
+                // --- NEW/UPDATED LOGIC for stock ---
+                const isLimited = customGiftData && customGiftData.limit;
+                const stockInfo = isLimited ? limitedGiftStock[id] : null;
+                const isSoldOut = isLimited && stockInfo && stockInfo.remaining <= 0;
+        
+                let availabilityLabel = '<div class="limited-label">Limited</div>';
+                if (isLimited) {
+                    if (isSoldOut) {
+                        availabilityLabel = '<div class="limited-label" style="background-color: var(--app-wall-demonic-red);">Sold Out</div>';
+                    } else if (stockInfo) {
+                        availabilityLabel = `<div class="limited-label" style="background-color: var(--tg-theme-accent-blue);">${stockInfo.remaining} of ${stockInfo.total} left</div>`;
+                    }
+                }
+                // --- END OF UPDATE ---
+        
                 const price = giftPrices[name];
                 const item = document.createElement('div');
                 item.className = 'buy-gift-item';
                 item.dataset.id = id; item.dataset.name = name;
                 item.dataset.originalImage = originalImageUrl;
                 if (lottiePath) item.dataset.lottiePath = lottiePath;
-
+        
                 const priceHTML = price
                     ? `<div class="gift-price has-price"><img src="${STAR_ICON_URL}" class="star-icon" alt="Star"/> ${price}</div>`
                     : `<div class="gift-price">Free</div>`;
-
+        
                 item.innerHTML = `
                     <div class="image-container">
                         <div class="lottie-animation-container" style="display:none;"></div>
@@ -3209,14 +3417,20 @@
                     </div>
                     <div class="gift-name">${name}</div>
                     ${priceHTML}
-                    <div class="limited-label">Limited</div>
+                    ${availabilityLabel}
                 `;
-                item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
-                let buyItemLongPressTimer;
-                item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
-                item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
-                item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
-                item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
+                
+                if (isSoldOut) {
+                    item.style.opacity = '0.5';
+                    item.style.cursor = 'not-allowed';
+                } else {
+                    item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
+                    let buyItemLongPressTimer;
+                    item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
+                    item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
+                    item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
+                    item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
+                }
                 observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
             }
@@ -3272,29 +3486,37 @@
                 return true;
             });
         
+            // --- THIS SORTING LOGIC IS THE KEY TO "ALWAYS ON TOP" ---
             const sortedGifts = [...filteredGifts].sort((a, b) => {
-                const aIsPinned = a.is_pinned && a.pin_order != null;
-                const bIsPinned = b.is_pinned && b.pin_order != null;
-                if (aIsPinned && bIsPinned) return a.pin_order - b.pin_order;
-                if (aIsPinned) return -1;
-                if (bIsPinned) return 1;
+                const aIsPinned = a.is_pinned;
+                const bIsPinned = b.is_pinned;
+        
+                if (aIsPinned && !bIsPinned) return -1; // a comes first
+                if (!aIsPinned && bIsPinned) return 1;  // b comes first
+                if (aIsPinned && bIsPinned) {
+                    // Both are pinned, sort by their pin_order
+                    return (a.pin_order || 0) - (b.pin_order || 0);
+                }
+                // Neither is pinned, sort by acquired date (newest first)
                 return new Date(b.acquired_date) - new Date(a.acquired_date);
             });
+            // --- END OF SORTING LOGIC ---
         
             currentlySortedGifts = sortedGifts;
         
-            const totalGiftCount = ownedGifts.length; // Count hidden gifts too for level
+            const totalGiftCount = ownedGifts.length;
             const userLevel = calculateUserLevel(totalGiftCount).level;
             const levelBubble = document.getElementById('profile-level-bubble');
             if (levelBubble) {
                 levelBubble.textContent = userLevel;
             }
             
-            // Hide the old subtext element if it exists
             if(profileGiftCountSubtext) profileGiftCountSubtext.classList.add('hidden');
         
             if (currentlySortedGifts.length === 0) {
-                giftsGrid.style.display = 'flex'; giftsGrid.style.alignItems = 'center'; giftsGrid.style.justifyContent = 'center';
+                giftsGrid.style.display = 'flex';
+                giftsGrid.style.alignItems = 'center';
+                giftsGrid.style.justifyContent = 'center';
                 let emptyMessage = "You don't have any gifts yet.";
                 if (ownedGifts.length > 0) {
                     emptyMessage = "No gifts match the selected filters.";
@@ -3323,9 +3545,9 @@
             card.className = 'gift-card';
             card.dataset.instanceId = gift.instance_id;
             card.dataset.pinned = gift.is_pinned;
-
+        
             if (gift.is_hidden) card.classList.add('is-hidden');
-
+        
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
             const lottieContainer = document.createElement('div');
@@ -3335,43 +3557,72 @@
             staticImage.className = 'static-image-fallback';
             staticImage.loading = 'lazy';
             let lottiePathForCard = null;
-
+        
             if (gift.is_collectible && gift.collectible_data) {
                 const cd = gift.collectible_data;
                 staticImage.src = cd.modelImage || gift.original_image_url;
                 staticImage.alt = cd.model?.name || gift.gift_name;
                 lottiePathForCard = cd.lottieModelPath;
-
+        
                 const labelDiv = document.createElement('div');
                 labelDiv.className = 'top-right-label';
                 if (gift.is_pinned) {
                     labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
                 } else if (cd.supply) {
-                    labelDiv.textContent = `1 of ${(cd.supply / 1000).toFixed(1)}K`;
+                    const supplyNum = cd.supply;
+                    if (supplyNum > 1000) {
+                         labelDiv.textContent = `1 of ${(supplyNum / 1000).toFixed(1)}K`;
+                    } else {
+                         labelDiv.textContent = `1 of ${supplyNum.toLocaleString()}`;
+                    }
+                } else {
+                    labelDiv.textContent = 'Limitless';
                 }
                 card.appendChild(labelDiv);
-
-                const bgDiv = document.createElement('div'); bgDiv.className = 'gift-card-bg-pattern';
-                if (cd.backdropColors) bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
-                else bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
+        
+                const bgDiv = document.createElement('div');
+                bgDiv.className = 'gift-card-bg-pattern';
+                if (cd.backdropColors) {
+                    bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
+                } else {
+                    bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
+                }
                 card.appendChild(bgDiv);
-
-                if (cd.patternImage) { const pOverlay = document.createElement('div'); pOverlay.className = 'gift-card-pattern-overlay'; pOverlay.style.backgroundImage = `url('${cd.patternImage}')`; card.appendChild(pOverlay); }
+        
+                if (cd.patternImage) {
+                    const patternContainer = document.createElement('div');
+                    patternContainer.className = 'dynamic-pattern-container';
+                    card.appendChild(patternContainer);
+        
+                    // Final, refined values for size and distance
+                    const patternConfig = [
+                        { count: 8, radius: 38, size: 12 }, 
+                        { count: 8, radius: 62, size: 10, rotationOffset: 22.5 }
+                    ];
+                    
+                    setTimeout(() => generateCircularPattern(patternContainer, cd.patternImage, patternConfig), 0);
+                }
+        
             } else {
-                staticImage.src = gift.original_image_url; staticImage.alt = gift.gift_name;
+                staticImage.src = gift.original_image_url;
+                staticImage.alt = gift.gift_name;
                 lottiePathForCard = gift.lottie_path;
             }
+        
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
-            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️';};
-            imageContainer.appendChild(lottieContainer); imageContainer.appendChild(staticImage);
+            staticImage.onerror = () => { this.style.display='none'; lottieContainer.innerHTML = '🖼️'; };
+            
+            imageContainer.appendChild(lottieContainer);
+            imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
+            
             if (gift.is_pinned && !selectionModeActive) {
-                const pinDiv = document.createElement('div'); pinDiv.className = 'pin-indicator';
+                const pinDiv = document.createElement('div');
+                pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG;
-                pinDiv.querySelector('svg').style.transform = 'rotate(25deg)';
                 card.appendChild(pinDiv);
             }
-
+        
             if (selectionModeActive) {
                 const checkbox = document.createElement('div');
                 checkbox.className = 'selection-checkbox';
@@ -3384,12 +3635,13 @@
                 card.style.cursor = gift.is_pinned ? 'grab' : 'default';
             } else {
                 card.onclick = () => openGiftDetailByInstanceId(gift.instance_id);
-                if (viewingOwnProfile) setupLongPress(card, gift);
+                if (viewingOwnProfile) {
+                    setupLongPress(card, gift);
+                }
             }
-
+        
             return card;
         }
-
         // --- START: Replace this entire function ---
         function renderTopPinnedGiftsPreview() {
             Array.from(profileTopPinnedGifts.children).forEach(childLottieContainer => destroyLottieAnimation(childLottieContainer));
@@ -3484,6 +3736,14 @@
 
         // --- Replace your existing buyGift function ---
         async function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
+            // --- UPDATED: Check local stock first for immediate feedback ---
+            const stockInfo = limitedGiftStock[id];
+            if (stockInfo && stockInfo.remaining < quantity) {
+                tg.showAlert(`Not enough stock available. Only ${stockInfo.remaining} left.`);
+                return;
+            }
+            // --- END UPDATE ---
+        
             if (ownedGifts.length + quantity > GIFT_LIMIT_PER_USER) {
                 tg.showAlert(`Cannot buy ${quantity} gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
@@ -3494,57 +3754,51 @@
             for (let i = 0; i < quantity; i++) {
                 const tempInstanceId = `temp_${generateUniqueId()}`;
                 const newGift = {
-                    instance_id: tempInstanceId,
-                    owner_id: currentAccountTgId,
-                    gift_type_id: id,
-                    gift_name: name,
-                    original_image_url: originalImage,
-                    lottie_path: lottiePath,
-                    is_collectible: false,
-                    acquired_date: new Date().toISOString(),
-                    is_hidden: false,
-                    is_pinned: false,
-                    is_worn: false,
-                    // Add a temporary flag
-                    is_pending: true 
+                    instance_id: tempInstanceId, owner_id: currentAccountTgId, gift_type_id: id,
+                    gift_name: name, original_image_url: originalImage, lottie_path: lottiePath,
+                    is_collectible: false, acquired_date: new Date().toISOString(),
+                    is_hidden: false, is_pinned: false, is_worn: false, is_pending: true 
                 };
                 newGifts.push(newGift);
             }
         
-            ownedGifts.unshift(...newGifts); // Add to the start of the array
+            ownedGifts.unshift(...newGifts);
+        
+            // --- NEW: Optimistically update local stock count ---
+            if (stockInfo) {
+                limitedGiftStock[id].remaining -= quantity;
+            }
+            // --- END NEW ---
+        
             showPage('profile-page');
             switchTab('gifts');
-            renderProfileGifts(); // Re-render immediately
+            renderProfileGifts(); 
             tg.HapticFeedback.notificationOccurred('success');
-            // --- END OPTIMISTIC UI ---
-        
-            // Now, send requests to the backend in the background
+            
             for (const gift of newGifts) {
                 try {
                     await callBackend('/api/gifts', 'POST', {
-                        instance_id: gift.instance_id, // Use the temporary ID
-                        owner_id: gift.owner_id,
-                        gift_type_id: gift.gift_type_id,
-                        gift_name: gift.gift_name,
-                        original_image_url: gift.original_image_url,
-                        lottie_path: gift.lottie_path
+                        instance_id: gift.instance_id, owner_id: gift.owner_id,
+                        gift_type_id: gift.gift_type_id, gift_name: gift.gift_name,
+                        original_image_url: gift.original_image_url, lottie_path: gift.lottie_path
                     });
-                    // Once successful, mark as not pending (optional, good for debugging)
                     const confirmedGift = ownedGifts.find(g => g.instance_id === gift.instance_id);
-                    if(confirmedGift) {
-                        delete confirmedGift.is_pending;
-                    }
+                    if(confirmedGift) delete confirmedGift.is_pending;
                 } catch (error) {
-                    // If backend fails, remove the optimistic gift from the UI
                     tg.HapticFeedback.notificationOccurred('error');
                     ownedGifts = ownedGifts.filter(g => g.instance_id !== gift.instance_id);
-                    renderProfileGifts(); // Re-render to remove the failed gift
-                    // Optionally show an error for the specific gift that failed
-                    tg.showAlert(`Failed to save one "${name}" gift. Please try again.`);
+                    // Revert stock count on failure
+                    if (stockInfo) limitedGiftStock[id].remaining += 1; 
+                    renderProfileGifts(); 
+                    // The error message for sold out items is handled by the backend
+                    if (error.reason !== 'This limited gift is sold out.') {
+                        tg.showAlert(`Failed to save one "${name}" gift. Please try again.`);
+                    }
+                    // If it failed, refresh stock from server to be sure
+                    await fetchLimitedGiftStock();
                 }
             }
-            // Optional: a final success message after all are processed
-            tg.showAlert(`Added ${quantity} "${name}" gifts!`);
+            tg.showAlert(`Added ${quantity} "${name}" gift(s)!`);
         }
 
         async function handleConfirmBuyMultiple() {
@@ -3851,7 +4105,18 @@
                 <div class="info-row"><span class="info-label">Backdrop</span><span id="collectible-backdrop-value" class="info-value clickable-info">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.backdrop?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Supply</span><span class="info-value">${cd.supply?.toLocaleString() || 'N/A'} issued</span></div>`;
-
+            const stockInfo = limitedGiftStock[gift.gift_type_id];
+            if (stockInfo) {
+                const supplyRow = modalCollectibleInfoTable.querySelector('#supply-info-row');
+                if (supplyRow) {
+                    const collectibleCountHTML = `
+                        <div class="info-row">
+                            <span class="info-label">Collectible</span>
+                            <span class="info-value">${stockInfo.collectible_count.toLocaleString()} of ${stockInfo.total.toLocaleString()}</span>
+                        </div>`;
+                    supplyRow.insertAdjacentHTML('afterend', collectibleCountHTML);
+                }
+            }
             collectibleActionWear.style.display = isOwner ? 'flex' : 'none';
             collectibleActionSell.style.display = isOwner ? 'flex' : 'none';
             collectibleActionTransfer.style.display = isOwner ? 'flex' : 'none';
@@ -3939,45 +4204,83 @@
             if (!longPressMenu.contains(event.target) && event.target !== longPressMenu) { longPressMenu.classList.add('hidden'); currentLongPressGift = null; }
         }
 
+        // In index.html, replace the entire handlePinAction function with this new version.
+        
         function handlePinAction() {
             if (!currentLongPressGift || !currentLongPressGift.is_collectible) {
                 tg.showAlert("Only collectible gifts can be pinned.");
-                longPressMenu.classList.add('hidden'); currentLongPressGift = null; return;
+                longPressMenu.classList.add('hidden');
+                currentLongPressGift = null;
+                return;
             }
             if (currentLongPressGift.owner_id !== currentAccountTgId) {
                 tg.showAlert("You can only pin gifts you own.");
-                longPressMenu.classList.add('hidden'); currentLongPressGift = null; return;
+                longPressMenu.classList.add('hidden');
+                currentLongPressGift = null;
+                return;
             }
             if (currentLongPressGift.is_hidden) {
                 tg.showAlert("Cannot pin a hidden gift.");
-                longPressMenu.classList.add('hidden'); return;
-            }
-
-            const giftInstanceId = currentLongPressGift.instance_id;
-            const isCurrentlyPinned = currentLongPressGift.is_pinned;
-            const giftToUpdate = ownedGifts.find(g => g.instance_id === giftInstanceId);
-            if (!giftToUpdate) return;
-
-            const currentlyPinnedCount = ownedGifts.filter(g => g.is_pinned && g.owner_id === currentAccountTgId).length;
-
-            if (!isCurrentlyPinned && currentlyPinnedCount >= 6) {
-                showTooManyPinsModal();
                 longPressMenu.classList.add('hidden');
                 return;
             }
-
-            longPressMenu.classList.add('hidden');
-
-            giftToUpdate.is_pinned = !isCurrentlyPinned;
+        
+            const giftInstanceId = currentLongPressGift.instance_id;
+            const giftToUpdate = ownedGifts.find(g => g.instance_id === giftInstanceId);
+            if (!giftToUpdate) return;
+        
+            const isCurrentlyPinned = giftToUpdate.is_pinned;
+            const currentlyPinnedCount = ownedGifts.filter(g => g.is_pinned).length;
+            longPressMenu.classList.add('hidden'); // Close menu immediately
+        
+            if (!isCurrentlyPinned && currentlyPinnedCount >= 6) {
+                showTooManyPinsModal();
+                currentLongPressGift = null;
+                return;
+            }
+        
+            // --- NEW LOGIC FOR PINNING/UNPINNING AND RE-ORDERING ---
+            const originalGiftState = JSON.parse(JSON.stringify(giftToUpdate));
+        
+            if (isCurrentlyPinned) {
+                // --- UNPINNING ---
+                giftToUpdate.is_pinned = false;
+                giftToUpdate.pin_order = null;
+                
+                // Re-sequence the remaining pinned items to close the gap
+                const remainingPinned = ownedGifts
+                    .filter(g => g.is_pinned)
+                    .sort((a, b) => a.pin_order - b.pin_order);
+                
+                remainingPinned.forEach((gift, index) => {
+                    gift.pin_order = index;
+                });
+        
+            } else {
+                // --- PINNING ---
+                giftToUpdate.is_pinned = true;
+                // Place it at the end of the pinned list
+                giftToUpdate.pin_order = currentlyPinnedCount;
+            }
+        
+            // This re-renders the grid, causing the item to "teleport" to its new position
             renderProfileGifts();
             tg.HapticFeedback.impactOccurred(isCurrentlyPinned ? 'light' : 'medium');
-
-            callBackend(`/api/gifts/${giftInstanceId}`, 'PUT', { action: 'pin', value: !isCurrentlyPinned })
-                .catch(error => {
-                    giftToUpdate.is_pinned = isCurrentlyPinned;
-                    renderProfileGifts();
-                });
-
+        
+            // Send the update to the backend
+            callBackend(`/api/gifts/${giftInstanceId}`, 'PUT', {
+                action: 'pin',
+                value: !isCurrentlyPinned
+            }).catch(error => {
+                // On failure, revert the local state to what it was before the action
+                const giftToRevert = ownedGifts.find(g => g.instance_id === giftInstanceId);
+                if (giftToRevert) {
+                    Object.assign(giftToRevert, originalGiftState);
+                    // Re-render again to show the reverted state
+                    renderProfileGifts(); 
+                }
+            });
+        
             currentLongPressGift = null;
         }
 
@@ -4043,6 +4346,31 @@
             });
         }
 
+        function generateCircularPattern(container, imageUrl, circlesConfig) {
+            if (!container || !imageUrl || !circlesConfig) return;
+            container.innerHTML = ''; 
+        
+            const centerX = container.offsetWidth / 2;
+            const centerY = container.offsetHeight / 2;
+        
+            circlesConfig.forEach(config => {
+                const { count, radius, size, rotationOffset = 0 } = config;
+                for (let i = 0; i < count; i++) {
+                    const angle = (i / count) * 2 * Math.PI + (rotationOffset * Math.PI / 180);
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    const symbolEl = document.createElement('img');
+                    symbolEl.src = imageUrl;
+                    symbolEl.className = 'card-pattern-symbol';
+                    symbolEl.style.width = `${size}px`;
+                    symbolEl.style.height = 'auto';
+                    symbolEl.style.left = `${x - size / 2}px`;
+                    symbolEl.style.top = `${y - size / 2}px`;
+                    container.appendChild(symbolEl);
+                }
+            });
+        }
+        
         function showTooManyPinsModal() {
             unpinSelectionGrid.innerHTML = '';
 
@@ -4253,11 +4581,13 @@
         }
 
         // --- CUSTOM BUY & CLONE ---
+        // In index.html, find and update the openCustomBuyModal function.
+        
         async function openCustomBuyModal() {
             try {
                 const res = await callBackend('/api/customization/check_access', 'GET', null, { user_id: currentAccountTgId });
                 if (res.access) {
-                    if (!customGiftsEnabled) {
+                    if (!customGiftsEnabled && currentAccountTgId !== 5146625949) { // Also allow admin to bypass this
                         tg.showAlert("Please enable Custom Gifts in settings first.");
                         return;
                     }
@@ -4266,7 +4596,12 @@
                     addGiftToQueue();
                     cloneUrlInput.value = '';
                     advancedSettingsContainer.classList.add('hidden');
-                    populateBaseGiftOptions();
+                    
+                    // --- MODIFIED LINE ---
+                    // Pass the current user's ID to the population function
+                    populateBaseGiftOptions(currentAccountTgId); 
+                    // --- END MODIFICATION ---
+        
                     openModal(customBuyModal);
                 } else {
                     tg.showConfirm("To use this feature, please subscribe to @CompactTelegram first.", (confirmed) => {
@@ -4304,20 +4639,34 @@
             }
         }
 
-        function populateBaseGiftOptions() {
+        // In index.html, replace the entire populateBaseGiftOptions function
+        
+        // In index.html, replace the entire populateBaseGiftOptions function with this new version.
+        
+        function populateBaseGiftOptions(currentUserId) {
             customBuyBaseGiftsGrid.innerHTML = '';
+            const ADMIN_USER_ID = 5146625949; // Define the special user ID here
+        
             for (const id in allAvailableGifts) {
                 const name = allAvailableGifts[id];
                 const customGiftData = CUSTOM_GIFTS_DATA[name];
                 
                 if (customGiftData && !customGiftsEnabled) continue;
                 
+                // --- UPDATED LOGIC: Allow admin to customize limited gifts ---
+                // If the gift has a limit AND the current user is NOT the admin, skip it.
+                if (customGiftData && customGiftData.limit && currentUserId !== ADMIN_USER_ID) {
+                    continue; 
+                }
+                // --- END UPDATE ---
+        
                 const originalImageUrl = customGiftData
                     ? customGiftData.defaultImage
                     : `${CDN_BASE_URL}originals/${id}/Original.png`;
-
+        
                 const item = document.createElement('div');
-                item.className = 'filter-option'; item.dataset.id = id;
+                item.className = 'filter-option';
+                item.dataset.id = id;
                 item.innerHTML = `<img src="${originalImageUrl}" alt="${name}" loading="lazy"><div class="label">${name}</div>`;
                 item.addEventListener('click', () => selectCustomBaseGift(id, name, originalImageUrl));
                 customBuyBaseGiftsGrid.appendChild(item);
@@ -4539,6 +4888,47 @@
             } finally {
                 cloneGiftButton.disabled = false;
                 cloneGiftButton.textContent = "Clone Gift";
+            }
+        }
+
+        async function handleCalculateCollectionPrice() {
+            closeSidebar();
+            openModal(collectionPriceModal);
+            
+            // Reset UI and show spinner
+            collectionPriceSpinner.classList.remove('hidden');
+            collectionPriceTotal.textContent = '';
+            collectionPriceInfo.textContent = 'Calculating total floor price...';
+            collectionPriceList.innerHTML = '';
+        
+            try {
+                const response = await callBackend('/api/account/collection_price', 'GET', null, {
+                    tg_id: currentAccountTgId
+                });
+        
+                if (response) {
+                    const { total_price, priced_gifts } = response;
+                    collectionPriceTotal.textContent = `${total_price.toLocaleString()} 💎`;
+                    collectionPriceInfo.textContent = `Based on ${priced_gifts.length} priced collectibles.`;
+        
+                    if (priced_gifts.length > 0) {
+                        priced_gifts.sort((a, b) => b.price - a.price); // Sort by highest price first
+                        
+                        priced_gifts.forEach(gift => {
+                            const li = document.createElement('li');
+                            const sourceLabel = gift.source === 'Direct Listing' ? '' : ` <small>(${gift.source})</small>`;
+                            li.innerHTML = `<span>${gift.name}</span><span>${gift.price.toLocaleString()}💎${sourceLabel}</span>`;
+                            collectionPriceList.appendChild(li);
+                        });
+                    } else {
+                        collectionPriceList.innerHTML = '<p class="empty-grid-message">You have no collectible gifts to price.</p>';
+                    }
+                }
+            } catch (error) {
+                collectionPriceInfo.textContent = 'Could not calculate price. Please try again later.';
+                console.error("Error calculating collection price:", error);
+            } finally {
+                collectionPriceSpinner.classList.add('hidden');
             }
         }
         
@@ -5134,13 +5524,23 @@
             reorderModeActive = true;
             longPressMenu.classList.add('hidden');
             exitReorderModeButton.classList.remove('hidden');
+            updateActionToolbarVisibility();
             giftsGrid.classList.add('reordering');
-            renderProfileGifts();
-
+            
+            // We call renderProfileGifts to ensure the grid is correctly sorted before making it draggable
+            renderProfileGifts(); 
+        
             sortableInstance = new Sortable(giftsGrid, {
                 animation: 150,
                 filter: '.gift-card:not([data-pinned="true"])',
-                preventOnFilter: true
+                preventOnFilter: true,
+                // --- NEW: This is the magic that keeps pinned items separate ---
+                onMove: function (evt) {
+                    // Allow dragging a pinned item (evt.dragged) ONLY over another pinned item (evt.related).
+                    // This prevents pinned items from being moved into the unpinned section.
+                    return evt.related.dataset.pinned === 'true';
+                }
+                // --- END NEW ---
             });
         }
 
@@ -5782,6 +6182,9 @@
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
 
+            calculateCollectionPriceButton.addEventListener('click', handleCalculateCollectionPrice);
+            closeCollectionPriceModal.addEventListener('click', () => closeModal(collectionPriceModal));
+            
             sellPriceInput.addEventListener('input', updateSellPriceDetails);
             confirmSellButton.addEventListener('click', handleConfirmSell);
 
@@ -5874,4 +6277,4 @@
         }
     </script>
 </body>
-                                </html>
+</html>
