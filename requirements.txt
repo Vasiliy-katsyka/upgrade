@@ -6,3 +6,4 @@ gunicorn
 pytz
 beautifulsoup4
 Pillow
+portalsmp
