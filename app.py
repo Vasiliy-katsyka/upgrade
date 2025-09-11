@@ -29,6 +29,7 @@ CORS(app, resources={r"/api/*": {"origins": ["https://vasiliy-katsyka.github.io"
 # --- ENVIRONMENT VARIABLES & CONSTANTS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+PORTALS_AUTH_TOKEN = os.environ.get('PORTALS_AUTH_TOKEN')
 TRANSFER_API_KEY = os.environ.get('TRANSFER_API_KEY')
 WEBHOOK_URL = "https://upgrade-a57g.onrender.com"
 
