@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from psycopg2.extras import DictCursor
 from psycopg2 import pool
+from portalsmp import giftsFloors, search, filterFloors
 
 # --- CONFIGURATION ---
 
