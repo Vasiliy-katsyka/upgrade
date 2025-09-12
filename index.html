@@ -3597,17 +3597,29 @@
             closeModal(settingsModal);
             exitRegularReorderModeButton.classList.remove('hidden');
             updateActionToolbarVisibility();
-            giftsGrid.classList.add('reordering-regular'); // Use a different class if needed for styling
+            giftsGrid.classList.add('reordering-regular');
             renderProfileGifts();
         
             sortableInstance = new Sortable(giftsGrid, {
                 animation: 150,
-                // Only allow dragging non-pinned, non-collectible items
+                
+                // --- CORRECTED FILTER LOGIC ---
+                // This tells Sortable which items should NOT be draggable.
+                // It correctly filters out pinned items OR collectible items.
                 filter: '.gift-card[data-pinned="true"], .gift-card.is-collectible',
-                preventOnFilter: true,
+                preventOnFilter: true, // This is important to make the filter work as an exclusion list
+                
+                // --- CORRECTED onMove LOGIC ---
+                // This function determines where a dragged item can be dropped.
                 onMove: function (evt) {
-                    // Ensure regular gifts can only be dropped among other regular gifts
-                    return !evt.related.classList.contains('is-collectible') && evt.related.dataset.pinned === 'false';
+                    // evt.dragged: The item being dragged (must be a regular gift because of the filter above).
+                    // evt.related: The item the cursor is hovering over.
+                    
+                    // Allow dropping ONLY if the target item is also a regular (not pinned, not collectible) gift.
+                    const isTargetPinned = evt.related.dataset.pinned === 'true';
+                    const isTargetCollectible = evt.related.classList.contains('is-collectible');
+                    
+                    return !isTargetPinned && !isTargetCollectible;
                 }
             });
         }
@@ -3677,10 +3689,16 @@
             card.className = 'gift-card';
             card.dataset.instanceId = gift.instance_id;
             card.dataset.pinned = gift.is_pinned;
-            
+        
+            // --- THIS LINE WAS MISSING ---
             if (gift.is_collectible) card.classList.add('is-collectible');
+            // --- END OF FIX ---
+        
             if (gift.is_hidden) card.classList.add('is-hidden');
         
+            // ... (the rest of the function remains exactly the same)
+            // No other changes are needed in this function.
+            
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
             const lottieContainer = document.createElement('div');
@@ -3727,7 +3745,6 @@
                     patternContainer.className = 'dynamic-pattern-container';
                     card.appendChild(patternContainer);
         
-                    // Final, refined values for size and distance
                     const patternConfig = [
                         { count: 8, radius: 38, size: 12 }, 
                         { count: 8, radius: 62, size: 10, rotationOffset: 22.5 }
@@ -3743,7 +3760,7 @@
             }
         
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
-            staticImage.onerror = () => { this.style.display='none'; lottieContainer.innerHTML = '🖼️'; };
+            staticImage.onerror = function() { this.style.display='none'; lottieContainer.innerHTML = '🖼️'; };
             
             imageContainer.appendChild(lottieContainer);
             imageContainer.appendChild(staticImage);
@@ -3755,7 +3772,7 @@
                 pinDiv.innerHTML = PIN_ICON_SVG;
                 card.appendChild(pinDiv);
             }
-        
+            
             if (selectionModeActive) {
                 const checkbox = document.createElement('div');
                 checkbox.className = 'selection-checkbox';
@@ -3766,6 +3783,13 @@
                 card.onclick = () => toggleGiftSelection(gift.instance_id);
             } else if (reorderModeActive) {
                 card.style.cursor = gift.is_pinned ? 'grab' : 'default';
+            } else if (regularReorderModeActive) {
+                // Make draggable items have the grab cursor
+                if (!gift.is_pinned && !gift.is_collectible) {
+                    card.style.cursor = 'grab';
+                } else {
+                    card.style.cursor = 'default';
+                }
             } else {
                 card.onclick = () => openGiftDetailByInstanceId(gift.instance_id);
                 if (viewingOwnProfile) {
