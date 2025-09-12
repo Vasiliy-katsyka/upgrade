@@ -554,7 +554,19 @@ def init_db():
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_subscriptions_target ON user_subscriptions (target_user_id, notification_type);")
             # --- END OF FIX ---
-
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS gifts (
+                    instance_id VARCHAR(50) PRIMARY KEY,
+                    owner_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                    gift_type_id VARCHAR(255) NOT NULL, gift_name VARCHAR(255) NOT NULL,
+                    original_image_url TEXT, lottie_path TEXT, is_collectible BOOLEAN DEFAULT FALSE,
+                    collectible_data JSONB, collectible_number INT,
+                    acquired_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    is_hidden BOOLEAN DEFAULT FALSE, is_pinned BOOLEAN DEFAULT FALSE, is_worn BOOLEAN DEFAULT FALSE,
+                    pin_order INT,
+                    regular_order INT -- NEW COLUMN for non-collectible gift ordering
+                );
+            """)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS giveaways (
                     id SERIAL PRIMARY KEY,
@@ -1427,6 +1439,43 @@ def search_handler():
         if conn: put_db_connection(conn)
 
 # --- EXISTING API ENDPOINTS (AS PROMISED, FULLY WRITTEN) ---
+
+@app.route('/api/gifts/reorder_regular', methods=['POST'])
+def reorder_regular_gifts():
+    data = request.get_json()
+    owner_id = data.get('owner_id')
+    ordered_ids = data.get('ordered_instance_ids')
+
+    if not owner_id or not isinstance(ordered_ids, list):
+        return jsonify({"error": "owner_id and ordered_instance_ids list are required"}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed."}), 500
+
+    try:
+        with conn.cursor() as cur:
+            # First, clear the old order for all of the user's regular gifts
+            cur.execute("""
+                UPDATE gifts SET regular_order = NULL 
+                WHERE owner_id = %s AND is_collectible = FALSE AND is_pinned = FALSE;
+            """, (owner_id,))
+
+            # Then, apply the new order
+            for index, instance_id in enumerate(ordered_ids):
+                cur.execute("""
+                    UPDATE gifts SET regular_order = %s 
+                    WHERE instance_id = %s AND owner_id = %s AND is_collectible = FALSE AND is_pinned = FALSE;
+                """, (index, instance_id, owner_id))
+            
+            conn.commit()
+            return jsonify({"message": "Regular gifts reordered successfully."}), 200
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error reordering regular gifts for user {owner_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
 
 @app.route('/webhook', methods=['POST'])
 def webhook_handler():
