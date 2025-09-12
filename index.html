@@ -2083,13 +2083,6 @@
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
     
-        // NEW: Add the "Done" button for the new reorder mode
-        const exitRegularReorderModeButton = document.createElement('button');
-        exitRegularReorderModeButton.id = 'exit-regular-reorder-mode-button';
-        exitRegularReorderModeButton.className = 'action-button hidden';
-        exitRegularReorderModeButton.textContent = 'Done Reordering';
-        profileGiftsActions.prepend(exitRegularReorderModeButton);
-        
         // --- CUSTOM GIFT DATA ---
         const CUSTOM_GIFTS_DATA = {
             "Dildo": {
@@ -2694,7 +2687,13 @@
         exitReorderModeButton.className = 'action-button hidden';
         exitReorderModeButton.textContent = 'Done Reordering';
         profileGiftsActions.prepend(exitReorderModeButton);
-
+        
+        const exitRegularReorderModeButton = document.createElement('button');
+        exitRegularReorderModeButton.id = 'exit-regular-reorder-mode-button';
+        exitRegularReorderModeButton.className = 'action-button hidden';
+        exitRegularReorderModeButton.textContent = 'Done Reordering';
+        profileGiftsActions.prepend(exitRegularReorderModeButton);
+        
         const exitSelectionModeButton = document.createElement('button');
         exitSelectionModeButton.id = 'exit-selection-mode-button';
         exitSelectionModeButton.className = 'action-button hidden';
