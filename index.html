@@ -229,9 +229,11 @@
         }
         .header-pattern-item {
             position: absolute;
-            opacity: 0.6;
+            /* CHANGED: Drastically reduced opacity for a subtle effect */
+            opacity: 0.15;
+            /* NEW: This filter creates the dark silhouette effect from any image */
+            filter: brightness(0);
             transform-origin: center center;
-            /* This centers the image on its calculated coordinates */
             transform: translate(-50%, -50%);
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease;
             width: 40px;
@@ -2901,7 +2903,6 @@
                 return; // No pattern to render
             }
         
-            // Wait a moment for the layout to be stable before getting element positions
             setTimeout(() => {
                 const avatarElement = document.getElementById('profile-avatar');
                 if (!container || !avatarElement) return;
@@ -2909,11 +2910,9 @@
                 const containerRect = container.getBoundingClientRect();
                 const avatarRect = avatarElement.getBoundingClientRect();
         
-                // Calculate the center point based on the avatar's position within the container
                 const centerX = (avatarRect.left - containerRect.left) + (avatarRect.width / 2);
                 const centerY = (avatarRect.top - containerRect.top) + (avatarRect.height / 2);
         
-                // Define the properties for the two circles of patterns
                 const circles = [
                     { count: 8, radius: 100, size: 40 }, // Inner circle
                     { count: 10, radius: 150, size: 36 }  // Outer circle
@@ -2922,8 +2921,8 @@
                 circles.forEach(circleConfig => {
                     for (let i = 0; i < circleConfig.count; i++) {
                         const angle = (i / circleConfig.count) * 2 * Math.PI;
-                        // Add a slight random offset to the radius for a more organic look
-                        const radius = circleConfig.radius + (Math.random() * 10 - 5); 
+                        // REMOVED: The random offset that caused overlapping visuals
+                        const radius = circleConfig.radius; 
                         const x = centerX + radius * Math.cos(angle);
                         const y = centerY + radius * Math.sin(angle);
         
@@ -2935,14 +2934,12 @@
                         patternEl.style.left = `${x}px`;
                         patternEl.style.top = `${y}px`;
                         
-                        // Animate the patterns into view with a slight delay and rotation
                         const randomRotation = Math.random() * 90 - 45;
                         patternEl.style.transform = `translate(-50%, -50%) rotate(${randomRotation}deg) scale(0)`;
                         patternEl.style.transitionDelay = `${i * 0.03}s`;
         
                         container.appendChild(patternEl);
         
-                        // Trigger the animation
                         requestAnimationFrame(() => {
                             patternEl.style.transform = `translate(-50%, -50%) rotate(${randomRotation}deg) scale(1)`;
                         });
