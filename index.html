@@ -223,11 +223,20 @@
         .profile-header-pattern-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-repeat: repeat;
-            background-size: 30% auto;
-            opacity: 0.07;
             pointer-events: none;
             z-index: 0;
+            overflow: hidden; /* Keep patterns within the header bounds */
+        }
+        .header-pattern-item {
+            position: absolute;
+            opacity: 0.6;
+            transform-origin: center center;
+            /* This centers the image on its calculated coordinates */
+            transform: translate(-50%, -50%);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease;
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
         }
         .profile-header-content-wrapper {
              position: relative; z-index: 1;
@@ -2074,43 +2083,6 @@
 
         // --- CUSTOM GIFT DATA ---
         const CUSTOM_GIFTS_DATA = {
-            "Dildo": {
-                "id": "custom_dildo",
-                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_003931098.png",
-                "models": [
-                    {"name": "She Wants", "rarityPermille": 1, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011319484.png"},
-                    {"name": "Anal Games", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004252351.png"},
-                    {"name": "Romance", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011244151.png"},
-                    {"name": "Ma Boi", "rarityPermille": 5, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012725065.png"},
-                    {"name": "Twins 18", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004029718.png"},
-                    {"name": "Golden Sex", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004223973.png"},
-                    {"name": "Pixels", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012914349.png"},
-                    {"name": "Penis Sword", "rarityPermille": 8, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014719027.png"},
-                    {"name": "Water One", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004351728.png"},
-                    {"name": "Woman Place", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004416012.png"},
-                    {"name": "Volcano", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011343633.png"},
-                    {"name": "Telegram", "rarityPermille": 10, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012648445.png"},
-                    {"name": "Pinkie Twinkie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004004128.png"},
-                    {"name": "Silver Glass", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004200179.png"},
-                    {"name": "Plush", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011552827.png"},
-                    {"name": "Plush Cuttie", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011623951.png"},
-                    {"name": "Spider Fun", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012003197.png"},
-                    {"name": "Horse", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012355663.png"},
-                    {"name": "Hand", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013039090.png"},
-                    {"name": "Ancient", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014521352.png"},
-                    {"name": "Minion", "rarityPermille": 20, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014626463.png"},
-                    {"name": "Skinny Boi", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004055652.png"},
-                    {"name": "Rainbow", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_004125778.png"},
-                    {"name": "Russian Wood", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011527878.png"},
-                    {"name": "Afterparty", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_011822289.png"},
-                    {"name": "Neon", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_012439323.png"},
-                    {"name": "Black Jack", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_013144671.png"},
-                    {"name": "Galaxy", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014555528.png"},
-                    {"name": "Hell Red", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/newTacos/main/BackgroundEraser_20250717_014650858.png"}
-                ],
-                "backdrops_source": "Astral Shard",
-                "patterns_source": "Astral Shard"
-            },
             "Skebob": {
                 "id": "custom_skebob",
                 "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/skebobs/refs/heads/main/BackgroundEraser_20250718_034626591.png",
@@ -2921,6 +2893,63 @@
                 if(lottieContainer) destroyLottieAnimation(lottieContainer);
             }
         }
+        function renderProfileHeaderPatterns(patternUrl) {
+            const container = document.getElementById('profile-header-pattern-overlay');
+            container.innerHTML = ''; // Clear previous patterns
+        
+            if (!patternUrl) {
+                return; // No pattern to render
+            }
+        
+            // Wait a moment for the layout to be stable before getting element positions
+            setTimeout(() => {
+                const avatarElement = document.getElementById('profile-avatar');
+                if (!container || !avatarElement) return;
+        
+                const containerRect = container.getBoundingClientRect();
+                const avatarRect = avatarElement.getBoundingClientRect();
+        
+                // Calculate the center point based on the avatar's position within the container
+                const centerX = (avatarRect.left - containerRect.left) + (avatarRect.width / 2);
+                const centerY = (avatarRect.top - containerRect.top) + (avatarRect.height / 2);
+        
+                // Define the properties for the two circles of patterns
+                const circles = [
+                    { count: 8, radius: 100, size: 40 }, // Inner circle
+                    { count: 10, radius: 150, size: 36 }  // Outer circle
+                ];
+        
+                circles.forEach(circleConfig => {
+                    for (let i = 0; i < circleConfig.count; i++) {
+                        const angle = (i / circleConfig.count) * 2 * Math.PI;
+                        // Add a slight random offset to the radius for a more organic look
+                        const radius = circleConfig.radius + (Math.random() * 10 - 5); 
+                        const x = centerX + radius * Math.cos(angle);
+                        const y = centerY + radius * Math.sin(angle);
+        
+                        const patternEl = document.createElement('img');
+                        patternEl.src = patternUrl;
+                        patternEl.className = 'header-pattern-item';
+                        patternEl.style.width = `${circleConfig.size}px`;
+                        patternEl.style.height = `${circleConfig.size}px`;
+                        patternEl.style.left = `${x}px`;
+                        patternEl.style.top = `${y}px`;
+                        
+                        // Animate the patterns into view with a slight delay and rotation
+                        const randomRotation = Math.random() * 90 - 45;
+                        patternEl.style.transform = `translate(-50%, -50%) rotate(${randomRotation}deg) scale(0)`;
+                        patternEl.style.transitionDelay = `${i * 0.03}s`;
+        
+                        container.appendChild(patternEl);
+        
+                        // Trigger the animation
+                        requestAnimationFrame(() => {
+                            patternEl.style.transform = `translate(-50%, -50%) rotate(${randomRotation}deg) scale(1)`;
+                        });
+                    }
+                });
+            }, 50);
+        }
         async function fetchLimitedGiftStock() {
             try {
                 limitedGiftStock = await callBackend('/api/gifts/stock');
@@ -3285,8 +3314,13 @@
 
         function applyWornGiftStyles() {
             const wornGift = ownedGifts.find(g => g.is_worn === true);
-
+        
             destroyLottieAnimation(wornGiftIconContainer);
+            
+            // Clear the old repeating background style just in case
+            const patternOverlay = document.getElementById('profile-header-pattern-overlay');
+            patternOverlay.style.backgroundImage = 'none';
+        
             if (wornGift && wornGift.is_collectible && wornGift.collectible_data) {
                 const cd = wornGift.collectible_data;
                 if (animationsEnabled && cd.lottieModelPath) {
@@ -3295,18 +3329,24 @@
                     wornGiftIconContainer.innerHTML = `<img src="${cd.modelImage}" style="width:100%; height:100%; object-fit:contain;">`;
                 }
                 wornGiftIconContainer.classList.remove('hidden');
+                
                 const colors = cd.backdropColors;
-                if (colors) profileTopSection.style.background = `radial-gradient(circle at 50% 0%, ${colors.centerColor} 0%, ${colors.edgeColor} 100%)`;
-                else profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
-                if (cd.patternImage) {
-                    profileHeaderPatternOverlay.style.backgroundImage = `url('${cd.patternImage}')`;
-                    profileHeaderPatternOverlay.style.opacity = '0.07';
-                } else profileHeaderPatternOverlay.style.backgroundImage = 'none';
+                if (colors) {
+                    profileTopSection.style.background = `radial-gradient(circle at 50% 0%, ${colors.centerColor} 0%, ${colors.edgeColor} 100%)`;
+                } else {
+                    profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
+                }
+                
+                // **REPLACED LOGIC**: Call the new function to render circular patterns
+                renderProfileHeaderPatterns(cd.patternImage || null);
+        
             } else {
                 wornGiftIconContainer.classList.add('hidden');
                 wornGiftIconContainer.innerHTML = '';
                 profileTopSection.style.background = 'var(--app-profile-gradient-fallback)';
-                profileHeaderPatternOverlay.style.backgroundImage = 'none';
+                
+                // **REPLACED LOGIC**: Clear any existing patterns if no gift is worn
+                renderProfileHeaderPatterns(null);
             }
         }
 
