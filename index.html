@@ -3035,29 +3035,32 @@
             }
         }
         async function initApp() {
-            tg.ready(); tg.expand();
+            tg.ready();
+            tg.expand();
             initLottieObserver();
-
+        
             if (localStorage.getItem('fullscreenEnabled' + APP_VERSION_SUFFIX) === 'true') {
                 Telegram.WebApp.requestFullscreen();
                 document.getElementById('fullscreen-toggle').checked = true;
             }
-            
+        
             playLottieAnimation(
                 document.getElementById('loading-animation-container'),
                 'https://cdn.changes.tg/gifts/models/Jolly%20Chimp/lottie/Toddler.json'
             );
-
-            collectibleActionWear.querySelector('.icon').innerHTML = CROWN_SVG;
-            collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
-            collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
+            
+            // The problematic lines that set the old SVG icons have been REMOVED from here.
+            // This allows the populateCollectibleDetailModal function to correctly set the new PNG images.
+            
             collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
+        
             const giveawayBtnIconContainer = document.getElementById('giveaway-btn-icon-container');
             if (giveawayBtnIconContainer) {
                 giveawayBtnIconContainer.innerHTML = `<img src="${GIVEAWAY_BUTTON_IMG}" alt="Giveaway Icon">`;
             }
+        
             loadClientSideState();
-
+        
             const startAppParam = tg.initDataUnsafe?.start_param;
             if (startAppParam) {
                 await initializeTelegramUserAccount();
@@ -3076,24 +3079,24 @@
                             tg.showAlert("Invalid gift format in deep link.");
                         }
                     } else {
-                         tg.showAlert("Invalid gift format in deep link.");
+                        tg.showAlert("Invalid gift format in deep link.");
                     }
                 }
             } else {
                 await initializeTelegramUserAccount();
             }
-
+        
             applyTheme(tg.themeParams);
             tg.onEvent('themeChanged', () => applyTheme(tg.themeParams));
             tg.SettingsButton.show();
             tg.SettingsButton.onClick(openSettingsModal);
-
+        
             setupEventListeners();
             await fetchGiftPrices();
             await fetchLimitedGiftStock();
             await fetchAvailableGifts();
-
-            document.getElementById('loading-overlay').classList.remove('active')
+        
+            document.getElementById('loading-overlay').classList.remove('active');
         }
 
         async function initializeTelegramUserAccount() {
@@ -4143,14 +4146,14 @@
                 collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
         
-            // --- NEW & CORRECTED PATTERN PLACEMENT LOGIC ---
             if (cd.patternImage && patternContainerDynamic) {
                 setTimeout(() => {
                     if (!patternContainerDynamic) return;
                     const containerWidth = patternContainerDynamic.offsetWidth;
                     const containerHeight = patternContainerDynamic.offsetHeight;
                     const centerX = containerWidth / 2;
-                    const centerY = containerHeight * 0.45; // Vertical center of the visual area
+                    // --- ADJUSTMENT: Changed 0.45 to 0.4 to move patterns higher ---
+                    const centerY = containerHeight * 0.4;
         
                     const createPattern = (styles) => {
                         const img = document.createElement('img');
@@ -4158,40 +4161,35 @@
                         img.className = 'dynamic-pattern-instance';
                         img.style.width = `${styles.size}px`;
                         img.style.height = 'auto';
-                        img.style.left = `${styles.left - (styles.size / 2)}px`; // Center the image on the coordinate
+                        img.style.left = `${styles.left - (styles.size / 2)}px`;
                         img.style.top = `${styles.top - (styles.size / 2)}px`;
                         patternContainerDynamic.appendChild(img);
                     };
         
-                    // Main Circle: 10 items (positions 1-10)
                     const circleRadius = Math.min(containerWidth, containerHeight) / 3.5;
                     const numCirclePatterns = 10;
                     for (let i = 0; i < numCirclePatterns; i++) {
                         const angle = (i / numCirclePatterns) * 2 * Math.PI;
                         const x = centerX + circleRadius * Math.cos(angle);
                         const y = centerY + circleRadius * Math.sin(angle);
-                        createPattern({ left: x, top: y, size: 40 }); // Larger size
+                        createPattern({ left: x, top: y, size: 40 });
                     }
         
-                    // Side Columns: 8 items total (positions 11-18)
                     const numColumnPatterns = 4;
-                    const colYStart = containerHeight * 0.2;
-                    const colYStep = (containerHeight * 0.9 - colYStart) / (numColumnPatterns - 1);
+                    const colYStart = containerHeight * 0.18; // Start slightly lower than the very top
+                    const colYStep = (containerHeight * 0.85 - colYStart) / (numColumnPatterns - 1);
         
-                    // Left column (positions 11-14)
                     const leftColX = containerWidth * 0.15;
                     for (let i = 0; i < numColumnPatterns; i++) {
-                        createPattern({ left: leftColX, top: colYStart + (i * colYStep), size: 30 }); // Smaller size
+                        createPattern({ left: leftColX, top: colYStart + (i * colYStep), size: 30 });
                     }
         
-                    // Right column (positions 15-18)
                     const rightColX = containerWidth * 0.85;
                     for (let i = 0; i < numColumnPatterns; i++) {
-                        createPattern({ left: rightColX, top: colYStart + (i * colYStep), size: 30 }); // Smaller size
+                        createPattern({ left: rightColX, top: colYStart + (i * colYStep), size: 30 });
                     }
                 }, 50);
             }
-            // --- END: NEW PATTERN LOGIC ---
         
             destroyLottieAnimation(modalLottieCollectibleModel);
             modalCollectibleModelImgStatic.style.display = 'block';
@@ -4229,7 +4227,6 @@
                 <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Supply</span><span class="info-value">${cd.supply?.toLocaleString() || 'N/A'} issued</span></div>`;
         
-            // --- FIX: SETTING THE SRC FOR BUTTON ICONS ---
             const wearBtnIcon = collectibleActionWear.querySelector('.icon img');
             wearBtnIcon.src = gift.is_worn ? UNWEAR_GIFT_IMG : WEAR_GIFT_IMG;
             collectibleActionWear.querySelector('.text').textContent = gift.is_worn ? 'Take Off' : 'Wear';
@@ -4239,7 +4236,6 @@
             collectibleActionSell.querySelector('.text').textContent = gift.is_on_sale ? `On Sale` : 'Sell';
         
             collectibleActionTransfer.querySelector('.icon img').src = TRANSFER_GIFT_IMG;
-            // --- END: ICON FIX ---
         
             const isVisible = isOwner ? 'flex' : 'none';
             [collectibleActionWear, collectibleActionSell, collectibleActionTransfer, collectibleMenuButton].forEach(el => el.style.display = isVisible);
