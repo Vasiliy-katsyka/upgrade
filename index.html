@@ -843,11 +843,16 @@
             position: relative; z-index: 2; /* Ensure buttons are on top */
         }
         .modal-action-buttons-row button {
-            flex-grow: 1; padding: 10px 5px; font-size: 0.9em;
-            background-color: rgba(0,0,0,0.25); /* Dark, transparent background */
+            flex: 1; /* This is the key change: forces equal width */
+            padding: 10px 5px;
+            font-size: 0.9em;
+            background-color: rgba(0, 0, 0, 0.25);
             color: var(--tg-theme-text-color);
-            border: none; border-radius: 8px;
-            display: flex; flex-direction: column; align-items: center;
+            border: none;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             font-weight: 500;
         }
         .modal-action-buttons-row button .icon {
@@ -4152,7 +4157,6 @@
                     const containerWidth = patternContainerDynamic.offsetWidth;
                     const containerHeight = patternContainerDynamic.offsetHeight;
                     const centerX = containerWidth / 2;
-                    // --- ADJUSTMENT: Changed 0.45 to 0.4 to move patterns higher ---
                     const centerY = containerHeight * 0.4;
         
                     const createPattern = (styles) => {
@@ -4172,21 +4176,24 @@
                         const angle = (i / numCirclePatterns) * 2 * Math.PI;
                         const x = centerX + circleRadius * Math.cos(angle);
                         const y = centerY + circleRadius * Math.sin(angle);
-                        createPattern({ left: x, top: y, size: 40 });
+                        // --- ADJUSTMENT: Made patterns a little smaller ---
+                        createPattern({ left: x, top: y, size: 36 }); 
                     }
         
                     const numColumnPatterns = 4;
-                    const colYStart = containerHeight * 0.18; // Start slightly lower than the very top
+                    const colYStart = containerHeight * 0.18;
                     const colYStep = (containerHeight * 0.85 - colYStart) / (numColumnPatterns - 1);
         
                     const leftColX = containerWidth * 0.15;
                     for (let i = 0; i < numColumnPatterns; i++) {
-                        createPattern({ left: leftColX, top: colYStart + (i * colYStep), size: 30 });
+                        // --- ADJUSTMENT: Made patterns a little smaller ---
+                        createPattern({ left: leftColX, top: colYStart + (i * colYStep), size: 26 }); 
                     }
         
                     const rightColX = containerWidth * 0.85;
                     for (let i = 0; i < numColumnPatterns; i++) {
-                        createPattern({ left: rightColX, top: colYStart + (i * colYStep), size: 30 });
+                        // --- ADJUSTMENT: Made patterns a little smaller ---
+                        createPattern({ left: rightColX, top: colYStart + (i * colYStep), size: 26 }); 
                     }
                 }, 50);
             }
