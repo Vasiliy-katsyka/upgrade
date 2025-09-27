@@ -783,8 +783,8 @@
         }
         #collectible-detail-modal #collectible-menu-button svg { fill: white; }
 
-        .collectible-display-area {
-            padding: 40px 0 20px 0; /* Adjusted padding */
+        #collectible-detail-modal .collectible-display-area {
+            padding: 40px 0 20px 0; /* More vertical space */
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -799,9 +799,7 @@
         }
         .dynamic-pattern-instance {
             position: absolute;
-            opacity: 0.1;
-            width: 40px;
-            height: auto;
+            opacity: 0.1; /* Fainter pattern */
             will-change: transform;
         }
 
@@ -860,9 +858,23 @@
         .collectible-info-section { padding: 0 20px; background-color: var(--tg-theme-secondary-bg-color); }
         .collectible-info-section .info-row {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 0; font-size: 0.95em;
+            padding: 12px 0;
+            font-size: 0.95em; /* Slightly smaller text */
         }
-        .collectible-info-section .info-row:not(:last-child) { border-bottom: 1px solid var(--tg-theme-bg-color); }
+        .collectible-info-section .info-row:not(:last-child) {
+            border-bottom: 1px solid var(--tg-theme-bg-color);
+        }
+        .collectible-info-section .info-value img.owner-avatar {
+            width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;
+        }
+        .modal-footer-message {
+            text-align: center; font-size: 0.85em;
+            color: var(--tg-theme-hint-color); padding: 15px 20px;
+            background-color: var(--tg-theme-bg-color); /* Matches Telegram's color break */
+        }
+        .modal-footer-message .link {
+            color: var(--tg-theme-link-color); cursor: pointer;
+        }
         .collectible-info-section .info-label { color: var(--tg-theme-text-color); }
         .collectible-info-section .info-value { color: var(--tg-theme-hint-color); display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .collectible-info-section .info-value a {
@@ -1461,7 +1473,65 @@
             color: inherit; /* Inherit the link color for the current level's range */
         }
         
-        /* --- END: New CSS rules --- */
+        .sidebar-footer button .btn-icon-container {
+            margin-right: 12px;
+            width: 22px; height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-footer button .btn-icon-container img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .modal-action-buttons-row button .icon {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px; /* Give icon a fixed size */
+            height: 28px;
+        }
+        .modal-action-buttons-row button .icon img {
+            max-width: 100%;
+            max-height: 100%;
+            /* This filter makes any PNG appear white, matching the target style */
+            filter: brightness(0) invert(1);
+        }
+        .modal-action-buttons-row button {
+            /* Ensure text is white */
+            color: var(--tg-theme-text-color);
+        }
+
+        .gift-card .top-right-label.on-sale {
+            background: #4caf50; /* A nice green for "on sale" */
+            color: white;
+            box-shadow: none; /* A flatter look for this label */
+            border: none;
+            padding: 2px 25px;
+            font-weight: 600;
+        }
+        /* Price display for Grid View */
+        .gift-card .bottom-left-price {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 4;
+        }
+        .gift-card .bottom-left-price img {
+            width: 12px;
+            height: 12px;
+        }
     </style>
 </head>
 <body>
@@ -1472,12 +1542,10 @@
         </div>
         <ul class="accounts-list" id="accounts-list"></ul>
         <div class="sidebar-footer">
-            <button id="calculate-collection-price-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.5,2C10.67,2 10,2.67 10,3.5V5.5H3.5C2.67,5.5 2,6.17 2,7V10.5C2,11.33 2.67,12 3.5,12H10V14H7.5C6.67,14 6,14.67 6,15.5V20.5C6,21.33 6.67,22 7.5,22H16.5C17.33,22 18,21.33 18,20.5V15.5C18,14.67 17.33,14 16.5,14H14V12H20.5C21.33,12 22,11.33 22,10.5V7C22,6.17 21.33,5.5 20.5,5.5H14V3.5C14,2.67 13.33,2 12.5,2H11.5M12,7A2,2 0 0,0 10,9A2,2 0 0,0 12,11A2,2 0 0,0 14,9A2,2 0 0,0 12,7Z" /></svg>My Collection Price</button>
-            <button id="add-account-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,13.28L1,10.72L2.41,9.31L5,11.9L9.6,7.3L11,8.72L5,14.72Z" /></svg>Add Account</button>
             <button id="open-filters-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" /></svg>Filters</button>
             <button id="open-numbers-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>Numbers</button>
-            <button id="open-usernames-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.33 4,18V20H20V18C20,15.33 14.67,14 12,14Z" /></svg>@ Usernames</button>
-            <button id="create-giveaway-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22,13H20V15H18V13H16V11H18V9H20V11H22M18,3L15,6H11L13,2H9.5C9.09,2 8.75,2.3 8.6,2.65L2,13L8,18H14L21,9V4M12.5,15.5C11.67,15.5 11,14.83 11,14C11,13.17 11.67,12.5 12.5,12.5C13.33,12.5 14,13.17 14,14C14,14.83 13.33,15.5 12.5,15.5Z" /></svg>🏆 Create Giveaway</button>
+            <button id="open-usernames-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.33 4,18V20H20V18C20,15.33 14.67,14 12,14Z" /></svg>Usernames</button>
+            <button id="create-giveaway-button"><span id="giveaway-btn-icon-container" class="btn-icon-container"></span>Create Giveaway</button>
         </div>
     </div>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -1608,9 +1676,9 @@
                         <h3 id="modal-collectible-main-name">Model Name</h3>
                         <p id="modal-collectible-number-subtext">Collectible #123</p>
                         <div id="modal-collectible-actions" class="modal-action-buttons-row">
-                            <button id="collectible-action-wear"><span class="icon"></span><span class="text">Wear</span></button>
-                            <button id="collectible-action-sell"><span class="icon"></span><span class="text">Sell</span></button>
-                            <button id="collectible-action-transfer"><span class="icon"></span><span class="text">Transfer</span></button>
+                            <button id="collectible-action-transfer"><span class="icon"><img src=""/></span><span class="text">Transfer</span></button>
+                            <button id="collectible-action-wear"><span class="icon"><img src=""/></span><span class="text">Wear</span></button>
+                            <button id="collectible-action-sell"><span class="icon"><img src=""/></span><span class="text">Sell</span></button>
                         </div>
                     </div>
                     <div class="collectible-info-section">
@@ -2069,6 +2137,13 @@
         const PRICES_JSON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/prices.json";
         const STAR_ICON_URL = "https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png";
 
+        const TRANSFER_GIFT_IMG = "https://github.com/Vasiliy-katsyka/upgrade/blob/main/transfer-gift.png?raw=true";
+        const WEAR_GIFT_IMG = "https://github.com/Vasiliy-katsyka/upgrade/blob/main/wear-gift.png?raw=true";
+        const UNWEAR_GIFT_IMG = "https://github.com/Vasiliy-katsyka/upgrade/blob/main/unwear-gift.png?raw=true";
+        const SELL_GIFT_IMG = "https://github.com/Vasiliy-katsyka/upgrade/blob/main/sell-gift.png?raw=true";
+        const UNSELL_GIFT_IMG = "https://github.com/Vasiliy-katsyka/upgrade/blob/main/unsell-gift.png?raw=true";
+        const GIVEAWAY_BUTTON_IMG = "https://github.com/Vasiliy-katsyka/upgrade/blob/main/giveaway.png?raw=true";
+        
         const GIFT_LIMIT_PER_USER = 500000;
         const MAX_COLLECTIBLE_USERNAMES = 10;
         const MIN_SALE_PRICE = 125;
@@ -2973,7 +3048,10 @@
             collectibleActionSell.querySelector('.icon').innerHTML = LABEL_SVG;
             collectibleActionTransfer.querySelector('.icon').innerHTML = DIAMOND_SVG;
             collectibleMenuButton.innerHTML = MENU_DOTS_SVG;
-
+            const giveawayBtnIconContainer = document.getElementById('giveaway-btn-icon-container');
+            if (giveawayBtnIconContainer) {
+                giveawayBtnIconContainer.innerHTML = `<img src="${GIVEAWAY_BUTTON_IMG}" alt="Giveaway Icon">`;
+            }
             loadClientSideState();
 
             const startAppParam = tg.initDataUnsafe?.start_param;
@@ -3600,22 +3678,35 @@
                 staticImage.src = cd.modelImage || gift.original_image_url;
                 staticImage.alt = cd.model?.name || gift.gift_name;
                 lottiePathForCard = cd.lottieModelPath;
+                
+                // NEW: "On Sale" banner logic
+                if (gift.is_on_sale) {
+                    const saleLabel = document.createElement('div');
+                    saleLabel.className = 'top-right-label on-sale';
+                    saleLabel.textContent = 'on sale';
+                    card.appendChild(saleLabel);
         
-                const labelDiv = document.createElement('div');
-                labelDiv.className = 'top-right-label';
-                if (gift.is_pinned) {
-                    labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
-                } else if (cd.supply) {
-                    const supplyNum = cd.supply;
-                    if (supplyNum > 1000) {
-                         labelDiv.textContent = `1 of ${(supplyNum / 1000).toFixed(1)}K`;
-                    } else {
-                         labelDiv.textContent = `1 of ${supplyNum.toLocaleString()}`;
-                    }
+                    const priceLabel = document.createElement('div');
+                    priceLabel.className = 'bottom-left-price';
+                    priceLabel.innerHTML = `<img src="${STAR_ICON_URL}" alt="Star"/> ${gift.sale_price.toLocaleString()}`;
+                    card.appendChild(priceLabel);
                 } else {
-                    labelDiv.textContent = 'Limitless';
+                     const labelDiv = document.createElement('div');
+                     labelDiv.className = 'top-right-label';
+                     if (gift.is_pinned) {
+                         labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
+                     } else if (cd.supply) {
+                         const supplyNum = cd.supply;
+                         if (supplyNum > 1000) {
+                              labelDiv.textContent = `1 of ${(supplyNum / 1000).toFixed(1)}K`;
+                         } else {
+                              labelDiv.textContent = `1 of ${supplyNum.toLocaleString()}`;
+                         }
+                     } else {
+                         labelDiv.textContent = 'Limitless';
+                     }
+                     card.appendChild(labelDiv);
                 }
-                card.appendChild(labelDiv);
         
                 const bgDiv = document.createElement('div');
                 bgDiv.className = 'gift-card-bg-pattern';
@@ -3630,13 +3721,10 @@
                     const patternContainer = document.createElement('div');
                     patternContainer.className = 'dynamic-pattern-container';
                     card.appendChild(patternContainer);
-        
-                    // Final, refined values for size and distance
                     const patternConfig = [
                         { count: 8, radius: 38, size: 12 }, 
                         { count: 8, radius: 62, size: 10, rotationOffset: 22.5 }
                     ];
-                    
                     setTimeout(() => generateCircularPattern(patternContainer, cd.patternImage, patternConfig), 0);
                 }
         
@@ -3647,7 +3735,7 @@
             }
         
             if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
-            staticImage.onerror = () => { this.style.display='none'; lottieContainer.innerHTML = '🖼️'; };
+            staticImage.onerror = () => { staticImage.style.display='none'; lottieContainer.innerHTML = '🖼️'; };
             
             imageContainer.appendChild(lottieContainer);
             imageContainer.appendChild(staticImage);
@@ -3664,17 +3752,13 @@
                 const checkbox = document.createElement('div');
                 checkbox.className = 'selection-checkbox';
                 card.appendChild(checkbox);
-                if (selectedGiftIds.has(gift.instance_id)) {
-                    card.classList.add('selected');
-                }
+                if (selectedGiftIds.has(gift.instance_id)) card.classList.add('selected');
                 card.onclick = () => toggleGiftSelection(gift.instance_id);
             } else if (reorderModeActive) {
                 card.style.cursor = gift.is_pinned ? 'grab' : 'default';
             } else {
                 card.onclick = () => openGiftDetailByInstanceId(gift.instance_id);
-                if (viewingOwnProfile) {
-                    setupLongPress(card, gift);
-                }
+                if (viewingOwnProfile) setupLongPress(card, gift);
             }
         
             return card;
@@ -4027,12 +4111,11 @@
         async function populateCollectibleDetailModal(gift) {
             const cd = gift.collectible_data;
             modalCollectibleMainName.textContent = cd.model?.name || gift.gift_name;
-
+        
             const numberForLink = gift.collectible_number;
-            
             const snoopGifts = ['Snoop Dogg', 'Swag Bag', 'Snoop Cigar', 'Low Rider', 'Westside Sign'];
             const vasiliyGifts = ['Dildo', 'Skebob', "Baggin' Cat"];
-
+        
             let subtextHTML;
             if (snoopGifts.includes(gift.gift_name)) {
                 subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'snoopdogg')">@snoopdogg</a>`;
@@ -4042,71 +4125,66 @@
                 subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
             }
             modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">${subtextHTML}</a>`;
-
             document.getElementById('collectible-link-copier').onclick = (e) => { 
                 if (e.target.tagName !== 'A' || e.target.id === 'collectible-link-copier') {
                     e.preventDefault(); 
                     copyGiftLink(gift); 
                 }
             };
-
+        
             if (patternContainerDynamic) patternContainerDynamic.innerHTML = '';
-
             if (collectibleDisplayArea && cd.backdropColors) {
                 collectibleDisplayArea.style.background = `radial-gradient(circle at 50% 0%, ${cd.backdropColors.centerColor} 0%, ${cd.backdropColors.edgeColor} 100%)`;
             } else {
                 collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
-
+        
+            // NEW PATTERN PLACEMENT LOGIC
             if (cd.patternImage && patternContainerDynamic) {
                 setTimeout(() => {
                     if(!patternContainerDynamic) return;
                     const containerWidth = patternContainerDynamic.offsetWidth;
                     const containerHeight = patternContainerDynamic.offsetHeight;
                     const centerX = containerWidth / 2;
-                    const centerY = containerHeight / 2 - 30;
-
+                    const centerY = containerHeight * 0.45; // Center vertically in the display area
+                    
                     const createPattern = (styles) => {
                         const img = document.createElement('img');
                         img.src = cd.patternImage;
                         img.className = 'dynamic-pattern-instance';
-                        img.crossOrigin = 'Anonymous';
-                        const baseRotation = -25;
-                        img.style.transform = `translate(-50%, -50%) rotate(${baseRotation}deg) scale(${styles.scale || 0.9})`;
+                        img.style.width = `${styles.size}px`;
+                        img.style.height = 'auto';
                         img.style.left = `${styles.left}px`;
                         img.style.top = `${styles.top}px`;
                         patternContainerDynamic.appendChild(img);
                     };
-
-                    const circleRadius = Math.min(containerWidth, containerHeight) / 3.2;
+        
+                    // Circle of 10 items (items 1-10)
+                    const circleRadius = Math.min(containerWidth, containerHeight) / 3.5;
                     const numCirclePatterns = 10;
                     for (let i = 0; i < numCirclePatterns; i++) {
                         const angle = (i / numCirclePatterns) * 2 * Math.PI;
                         const x = centerX + circleRadius * Math.cos(angle);
                         const y = centerY + circleRadius * Math.sin(angle);
-                        createPattern({ left: x, top: y, scale: 0.9 });
+                        createPattern({ left: x, top: y, size: 40 });
                     }
-
-                    const leftRowStartX = containerWidth * 0.15;
-                    const leftRowStartY = containerHeight * 0.2;
-                    const leftRowYStep = containerHeight * 0.18;
+        
+                    // Left column of 4 items (items 11-14)
+                    const leftColX = containerWidth * 0.15;
+                    const colYStart = containerHeight * 0.2;
+                    const colYStep = containerHeight * 0.22;
                     for (let i = 0; i < 4; i++) {
-                        const x = leftRowStartX - (i * 5);
-                        const y = leftRowStartY + (i * leftRowYStep);
-                        createPattern({ left: x, top: y, scale: 0.85 });
+                        createPattern({ left: leftColX, top: colYStart + (i * colYStep), size: 30 });
                     }
-
-                    const rightRowStartX = containerWidth * 0.85;
-                    const rightRowStartY = containerHeight * 0.2;
-                    const rightRowYStep = containerHeight * 0.18;
+        
+                    // Right column of 4 items (items 15-18)
+                    const rightColX = containerWidth * 0.85;
                     for (let i = 0; i < 4; i++) {
-                        const x = rightRowStartX + (i * 5);
-                        const y = rightRowStartY + (i * rightRowYStep);
-                        createPattern({ left: x, top: y, scale: 0.85 });
+                        createPattern({ left: rightColX, top: colYStart + (i * colYStep), size: 30 });
                     }
                 }, 50);
             }
-
+        
             destroyLottieAnimation(modalLottieCollectibleModel);
             modalCollectibleModelImgStatic.style.display = 'block';
             modalLottieCollectibleModel.style.display = 'none';
@@ -4118,7 +4196,7 @@
                  modalCollectibleModelImgStatic.src = cd.modelImage || gift.original_image_url;
                  modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
             }
-
+        
             let ownerName, ownerAvatar, ownerUsername;
             const isOwner = (gift.owner_id === currentAccountTgId);
             if(isOwner) {
@@ -4131,37 +4209,49 @@
                 ownerAvatar = gift.owner_avatar || `https://i.pravatar.cc/140?u=${generateUniqueId()}`;
                 ownerUsername = gift.owner_username;
             }
-
+        
             const ownerDisplayHTML = ownerUsername
                 ? `<a href="#" onclick="event.preventDefault(); displayUserProfile('${ownerUsername}')"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</a>`
                 : `<span><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span>`;
-
+        
             modalCollectibleInfoTable.innerHTML = `
                 <div class="info-row"><span class="info-label">Owner</span><span class="info-value">${ownerDisplayHTML}</span></div>
                 <div class="info-row"><span class="info-label">Model</span><span id="collectible-model-value" class="info-value clickable-info">${cd.model?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.model?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Backdrop</span><span id="collectible-backdrop-value" class="info-value clickable-info">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.backdrop?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Supply</span><span class="info-value">${cd.supply?.toLocaleString() || 'N/A'} issued</span></div>`;
-            const stockInfo = limitedGiftStock[gift.gift_type_id];
-            if (stockInfo) {
-                const supplyRow = modalCollectibleInfoTable.querySelector('#supply-info-row');
-                if (supplyRow) {
-                    const collectibleCountHTML = `
-                        <div class="info-row">
-                            <span class="info-label">Collectible</span>
-                            <span class="info-value">${stockInfo.collectible_count.toLocaleString()} of ${stockInfo.total.toLocaleString()}</span>
-                        </div>`;
-                    supplyRow.insertAdjacentHTML('afterend', collectibleCountHTML);
-                }
+            
+            // UPDATED: Set button images and text based on gift state
+            const wearBtn = document.getElementById('collectible-action-wear');
+            const wearBtnIcon = wearBtn.querySelector('.icon img');
+            const wearBtnText = wearBtn.querySelector('.text');
+            if (gift.is_worn) {
+                wearBtnIcon.src = UNWEAR_GIFT_IMG;
+                wearBtnText.textContent = 'Take Off';
+            } else {
+                wearBtnIcon.src = WEAR_GIFT_IMG;
+                wearBtnText.textContent = 'Wear';
             }
-            collectibleActionWear.style.display = isOwner ? 'flex' : 'none';
-            collectibleActionSell.style.display = isOwner ? 'flex' : 'none';
-            collectibleActionTransfer.style.display = isOwner ? 'flex' : 'none';
-            collectibleMenuButton.style.display = isOwner ? 'flex' : 'none';
+        
+            const sellBtn = document.getElementById('collectible-action-sell');
+            const sellBtnIcon = sellBtn.querySelector('.icon img');
+            const sellBtnText = sellBtn.querySelector('.text');
+            if (gift.is_on_sale) {
+                sellBtnIcon.src = UNSELL_GIFT_IMG;
+                sellBtnText.textContent = `On Sale (${gift.sale_price} ★)`;
+            } else {
+                sellBtnIcon.src = SELL_GIFT_IMG;
+                sellBtnText.textContent = 'Sell';
+            }
+            
+            document.getElementById('collectible-action-transfer').querySelector('.icon img').src = TRANSFER_GIFT_IMG;
+        
+            // Show/hide buttons and footer link based on ownership
+            const isVisible = isOwner ? 'flex' : 'none';
+            [collectibleActionWear, collectibleActionSell, collectibleActionTransfer, collectibleMenuButton].forEach(el => el.style.display = isVisible);
             hideLinkInModal.style.display = isOwner ? 'inline' : 'none';
-
-            collectibleActionWear.querySelector('.text').textContent = (gift.is_worn === true) ? 'Take Off' : 'Wear';
-
+        
+            // Event listeners for triple-tap filtering
             const modelValueEl = document.getElementById('collectible-model-value');
             const backdropValueEl = document.getElementById('collectible-backdrop-value');
             const patternValueEl = document.getElementById('collectible-pattern-value');
@@ -5249,18 +5339,17 @@
         }
 
         function openSellModal(gift) {
-            if (!gift || !gift.is_collectible) return;
-            if (gift.owner_id !== currentAccountTgId) return;
+            if (!gift || !gift.is_collectible || gift.owner_id !== currentAccountTgId) return;
             currentGiftToSell = gift;
             closeModal(collectibleDetailModal);
-
+        
             sellGiftImage.src = gift.collectible_data.modelImage || gift.original_image_url;
             sellGiftName.textContent = `${gift.gift_name} #${gift.collectible_number}`;
             sellPriceInput.value = '';
             sellReceiveAmount.textContent = 'You will receive...';
             sellUsdAmount.textContent = '';
             confirmSellButton.disabled = true;
-
+        
             openModal(sellGiftModal);
             setTimeout(() => sellPriceInput.focus(), 250);
         }
@@ -5282,28 +5371,33 @@
             }
         }
 
-        function handleConfirmSell() {
+        async function handleConfirmSell() {
             if (!currentGiftToSell || confirmSellButton.disabled) return;
             const price = parseInt(sellPriceInput.value, 10);
-
-            const giftIndex = ownedGifts.findIndex(g => g.instance_id === currentGiftToSell.instance_id);
-            if (giftIndex === -1) return;
-
-            const removedGift = ownedGifts.splice(giftIndex, 1)[0];
+            const giftToUpdate = ownedGifts.find(g => g.instance_id === currentGiftToSell.instance_id);
+            if (!giftToUpdate) return;
+            
+            // Optimistic UI Update
+            giftToUpdate.is_on_sale = true;
+            giftToUpdate.sale_price = price;
             renderProfileGifts();
             closeModal(sellGiftModal);
             tg.HapticFeedback.notificationOccurred('success');
-            tg.showAlert(`Gift "${currentGiftToSell.gift_name}" listed for sale. It will be removed from your profile until sold or cancelled.`);
-
-            callBackend('/api/gifts/sell', 'POST', {
-                instance_id: currentGiftToSell.instance_id,
-                price: price,
-                owner_id: currentAccountTgId
-            }).catch(error => {
-                tg.HapticFeedback.notificationOccurred('error');
-                ownedGifts.splice(giftIndex, 0, removedGift);
+            tg.showAlert(`Gift "${currentGiftToSell.gift_name}" successfully listed for ${price} Stars.`);
+        
+            // Backend call
+            try {
+                await callBackend(`/api/gifts/${currentGiftToSell.instance_id}`, 'PUT', {
+                    action: 'sell',
+                    value: true,
+                    price: price
+                });
+            } catch (error) {
+                // Revert on failure
+                giftToUpdate.is_on_sale = false;
+                delete giftToUpdate.sale_price;
                 renderProfileGifts();
-            });
+            }
         }
 
         function openTransferModal(gift) {
