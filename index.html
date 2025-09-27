@@ -850,7 +850,14 @@
             display: flex; flex-direction: column; align-items: center;
             font-weight: 500;
         }
-        .modal-action-buttons-row button .icon { margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
+        .modal-action-buttons-row button .icon {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px; /* A good fixed size */
+            height: 28px;
+        }
         .modal-action-buttons-row button .icon svg { width: 22px; height: 22px; fill: var(--tg-theme-link-color); }
         .modal-action-buttons-row button .text { font-size: 0.9em; }
         /* === END COLLECTIBLE MODAL REDESIGN === */
@@ -1496,11 +1503,10 @@
         .modal-action-buttons-row button .icon img {
             max-width: 100%;
             max-height: 100%;
-            /* This filter makes any PNG appear white, matching the target style */
-            filter: brightness(0) invert(1);
+            /* The filter property has been REMOVED */
         }
         .modal-action-buttons-row button {
-            /* Ensure text is white */
+            /* Ensure text is white to match the target */
             color: var(--tg-theme-text-color);
         }
 
@@ -4123,10 +4129,10 @@
                 subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
             }
             modalCollectibleNumberSubtext.innerHTML = `<a id="collectible-link-copier" href="#">${subtextHTML}</a>`;
-            document.getElementById('collectible-link-copier').onclick = (e) => { 
+            document.getElementById('collectible-link-copier').onclick = (e) => {
                 if (e.target.tagName !== 'A' || e.target.id === 'collectible-link-copier') {
-                    e.preventDefault(); 
-                    copyGiftLink(gift); 
+                    e.preventDefault();
+                    copyGiftLink(gift);
                 }
             };
         
@@ -4137,51 +4143,55 @@
                 collectibleDisplayArea.style.background = 'var(--tg-theme-secondary-bg-color)';
             }
         
-            // NEW PATTERN PLACEMENT LOGIC
+            // --- NEW & CORRECTED PATTERN PLACEMENT LOGIC ---
             if (cd.patternImage && patternContainerDynamic) {
                 setTimeout(() => {
-                    if(!patternContainerDynamic) return;
+                    if (!patternContainerDynamic) return;
                     const containerWidth = patternContainerDynamic.offsetWidth;
                     const containerHeight = patternContainerDynamic.offsetHeight;
                     const centerX = containerWidth / 2;
-                    const centerY = containerHeight * 0.45; // Center vertically in the display area
-                    
+                    const centerY = containerHeight * 0.45; // Vertical center of the visual area
+        
                     const createPattern = (styles) => {
                         const img = document.createElement('img');
                         img.src = cd.patternImage;
                         img.className = 'dynamic-pattern-instance';
                         img.style.width = `${styles.size}px`;
                         img.style.height = 'auto';
-                        img.style.left = `${styles.left}px`;
-                        img.style.top = `${styles.top}px`;
+                        img.style.left = `${styles.left - (styles.size / 2)}px`; // Center the image on the coordinate
+                        img.style.top = `${styles.top - (styles.size / 2)}px`;
                         patternContainerDynamic.appendChild(img);
                     };
         
-                    // Circle of 10 items (items 1-10)
+                    // Main Circle: 10 items (positions 1-10)
                     const circleRadius = Math.min(containerWidth, containerHeight) / 3.5;
                     const numCirclePatterns = 10;
                     for (let i = 0; i < numCirclePatterns; i++) {
                         const angle = (i / numCirclePatterns) * 2 * Math.PI;
                         const x = centerX + circleRadius * Math.cos(angle);
                         const y = centerY + circleRadius * Math.sin(angle);
-                        createPattern({ left: x, top: y, size: 40 });
+                        createPattern({ left: x, top: y, size: 40 }); // Larger size
                     }
         
-                    // Left column of 4 items (items 11-14)
-                    const leftColX = containerWidth * 0.15;
+                    // Side Columns: 8 items total (positions 11-18)
+                    const numColumnPatterns = 4;
                     const colYStart = containerHeight * 0.2;
-                    const colYStep = containerHeight * 0.22;
-                    for (let i = 0; i < 4; i++) {
-                        createPattern({ left: leftColX, top: colYStart + (i * colYStep), size: 30 });
+                    const colYStep = (containerHeight * 0.9 - colYStart) / (numColumnPatterns - 1);
+        
+                    // Left column (positions 11-14)
+                    const leftColX = containerWidth * 0.15;
+                    for (let i = 0; i < numColumnPatterns; i++) {
+                        createPattern({ left: leftColX, top: colYStart + (i * colYStep), size: 30 }); // Smaller size
                     }
         
-                    // Right column of 4 items (items 15-18)
+                    // Right column (positions 15-18)
                     const rightColX = containerWidth * 0.85;
-                    for (let i = 0; i < 4; i++) {
-                        createPattern({ left: rightColX, top: colYStart + (i * colYStep), size: 30 });
+                    for (let i = 0; i < numColumnPatterns; i++) {
+                        createPattern({ left: rightColX, top: colYStart + (i * colYStep), size: 30 }); // Smaller size
                     }
                 }, 50);
             }
+            // --- END: NEW PATTERN LOGIC ---
         
             destroyLottieAnimation(modalLottieCollectibleModel);
             modalCollectibleModelImgStatic.style.display = 'block';
@@ -4191,13 +4201,13 @@
                 modalCollectibleModelImgStatic.style.display = 'none';
                 modalLottieCollectibleModel.style.display = 'flex';
             } else {
-                 modalCollectibleModelImgStatic.src = cd.modelImage || gift.original_image_url;
-                 modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
+                modalCollectibleModelImgStatic.src = cd.modelImage || gift.original_image_url;
+                modalCollectibleModelImgStatic.onerror = function() { this.src = `https://i.pravatar.cc/200?u=err${generateUniqueId()}`; };
             }
         
             let ownerName, ownerAvatar, ownerUsername;
             const isOwner = (gift.owner_id === currentAccountTgId);
-            if(isOwner) {
+            if (isOwner) {
                 const myAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
                 ownerName = myAccount.full_name;
                 ownerAvatar = myAccount.avatar_url;
@@ -4208,9 +4218,9 @@
                 ownerUsername = gift.owner_username;
             }
         
-            const ownerDisplayHTML = ownerUsername
-                ? `<a href="#" onclick="event.preventDefault(); displayUserProfile('${ownerUsername}')"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</a>`
-                : `<span><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span>`;
+            const ownerDisplayHTML = ownerUsername ?
+                `<a href="#" onclick="event.preventDefault(); displayUserProfile('${ownerUsername}')"><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</a>` :
+                `<span><img src="${ownerAvatar}" alt="" class="owner-avatar">${ownerName}</span>`;
         
             modalCollectibleInfoTable.innerHTML = `
                 <div class="info-row"><span class="info-label">Owner</span><span class="info-value">${ownerDisplayHTML}</span></div>
@@ -4218,38 +4228,23 @@
                 <div class="info-row"><span class="info-label">Backdrop</span><span id="collectible-backdrop-value" class="info-value clickable-info">${cd.backdrop?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.backdrop?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Symbol</span><span id="collectible-pattern-value" class="info-value clickable-info">${cd.pattern?.name || 'N/A'} <span class="rarity-chip">${formatRarity(cd.pattern?.rarityPermille || 0)}</span></span></div>
                 <div class="info-row"><span class="info-label">Supply</span><span class="info-value">${cd.supply?.toLocaleString() || 'N/A'} issued</span></div>`;
-            
-            // UPDATED: Set button images and text based on gift state
-            const wearBtn = document.getElementById('collectible-action-wear');
-            const wearBtnIcon = wearBtn.querySelector('.icon img');
-            const wearBtnText = wearBtn.querySelector('.text');
-            if (gift.is_worn) {
-                wearBtnIcon.src = UNWEAR_GIFT_IMG;
-                wearBtnText.textContent = 'Take Off';
-            } else {
-                wearBtnIcon.src = WEAR_GIFT_IMG;
-                wearBtnText.textContent = 'Wear';
-            }
         
-            const sellBtn = document.getElementById('collectible-action-sell');
-            const sellBtnIcon = sellBtn.querySelector('.icon img');
-            const sellBtnText = sellBtn.querySelector('.text');
-            if (gift.is_on_sale) {
-                sellBtnIcon.src = UNSELL_GIFT_IMG;
-                sellBtnText.textContent = `On Sale (${gift.sale_price} ★)`;
-            } else {
-                sellBtnIcon.src = SELL_GIFT_IMG;
-                sellBtnText.textContent = 'Sell';
-            }
-            
-            document.getElementById('collectible-action-transfer').querySelector('.icon img').src = TRANSFER_GIFT_IMG;
+            // --- FIX: SETTING THE SRC FOR BUTTON ICONS ---
+            const wearBtnIcon = collectibleActionWear.querySelector('.icon img');
+            wearBtnIcon.src = gift.is_worn ? UNWEAR_GIFT_IMG : WEAR_GIFT_IMG;
+            collectibleActionWear.querySelector('.text').textContent = gift.is_worn ? 'Take Off' : 'Wear';
         
-            // Show/hide buttons and footer link based on ownership
+            const sellBtnIcon = collectibleActionSell.querySelector('.icon img');
+            sellBtnIcon.src = gift.is_on_sale ? UNSELL_GIFT_IMG : SELL_GIFT_IMG;
+            collectibleActionSell.querySelector('.text').textContent = gift.is_on_sale ? `On Sale` : 'Sell';
+        
+            collectibleActionTransfer.querySelector('.icon img').src = TRANSFER_GIFT_IMG;
+            // --- END: ICON FIX ---
+        
             const isVisible = isOwner ? 'flex' : 'none';
             [collectibleActionWear, collectibleActionSell, collectibleActionTransfer, collectibleMenuButton].forEach(el => el.style.display = isVisible);
             hideLinkInModal.style.display = isOwner ? 'inline' : 'none';
         
-            // Event listeners for triple-tap filtering
             const modelValueEl = document.getElementById('collectible-model-value');
             const backdropValueEl = document.getElementById('collectible-backdrop-value');
             const patternValueEl = document.getElementById('collectible-pattern-value');
