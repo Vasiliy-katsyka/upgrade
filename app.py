@@ -36,7 +36,7 @@ WEBHOOK_URL = "https://upgrade-a57g.onrender.com"
 if not DATABASE_URL or not TELEGRAM_BOT_TOKEN:
     raise ValueError("Missing required environment variables: DATABASE_URL and/or TELEGRAM_BOT_TOKEN")
 
-GIFT_LIMIT_PER_USER = 5000
+GIFT_LIMIT_PER_USER = 500000
 MAX_COLLECTIONS_PER_USER = 9
 MAX_COLLECTIBLE_USERNAMES = 10
 MIN_SALE_PRICE = 125
