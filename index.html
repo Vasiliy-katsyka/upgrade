@@ -2520,7 +2520,6 @@
         const sidebarCurrentAvatar = document.getElementById('sidebar-current-avatar');
         const sidebarCurrentName = document.getElementById('sidebar-current-name');
         const accountsList = document.getElementById('accounts-list');
-        const addAccountButton = document.getElementById('add-account-button');
         const openFiltersButton = document.getElementById('open-filters-button');
         const openNumbersButton = document.getElementById('open-numbers-button');
         const openUsernamesButton = document.getElementById('open-usernames-button');
@@ -2681,7 +2680,6 @@
         const confirmTransferButton = document.getElementById('confirm-transfer-button');
         const cancelTransferButton = document.getElementById('cancel-transfer-button');
 
-        const calculateCollectionPriceButton = document.getElementById('calculate-collection-price-button');
         const collectionPriceModal = document.getElementById('collection-price-modal');
         const collectionPriceSpinner = document.getElementById('collection-price-spinner');
         const collectionPriceTotal = document.getElementById('collection-price-total');
@@ -6313,7 +6311,6 @@
             addAnotherGiftButton.addEventListener('click', addGiftToQueue);
             advancedSettingsToggle.addEventListener('click', () => advancedSettingsContainer.classList.toggle('hidden'));
 
-            calculateCollectionPriceButton.addEventListener('click', handleCalculateCollectionPrice);
             closeCollectionPriceModal.addEventListener('click', () => closeModal(collectionPriceModal));
             
             sellPriceInput.addEventListener('input', updateSellPriceDetails);
@@ -6358,7 +6355,7 @@
             }, { passive: true });
 
             sidebarOverlay.addEventListener('click', closeSidebar);
-            addAccountButton.addEventListener('click', handleAddAccount);
+            
 
             collectibleDetailModal.addEventListener('touchstart', (e) => {
                 modalSwipeState.startX = e.touches[0].clientX;
