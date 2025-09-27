@@ -583,6 +583,16 @@ def init_db():
                     UNIQUE(gift_instance_id, collection_id)
                 );
             """)
+            cur.execute("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='is_on_sale') THEN
+                        ALTER TABLE gifts ADD COLUMN is_on_sale BOOLEAN DEFAULT FALSE;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='sale_price') THEN
+                        ALTER TABLE gifts ADD COLUMN sale_price INT;
+                    END IF;
+                END $$;
+            """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_collections_owner_id ON collections (owner_id);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_gift_collections_collection_id ON gift_collections (collection_id);")
             cur.execute("""
@@ -2315,14 +2325,51 @@ def get_gift_by_details(gift_type_id, collectible_number):
     finally:
         if conn: put_db_connection(conn)
 
+async function handleSellAction() {
+    const giftInstanceId = collectibleDetailModal.dataset.instanceId;
+    const gift = ownedGifts.find(g => g.instance_id === giftInstanceId);
+    if (!gift) return;
+
+    if (gift.is_on_sale) {
+        // --- Logic to CANCEL the sale ---
+        const originalState = { is_on_sale: gift.is_on_sale, sale_price: gift.sale_price };
+        
+        // Optimistic UI update
+        gift.is_on_sale = false;
+        delete gift.sale_price;
+        closeModal(collectibleDetailModal);
+        renderProfileGifts();
+        tg.HapticFeedback.notificationOccurred('success');
+        tg.showAlert("Sale canceled. Your gift is visible again.");
+
+        // Backend call
+        try {
+            await callBackend(`/api/gifts/${gift.instance_id}`, 'PUT', {
+                action: 'sell',
+                value: false
+            });
+        } catch (error) {
+            // Revert on failure
+            gift.is_on_sale = originalState.is_on_sale;
+            gift.sale_price = originalState.sale_price;
+            renderProfileGifts();
+        }
+    } else {
+        // --- Logic to LIST for sale ---
+        openSellModal(gift);
+    }
+}
+
 @app.route('/api/gifts/<string:instance_id>', methods=['PUT'])
 def update_gift_state(instance_id):
     data = request.get_json()
-    action, value = data.get('action'), data.get('value')
-    if action not in ['pin', 'hide', 'wear'] or not isinstance(value, bool): 
+    action = data.get('action')
+    value = data.get('value')
+
+    # Add 'sell' to the list of valid actions
+    if action not in ['pin', 'hide', 'wear', 'sell'] or not isinstance(value, bool):
         return jsonify({"error": "Invalid action or value"}), 400
-    
-    column_to_update = {'pin': 'is_pinned', 'hide': 'is_hidden', 'wear': 'is_worn'}[action]
+
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     try:
@@ -2333,21 +2380,30 @@ def update_gift_state(instance_id):
                 if not owner_id_result: return jsonify({"error": "Gift not found for wear action."}), 404
                 cur.execute("UPDATE gifts SET is_worn = FALSE WHERE owner_id = %s AND is_worn = TRUE;", (owner_id_result[0],))
 
-            # Correct logic for unhiding (value=False)
-            if action == 'hide' and value is True:
-                update_query = "UPDATE gifts SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;"
-                cur.execute(update_query, (instance_id,))
-            elif action == 'pin' and value is False:
-                 update_query = "UPDATE gifts SET is_pinned = FALSE, pin_order = NULL WHERE instance_id = %s;"
-                 cur.execute(update_query, (instance_id,))
-            else:
-                update_query = f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;"
-                cur.execute(update_query, (value, instance_id))
+            # --- NEW: Handle 'sell' action ---
+            elif action == 'sell':
+                if value is True: # Listing for sale
+                    price = data.get('price')
+                    if price is None or not isinstance(price, int):
+                        return jsonify({"error": "Price is required when listing a gift for sale."}), 400
+                    cur.execute("UPDATE gifts SET is_on_sale = TRUE, sale_price = %s WHERE instance_id = %s;", (price, instance_id))
+                else: # Canceling a sale
+                    cur.execute("UPDATE gifts SET is_on_sale = FALSE, sale_price = NULL WHERE instance_id = %s;", (instance_id,))
+            # --- END NEW ---
 
-            if cur.rowcount == 0: 
+            else: # Handle pin and hide as before
+                column_to_update = {'pin': 'is_pinned', 'hide': 'is_hidden', 'wear': 'is_worn'}[action]
+                if action == 'hide' and value is True:
+                    cur.execute("UPDATE gifts SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;", (instance_id,))
+                elif action == 'pin' and value is False:
+                     cur.execute("UPDATE gifts SET is_pinned = FALSE, pin_order = NULL WHERE instance_id = %s;", (instance_id,))
+                else:
+                    cur.execute(f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;", (value, instance_id))
+
+            if cur.rowcount == 0:
                 conn.rollback()
                 return jsonify({"error": "Gift not found or state not changed."}), 404
-            
+
             conn.commit()
             return jsonify({"message": f"Gift {action} state updated"}), 200
     except Exception as e:
