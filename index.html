@@ -108,6 +108,26 @@
             flex-grow: 1;
             overflow-y: auto;
         }
+        .gift-card .bottom-price-label {
+            position: absolute;
+            bottom: 5px;
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%); /* Adjust for element's own width */
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 4;
+        }
+        .gift-card .bottom-price-label img {
+            width: 12px;
+            height: 12px;
+        }
         .accounts-list li {
             display: flex;
             align-items: center;
@@ -3699,7 +3719,7 @@
                     card.appendChild(saleLabel);
         
                     const priceLabel = document.createElement('div');
-                    priceLabel.className = 'bottom-left-price';
+                    priceLabel.className = 'bottom-price-label';
                     priceLabel.innerHTML = `<img src="${STAR_ICON_URL}" alt="Star"/> ${gift.sale_price.toLocaleString()}`;
                     card.appendChild(priceLabel);
                 } else {
