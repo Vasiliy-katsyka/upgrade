@@ -2325,41 +2325,6 @@ def get_gift_by_details(gift_type_id, collectible_number):
     finally:
         if conn: put_db_connection(conn)
 
-async function handleSellAction() {
-    const giftInstanceId = collectibleDetailModal.dataset.instanceId;
-    const gift = ownedGifts.find(g => g.instance_id === giftInstanceId);
-    if (!gift) return;
-
-    if (gift.is_on_sale) {
-        // --- Logic to CANCEL the sale ---
-        const originalState = { is_on_sale: gift.is_on_sale, sale_price: gift.sale_price };
-        
-        // Optimistic UI update
-        gift.is_on_sale = false;
-        delete gift.sale_price;
-        closeModal(collectibleDetailModal);
-        renderProfileGifts();
-        tg.HapticFeedback.notificationOccurred('success');
-        tg.showAlert("Sale canceled. Your gift is visible again.");
-
-        // Backend call
-        try {
-            await callBackend(`/api/gifts/${gift.instance_id}`, 'PUT', {
-                action: 'sell',
-                value: false
-            });
-        } catch (error) {
-            // Revert on failure
-            gift.is_on_sale = originalState.is_on_sale;
-            gift.sale_price = originalState.sale_price;
-            renderProfileGifts();
-        }
-    } else {
-        // --- Logic to LIST for sale ---
-        openSellModal(gift);
-    }
-}
-
 @app.route('/api/gifts/<string:instance_id>', methods=['PUT'])
 def update_gift_state(instance_id):
     data = request.get_json()
