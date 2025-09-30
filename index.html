@@ -2155,6 +2155,67 @@
                 </div>
             </div>
         </div>
+
+        <div id="stars-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Stars</h3></div>
+                <div class="modal-scrollable-content" style="text-align: center; padding-top: 20px;">
+                    <img src="https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png" alt="Star" style="width: 100px; height: 100px; margin-bottom: 20px;">
+                    <h2>Telegram Stars</h2>
+                    <p style="color: var(--tg-theme-hint-color); margin: 10px 0 30px;">Buy Stars to unlock gifts and services in the app.</p>
+                    
+                    <div id="stars-balance-display">
+                        <span style="font-size: 2em; font-weight: 600;">
+                            <img src="https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png" alt="Star" style="width: 28px; height: 28px; vertical-align: bottom; margin-right: 5px;">
+                            <span id="stars-balance-amount">0</span>
+                        </span>
+                        <p style="color: var(--tg-theme-hint-color);">your balance</p>
+                    </div>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="topup-stars-button" class="modal-button">⊕ Top Up</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="topup-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Top Up Stars</h3></div>
+                <div class="modal-scrollable-content" style="text-align: center;">
+                    <p id="topup-level-info" style="margin-bottom: 15px; color: var(--tg-theme-hint-color);"></p>
+                    <div class="price-input-container">
+                        <label>Enter amount to add</label>
+                        <div class="price-input-wrapper">
+                            <img src="https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/refs/heads/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png" alt="Star">
+                            <input type="number" id="topup-amount-input" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="confirm-topup-button" class="modal-button" disabled>Confirm Top Up</button>
+                    <button id="cancel-topup-button" class="modal-button secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="market-summary-page" class="page">
+            <div class="page-header"><h2>Market</h2></div>
+            <div id="market-summary-grid" class="gifts-grid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));">
+                <div class="spinner"></div>
+            </div>
+        </div>
+        
+        <div id="market-listings-page" class="page">
+            <div class="page-header">
+                <h2 id="market-listings-title">Gift Listings</h2>
+            </div>
+            <div class="profile-gifts-actions-wrapper" style="display: flex; padding: 10px; gap: 8px;">
+                <!-- Filters will go here -->
+            </div>
+            <div id="market-listings-grid" class="gifts-grid">
+                <div class="spinner"></div>
+            </div>
+        </div>
         
         <!-- Add this new modal for the loading screen -->
         <div id="loading-overlay" class="modal-overlay active" style="align-items: center; justify-content: center; background-color: var(--tg-theme-bg-color); z-index: 9999;">
@@ -2195,8 +2256,8 @@
         
         const GIFT_LIMIT_PER_USER = 500000;
         const MAX_COLLECTIBLE_USERNAMES = 10;
-        const MIN_SALE_PRICE = 125;
-        const MAX_SALE_PRICE = 100000;
+        const MIN_SALE_PRICE = 10;
+        const MAX_SALE_PRICE = 24000000;
         let profileNameTapCount = 0;
         let lastProfileNameTap = 0;
         let limitedGiftStock = {};
@@ -3437,6 +3498,59 @@
             sidebarOverlay.classList.remove('active');
         }
 
+        function openStarsPopup() {
+            closeSidebar();
+            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            if (currentAccount) {
+                document.getElementById('stars-balance-amount').textContent = parseFloat(currentAccount.stars_balance || 0).toLocaleString();
+            }
+            openModal(document.getElementById('stars-modal'));
+        }
+        
+        function openTopUpModal() {
+            const level = calculateUserLevel(ownedGifts.length).level;
+            // You would have the full table here
+            const maxBuy = [0, 10, 50, 100, 500, 1000, 5000, 10000, 15000, 20000, 30000, 40000, 50000][level] || 50000;
+            
+            document.getElementById('topup-level-info').textContent = `Your Level: ${level}. Maximum top up: ${maxBuy.toLocaleString()} Stars.`;
+            document.getElementById('topup-amount-input').value = '';
+            document.getElementById('confirm-topup-button').disabled = true;
+            
+            closeModal(document.getElementById('stars-modal'));
+            openModal(document.getElementById('topup-modal'));
+        }
+        
+        async function handleSimulateTopUp() {
+            const amountInput = document.getElementById('topup-amount-input');
+            const amount = parseInt(amountInput.value, 10);
+            if (isNaN(amount) || amount <= 0) {
+                tg.showAlert("Please enter a valid positive amount.");
+                return;
+            }
+            
+            const confirmBtn = document.getElementById('confirm-topup-button');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = "Processing...";
+        
+            try {
+                const response = await callBackend('/api/stars/topup', 'POST', {
+                    user_id: currentAccountTgId,
+                    amount: amount
+                });
+                const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+                if (currentAccount) {
+                    currentAccount.stars_balance = response.new_balance;
+                }
+                tg.HapticFeedback.notificationOccurred('success');
+                closeModal(document.getElementById('topup-modal'));
+            } catch (error) {
+                // Error is handled by callBackend
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = "Confirm Top Up";
+            }
+        }
+        
         function applyWornGiftStyles() {
             const wornGift = ownedGifts.find(g => g.is_worn === true);
         
@@ -3852,7 +3966,7 @@
                 }
                 
                 profileTopPinnedGifts.appendChild(container);
-            });
+           });
         }
         // --- END: Function replacement ---
         
@@ -3889,28 +4003,32 @@
         
             if (gift.is_on_sale) {
                 // --- Logic to CANCEL the sale ---
-                const originalState = { is_on_sale: gift.is_on_sale, sale_price: gift.sale_price };
+                tg.showConfirm("Are you sure you want to remove this gift from the market?", async (confirmed) => {
+                    if (confirmed) {
+                        const originalState = { is_on_sale: gift.is_on_sale, sale_price: gift.sale_price };
+                        
+                        // Optimistic UI update
+                        gift.is_on_sale = false;
+                        delete gift.sale_price;
+                        closeModal(collectibleDetailModal);
+                        renderProfileGifts();
+                        tg.HapticFeedback.notificationOccurred('success');
                 
-                // Optimistic UI update
-                gift.is_on_sale = false;
-                delete gift.sale_price;
-                closeModal(collectibleDetailModal);
-                renderProfileGifts();
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert("Sale canceled. Your gift is visible again.");
-        
-                // Backend call
-                try {
-                    await callBackend(`/api/gifts/${gift.instance_id}`, 'PUT', {
-                        action: 'sell',
-                        value: false
-                    });
-                } catch (error) {
-                    // Revert on failure
-                    gift.is_on_sale = originalState.is_on_sale;
-                    gift.sale_price = originalState.sale_price;
-                    renderProfileGifts();
-                }
+                        // Backend call
+                        try {
+                            await callBackend(`/api/gifts/${gift.instance_id}`, 'PUT', {
+                                action: 'sell',
+                                value: false
+                            });
+                        } catch (error) {
+                            // Revert on failure
+                            gift.is_on_sale = originalState.is_on_sale;
+                            gift.sale_price = originalState.sale_price;
+                            renderProfileGifts();
+                            // Error alert is handled by callBackend
+                        }
+                    }
+                });
             } else {
                 // --- Logic to LIST for sale ---
                 openSellModal(gift);
@@ -6325,7 +6443,24 @@
                 content.classList.toggle('hidden');
                 e.target.textContent = content.classList.contains('hidden') ? 'Show Formatting Help ▼' : 'Hide Formatting Help ▲';
             });
-
+            const sidebarFooter = document.querySelector('.sidebar-footer');
+            const marketButton = document.createElement('button');
+            marketButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,18H6V14H12M21,14V12L20,7H4L3,12V14H4V20H14V14H18V20H20V14M20,4H4V6H20Z" /></svg>Market`;
+            marketButton.addEventListener('click', openMarket);
+            sidebarFooter.prepend(marketButton); // Add at the top of the footer
+        
+            const starsButton = document.createElement('button');
+            starsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" /></svg>Stars`;
+            starsButton.addEventListener('click', openStarsPopup);
+            sidebarFooter.prepend(starsButton);
+            
+            // Listeners for new modals
+            document.getElementById('topup-stars-button').addEventListener('click', openTopUpModal);
+            document.getElementById('cancel-topup-button').addEventListener('click', () => closeModal(document.getElementById('topup-modal')));
+            document.getElementById('confirm-topup-button').addEventListener('click', handleSimulateTopUp);
+            document.getElementById('topup-amount-input').addEventListener('input', (e) => {
+                document.getElementById('confirm-topup-button').disabled = !e.target.value || parseInt(e.target.value) <= 0;
+            });
 
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', () => {
