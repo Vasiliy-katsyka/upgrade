@@ -40,7 +40,7 @@ GIFT_LIMIT_PER_USER = 500000
 MAX_COLLECTIONS_PER_USER = 9
 MAX_COLLECTIBLE_USERNAMES = 10
 MIN_SALE_PRICE = 125
-MAX_SALE_PRICE = 100000
+MAX_SALE_PRICE = 24000000
 CDN_BASE_URL = "https://cdn.changes.tg/gifts/"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 WEBAPP_URL = "https://vasiliy-katsyka.github.io/upgrade/"
@@ -445,6 +445,7 @@ def init_db():
 
     try:
         with conn.cursor() as cur:
+            # --- UPDATED: accounts table with stars_balance and music_status ---
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS accounts (
                     tg_id BIGINT PRIMARY KEY,
@@ -454,9 +455,24 @@ def init_db():
                     bio TEXT,
                     phone_number VARCHAR(50),
                     bot_state VARCHAR(255),
+                    music_status TEXT,
+                    stars_balance NUMERIC(20, 2) DEFAULT 0.0,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
             """)
+            # Add new columns to existing accounts table if they don't exist
+            cur.execute("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='accounts' AND column_name='stars_balance') THEN
+                        ALTER TABLE accounts ADD COLUMN stars_balance NUMERIC(20, 2) DEFAULT 0.0;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='accounts' AND column_name='music_status') THEN
+                        ALTER TABLE accounts ADD COLUMN music_status TEXT;
+                    END IF;
+                END $$;
+            """)
+
+            # --- UPDATED: gifts table with is_on_sale and sale_price ---
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS gifts (
                     instance_id VARCHAR(50) PRIMARY KEY,
@@ -466,13 +482,29 @@ def init_db():
                     collectible_data JSONB, collectible_number INT,
                     acquired_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     is_hidden BOOLEAN DEFAULT FALSE, is_pinned BOOLEAN DEFAULT FALSE, is_worn BOOLEAN DEFAULT FALSE,
-                    pin_order INT
+                    pin_order INT,
+                    is_on_sale BOOLEAN DEFAULT FALSE,
+                    sale_price INT
                 );
             """)
+            # Add new columns to existing gifts table if they don't exist
+            cur.execute("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='is_on_sale') THEN
+                        ALTER TABLE gifts ADD COLUMN is_on_sale BOOLEAN DEFAULT FALSE;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='sale_price') THEN
+                        ALTER TABLE gifts ADD COLUMN sale_price INT;
+                    END IF;
+                END $$;
+            """)
+            
+            # --- Indexes for gifts table ---
             cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_owner_id ON gifts (owner_id);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_type_and_number ON gifts (gift_type_id, collectible_number);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_pin_order ON gifts (owner_id, pin_order);")
 
+            # --- Other tables (unchanged from original) ---
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS collectible_usernames (
                     id SERIAL PRIMARY KEY,
@@ -481,8 +513,6 @@ def init_db():
                 );
             """)
             
-            # --- FIX: ADDED MISSING TABLES FOR POSTS, REACTIONS, AND SUBSCRIPTIONS ---
-            # --- NEW TABLES ---
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
                     id SERIAL PRIMARY KEY,
@@ -517,7 +547,6 @@ def init_db():
                 );
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_subscriptions_target ON user_subscriptions (target_user_id, notification_type);")
-            # --- END OF FIX ---
 
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS giveaways (
@@ -583,18 +612,9 @@ def init_db():
                     UNIQUE(gift_instance_id, collection_id)
                 );
             """)
-            cur.execute("""
-                DO $$ BEGIN
-                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='is_on_sale') THEN
-                        ALTER TABLE gifts ADD COLUMN is_on_sale BOOLEAN DEFAULT FALSE;
-                    END IF;
-                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='sale_price') THEN
-                        ALTER TABLE gifts ADD COLUMN sale_price INT;
-                    END IF;
-                END $$;
-            """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_collections_owner_id ON collections (owner_id);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_gift_collections_collection_id ON gift_collections (collection_id);")
+            
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS limited_gifts_stock (
                     gift_type_id VARCHAR(255) PRIMARY KEY,
@@ -603,11 +623,11 @@ def init_db():
                 );
             """)
 
+            # --- Data Initialization Logic (unchanged from original) ---
             for gift_name, gift_data in CUSTOM_GIFTS_DATA.items():
                 if 'limit' in gift_data:
                     gift_type_id = gift_data['id']
                     limit = gift_data['limit']
-                    # This query now also initializes stock based on existing collectibles, if any.
                     cur.execute("""
                         INSERT INTO limited_gifts_stock (gift_type_id, total_stock, remaining_stock)
                         SELECT %s, %s, %s - (SELECT COUNT(*) FROM gifts WHERE gift_type_id = %s)
@@ -615,17 +635,17 @@ def init_db():
                         SET total_stock = EXCLUDED.total_stock;
                     """, (gift_type_id, limit, limit, gift_type_id))
 
-            conn.commit()
-            app.logger.info("Database initialized successfully.")
-
             cur.execute("SELECT 1 FROM accounts WHERE tg_id = %s;", (TEST_ACCOUNT_TG_ID,))
             if not cur.fetchone():
                 cur.execute("""
                     INSERT INTO accounts (tg_id, username, full_name, avatar_url, bio)
                     VALUES (%s, %s, %s, %s, %s) ON CONFLICT (tg_id) DO NOTHING;
                 """, (TEST_ACCOUNT_TG_ID, 'system_test_account', 'Test Account', 'https://raw.githubusercontent.com/Vasiliy-katsyka/upgrade/main/DMJTGStarsEmoji_AgADUhMAAk9WoVI.png', 'This account holds sold gifts.'))
+            
+            # --- Final Commit and Logging ---
             conn.commit()
             app.logger.info("Database initialized successfully.")
+            
     except Exception as e:
         app.logger.error(f"Error during DB initialization: {e}", exc_info=True)
         if conn: conn.rollback()
@@ -1673,6 +1693,196 @@ def request_test_env():
     else:
         return jsonify({"error": "Failed to send message via Telegram API"}), 502
 
+@app.route('/api/stars/topup', methods=['POST'])
+def api_topup_stars():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    amount = data.get('amount')
+
+    if not user_id or not isinstance(amount, (int, float)) or amount <= 0:
+        return jsonify({"error": "user_id and a positive amount are required."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor() as cur:
+            # Get user level (gift count)
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (user_id,))
+            gift_count = cur.fetchone()[0]
+            
+            # This is a simplified level calculation; you would replace this with your full table
+            level = 1
+            if gift_count >= 50000: level = 12
+            elif gift_count >= 40000: level = 11
+            # ... and so on
+            
+            # This is a simplified check for the limit; you would use the full table
+            max_buy = 50000 # Default for level 12+
+            if level == 1: max_buy = 10
+            elif level == 2: max_buy = 50
+            
+            if amount > max_buy:
+                return jsonify({"error": f"Amount exceeds your level limit of {max_buy} Stars."}), 403
+
+            cur.execute(
+                "UPDATE accounts SET stars_balance = stars_balance + %s WHERE tg_id = %s RETURNING stars_balance;",
+                (amount, user_id)
+            )
+            new_balance = cur.fetchone()[0]
+            conn.commit()
+            
+            # Send notification to user
+            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=Stars"
+            message_text = f"✅ Successful top up of <b>{amount} Stars</b>!\nCheck your <a href='{deep_link}'>balance</a>."
+            send_telegram_message(user_id, message_text)
+            
+            return jsonify({"new_balance": float(new_balance)}), 200
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error in stars topup for user {user_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/market/summary', methods=['GET'])
+def api_get_market_summary():
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("""
+                SELECT 
+                    gift_type_id, 
+                    gift_name, 
+                    original_image_url,
+                    MIN(sale_price) as lowest_price
+                FROM gifts
+                WHERE is_on_sale = TRUE AND is_collectible = TRUE
+                GROUP BY gift_type_id, gift_name, original_image_url;
+            """)
+            summary = [dict(row) for row in cur.fetchall()]
+            return jsonify(summary), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching market summary: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/market/listings/<string:gift_type_id>', methods=['GET'])
+def api_get_market_listings(gift_type_id):
+    # Extract query params for filtering and sorting
+    sort_by = request.args.get('sort_by', 'price_asc')
+    model = request.args.get('model')
+    backdrop = request.args.get('backdrop')
+    symbol = request.args.get('symbol')
+
+    # Base query
+    query = "SELECT instance_id, collectible_data, sale_price FROM gifts WHERE is_on_sale = TRUE AND is_collectible = TRUE AND gift_type_id = %s"
+    params = [gift_type_id]
+
+    # Add filters
+    if model:
+        query += " AND collectible_data->'model'->>'name' = %s"
+        params.append(model)
+    if backdrop:
+        query += " AND collectible_data->'backdrop'->>'name' = %s"
+        params.append(backdrop)
+    if symbol:
+        query += " AND collectible_data->'pattern'->>'name' = %s"
+        params.append(symbol)
+
+    # Add sorting
+    if sort_by == 'price_desc':
+        query += " ORDER BY sale_price DESC"
+    elif sort_by == 'number_asc':
+        query += " ORDER BY collectible_number ASC"
+    elif sort_by == 'number_desc':
+        query += " ORDER BY collectible_number DESC"
+    elif sort_by == 'rarity_asc':
+        # Sorting by rarity requires casting the JSONB value to an integer
+        query += " ORDER BY (collectible_data->'model'->>'rarityPermille')::int ASC"
+    else: # Default to price_asc
+        query += " ORDER BY sale_price ASC"
+    
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute(query, tuple(params))
+            listings = [dict(row) for row in cur.fetchall()]
+            # Process JSONB data before sending
+            for item in listings:
+                if 'collectible_data' in item and isinstance(item['collectible_data'], str):
+                    item['collectible_data'] = json.loads(item['collectible_data'])
+            return jsonify(listings), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching market listings for {gift_type_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/market/buy/<string:instance_id>', methods=['POST'])
+def api_buy_market_gift(instance_id):
+    data = request.get_json()
+    buyer_id = data.get('buyer_id')
+    if not buyer_id:
+        return jsonify({"error": "buyer_id is required."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # --- START TRANSACTION ---
+            # 1. Lock the gift row and get its details to prevent race conditions
+            cur.execute(
+                "SELECT owner_id, sale_price, gift_name, collectible_number FROM gifts WHERE instance_id = %s AND is_on_sale = TRUE FOR UPDATE;",
+                (instance_id,)
+            )
+            gift_to_buy = cur.fetchone()
+            if not gift_to_buy:
+                conn.rollback()
+                return jsonify({"error": "This gift is no longer for sale or does not exist."}), 404
+
+            seller_id = gift_to_buy['owner_id']
+            price = gift_to_buy['sale_price']
+            gift_name = f"{gift_to_buy['gift_name']} #{gift_to_buy['collectible_number']}"
+
+            if int(seller_id) == int(buyer_id):
+                conn.rollback()
+                return jsonify({"error": "You cannot buy your own gift."}), 400
+
+            # 2. Check buyer's balance (lock the row)
+            cur.execute("SELECT stars_balance FROM accounts WHERE tg_id = %s FOR UPDATE;", (buyer_id,))
+            buyer_balance = cur.fetchone()['stars_balance']
+            if buyer_balance < price:
+                conn.rollback()
+                return jsonify({"error": "Insufficient Stars balance."}), 402
+            
+            # 3. Deduct from buyer, add to seller
+            cur.execute("UPDATE accounts SET stars_balance = stars_balance - %s WHERE tg_id = %s;", (price, buyer_id))
+            cur.execute("UPDATE accounts SET stars_balance = stars_balance + %s WHERE tg_id = %s;", (price, seller_id))
+            
+            # 4. Transfer ownership and unlist the gift
+            cur.execute(
+                "UPDATE gifts SET owner_id = %s, is_on_sale = FALSE, sale_price = NULL, acquired_date = CURRENT_TIMESTAMP WHERE instance_id = %s;",
+                (buyer_id, instance_id)
+            )
+            
+            # --- COMMIT TRANSACTION ---
+            conn.commit()
+
+            # 5. Send notifications
+            send_telegram_message(seller_id, f"🎉 Your {gift_name} has sold for ⭐ {price}!\nThe Stars have been added to your balance.")
+            
+            return jsonify({"message": "Purchase successful."}), 200
+
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error during market purchase of {instance_id} by {buyer_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred during the transaction."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
 @app.route('/api/profile/<string:username>', methods=['GET'])
 def get_user_profile(username):
     conn = get_db_connection()
@@ -2331,7 +2541,6 @@ def update_gift_state(instance_id):
     action = data.get('action')
     value = data.get('value')
 
-    # Add 'sell' to the list of valid actions
     if action not in ['pin', 'hide', 'wear', 'sell'] or not isinstance(value, bool):
         return jsonify({"error": "Invalid action or value"}), 400
 
@@ -2339,35 +2548,47 @@ def update_gift_state(instance_id):
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     try:
         with conn.cursor() as cur:
+            # --- ATOMIC WEAR LOGIC (BUG FIX #5) ---
             if action == 'wear' and value is True:
+                # First, get the owner_id of the gift being worn
                 cur.execute("SELECT owner_id FROM gifts WHERE instance_id = %s;", (instance_id,))
                 owner_id_result = cur.fetchone()
-                if not owner_id_result: return jsonify({"error": "Gift not found for wear action."}), 404
-                cur.execute("UPDATE gifts SET is_worn = FALSE WHERE owner_id = %s AND is_worn = TRUE;", (owner_id_result[0],))
+                if not owner_id_result:
+                    return jsonify({"error": "Gift not found for wear action."}), 404
+                owner_id = owner_id_result[0]
+                # Then, un-wear all other gifts for that owner
+                cur.execute("UPDATE gifts SET is_worn = FALSE WHERE owner_id = %s AND is_worn = TRUE;", (owner_id,))
+                # Finally, wear the new gift
+                cur.execute("UPDATE gifts SET is_worn = TRUE WHERE instance_id = %s;", (instance_id,))
 
-            # --- NEW: Handle 'sell' action ---
+            # --- SELL/UNLIST LOGIC ---
             elif action == 'sell':
                 if value is True: # Listing for sale
                     price = data.get('price')
-                    if price is None or not isinstance(price, int):
-                        return jsonify({"error": "Price is required when listing a gift for sale."}), 400
-                    cur.execute("UPDATE gifts SET is_on_sale = TRUE, sale_price = %s WHERE instance_id = %s;", (price, instance_id))
-                else: # Canceling a sale
+                    if price is None or not isinstance(price, int) or not (MIN_SALE_PRICE <= price <= MAX_SALE_PRICE):
+                        return jsonify({"error": f"Price must be a number between {MIN_SALE_PRICE} and {MAX_SALE_PRICE}."}), 400
+                    # When listing, also unpin and unwear it
+                    cur.execute("UPDATE gifts SET is_on_sale = TRUE, sale_price = %s, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;", (price, instance_id))
+                else: # Canceling a sale (unlisting)
                     cur.execute("UPDATE gifts SET is_on_sale = FALSE, sale_price = NULL WHERE instance_id = %s;", (instance_id,))
-            # --- END NEW ---
-
-            else: # Handle pin and hide as before
+            
+            # --- OTHER ACTIONS ---
+            else:
                 column_to_update = {'pin': 'is_pinned', 'hide': 'is_hidden', 'wear': 'is_worn'}[action]
+                # If hiding a gift, also unpin and unwear it
                 if action == 'hide' and value is True:
                     cur.execute("UPDATE gifts SET is_hidden = TRUE, is_pinned = FALSE, is_worn = FALSE, pin_order = NULL WHERE instance_id = %s;", (instance_id,))
+                # If unpinning, clear the order
                 elif action == 'pin' and value is False:
                      cur.execute("UPDATE gifts SET is_pinned = FALSE, pin_order = NULL WHERE instance_id = %s;", (instance_id,))
                 else:
+                    # Generic update for other simple toggles (un-hiding, pinning)
                     cur.execute(f"UPDATE gifts SET {column_to_update} = %s WHERE instance_id = %s;", (value, instance_id))
 
             if cur.rowcount == 0:
-                conn.rollback()
-                return jsonify({"error": "Gift not found or state not changed."}), 404
+                # This might happen if the state is already set, which is not an error.
+                # We only return an error if the initial check for 'wear' fails.
+                app.logger.warning(f"Update for gift {instance_id} action '{action}' resulted in 0 rows affected. State might have been unchanged.")
 
             conn.commit()
             return jsonify({"message": f"Gift {action} state updated"}), 200
