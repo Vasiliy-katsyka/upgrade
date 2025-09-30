@@ -1581,6 +1581,39 @@
             width: 12px;
             height: 12px;
         }
+
+        .gift-card .bottom-price-label, .buy-gift-item .bottom-price-label {
+            position: absolute;
+            bottom: 5px;
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%); /* Adjust for element's own width */
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 4;
+        }
+        .gift-card .bottom-price-label img, .buy-gift-item .bottom-price-label img {
+            width: 12px;
+            height: 12px;
+        }
+
+        .buy-gift-item .top-right-label.on-sale {
+            background: #4caf50;
+            color: white;
+            box-shadow: none;
+            border: none;
+            padding: 2px 35px;
+            font-weight: 600;
+            top: 12px;
+            right: -34px;
+            transform: rotate(45deg);
+        }
     </style>
 </head>
 <body>
@@ -1626,6 +1659,11 @@
                                 <div id="profile-status-line">
                                     <span id="profile-level-bubble">0</span>
                                     <span id="profile-status" class="online">online</span>
+                                </div>
+                                <!-- NEW MUSIC STATUS ELEMENT -->
+                                <div id="profile-music-status" class="hidden" style="margin-top: 12px; color: var(--tg-theme-hint-color); display: flex; align-items: center; font-size: 0.9em;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; margin-right: 8px;"><title>music</title><path d="M12,3V12.26C11.5,12.09 11,12 10.5,12C8,12 6,14 6,16.5C6,19 8,21 10.5,21C13,21 15,19 15,16.5V6H19V3H12Z" /></svg>
+                                    <span id="profile-music-text"></span>
                                 </div>
                             </div>
                         </div>
@@ -1945,6 +1983,30 @@
             </div>
         </div>
 
+        <div id="edit-profile-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Edit Profile</h3></div>
+                <div class="modal-scrollable-content">
+                    <div class="info-block">
+                        <label class="info-label" for="edit-profile-name">Name</label>
+                        <input type="text" id="edit-profile-name" class="price-input-wrapper" style="width: 100%; padding: 12px; border: none; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); border-radius: 8px;">
+                    </div>
+                    <div class="info-block">
+                        <label class="info-label" for="edit-profile-bio">Bio</label>
+                        <textarea id="edit-profile-bio" rows="3" style="width: 100%; padding: 12px; border: none; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); border-radius: 8px; resize: vertical;"></textarea>
+                    </div>
+                    <div class="info-block">
+                        <label class="info-label" for="edit-profile-music">Music Status</label>
+                        <input type="text" id="edit-profile-music" class="price-input-wrapper" placeholder="Artist - Song Title" style="width: 100%; padding: 12px; border: none; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); border-radius: 8px;">
+                    </div>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="save-profile-button" class="modal-button">Save</button>
+                    <button id="cancel-edit-profile-button" class="modal-button secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
         <div id="sell-gift-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header-bar">
@@ -3389,7 +3451,16 @@
                     collectibleUsernamesContainer.appendChild(unameSpan);
                 });
             }
-        
+
+            const musicStatusContainer = document.getElementById('profile-music-status');
+            const musicText = document.getElementById('profile-music-text');
+            if (account.music_status) {
+                musicText.textContent = account.music_status;
+                musicStatusContainer.classList.remove('hidden');
+            } else {
+                musicStatusContainer.classList.add('hidden');
+            }
+            
             sidebarCurrentAvatar.src = account.avatar_url;
             sidebarCurrentName.textContent = account.full_name;
         }
@@ -3592,10 +3663,20 @@
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
-            if(pageId === 'buy-gifts-page') {
+            
+            // Clear selection/reorder modes when changing pages
+            if (selectionModeActive) exitSelectionMode();
+            if (reorderModeActive) exitReorderMode();
+        
+            if (pageId === 'buy-gifts-page') {
                 renderAvailableGifts();
                 manageBackButton(true, () => showPage('profile-page'));
+            } else if (pageId === 'market-summary-page') {
+                manageBackButton(true, () => showPage('profile-page'));
+            } else if (pageId === 'market-listings-page') {
+                manageBackButton(true, () => showPage('market-summary-page'));
             } else {
+                // Default back button behavior (hides it)
                 manageBackButton(false);
             }
         }
@@ -4125,6 +4206,239 @@
             tg.showAlert(`Added ${quantity} "${name}" gift(s)!`);
         }
 
+        async function openMarket() {
+            closeSidebar();
+            showPage('market-summary-page');
+            const grid = document.getElementById('market-summary-grid');
+            grid.innerHTML = '<div class="spinner"></div>';
+        
+            try {
+                const summaryData = await callBackend('/api/market/summary');
+                grid.innerHTML = '';
+                if (summaryData.length === 0) {
+                    grid.innerHTML = '<p class="empty-grid-message">The market is empty right now.</p>';
+                    return;
+                }
+        
+                summaryData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'buy-gift-item';
+                    card.style.overflow = 'hidden'; // Ensure rotated label is clipped
+                    card.innerHTML = `
+                        <div class="top-right-label on-sale">resale</div>
+                        <div class="image-container">
+                            <img class="static-image-fallback" src="${item.original_image_url}" alt="${item.gift_name}" loading="lazy">
+                        </div>
+                        <div class="gift-name">${item.gift_name}</div>
+                        <div class="bottom-price-label">
+                            <img src="${STAR_ICON_URL}" alt="Star"/> ${item.lowest_price.toLocaleString()}+
+                        </div>
+                    `;
+                    card.addEventListener('click', () => openMarketListings(item.gift_type_id, item.gift_name));
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                grid.innerHTML = '<p class="empty-grid-message">Could not load the market. Please try again later.</p>';
+            }
+        }
+        
+        async function openMarketListings(giftTypeId, giftName) {
+            showPage('market-listings-page');
+            document.getElementById('market-listings-title').textContent = giftName;
+            const grid = document.getElementById('market-listings-grid');
+            grid.innerHTML = '<div class="spinner"></div>';
+        
+            try {
+                // For now, we fetch with default sorting. Filter implementation will come next.
+                const listings = await callBackend(`/api/market/listings/${giftTypeId}`);
+                grid.innerHTML = '';
+        
+                if (listings.length === 0) {
+                    grid.innerHTML = '<p class="empty-grid-message">No listings found for this gift.</p>';
+                    return;
+                }
+        
+                listings.forEach(listing => {
+                    // We can reuse the createGiftCardDOM function with a small modification for market context
+                    const card = createGiftCardDOM({
+                        ...listing,
+                        is_on_sale: true, // Force display of sale info
+                        sale_price: listing.sale_price,
+                        is_collectible: true // All market items are collectible
+                    });
+                    // Override the default click action to open the buy modal
+                    card.onclick = () => openBuyConfirmationModal(listing.instance_id, giftName);
+                    grid.appendChild(card);
+                });
+        
+            } catch (error) {
+                grid.innerHTML = '<p class="empty-grid-message">Could not load listings. Please try again later.</p>';
+            }
+        }
+        
+        async function openBuyConfirmationModal(instanceId, giftName) {
+            // This function re-uses the collectible detail modal but changes its behavior
+            try {
+                // Fetch full gift details to show in the modal
+                const giftData = await callBackend(`/api/gift/${giftName.replace(/\s/g, '')}/${instanceId.split('-').pop()}`);
+        
+                // Temporarily change the modal's footer button
+                const closeButton = document.getElementById('close-collectible-detail-modal');
+                const originalText = closeButton.textContent;
+                const originalOnClick = closeButton.onclick;
+        
+                closeButton.textContent = `Buy for ⭐ ${giftData.sale_price.toLocaleString()}`;
+                closeButton.onclick = () => handleMarketPurchase(giftData, originalText, originalOnClick);
+                
+                // Show the modal
+                openModal(collectibleDetailModal, giftData);
+        
+            } catch (error) {
+                tg.showAlert("Could not fetch gift details to purchase.");
+            }
+        }
+        
+        async function handleMarketPurchase(giftData, originalButtonText, originalOnClick) {
+            const closeButton = document.getElementById('close-collectible-detail-modal');
+            tg.showConfirm(`Confirm purchase of ${giftData.gift_name} #${giftData.collectible_number} for ⭐ ${giftData.sale_price.toLocaleString()}?`, async (confirmed) => {
+                if (confirmed) {
+                    closeButton.disabled = true;
+                    closeButton.textContent = 'Purchasing...';
+                    try {
+                        await callBackend(`/api/market/buy/${giftData.instance_id}`, 'POST', {
+                            buyer_id: currentAccountTgId
+                        });
+                        
+                        tg.HapticFeedback.notificationOccurred('success');
+                        tg.showAlert("Purchase successful! The gift has been added to your inventory.");
+                        
+                        // Reset the button and close the modal
+                        closeButton.disabled = false;
+                        closeButton.textContent = originalButtonText;
+                        closeButton.onclick = originalOnClick;
+                        closeModal(collectibleDetailModal);
+                        
+                        // Refresh user data and go back to their profile
+                        await initializeTelegramUserAccount();
+                        showPage('profile-page');
+                        switchTab('gifts');
+        
+                    } catch (error) {
+                        // Error is handled by callBackend
+                        closeButton.disabled = false;
+                        closeButton.textContent = `Buy for ⭐ ${giftData.sale_price.toLocaleString()}`;
+                    }
+                }
+            });
+        }
+        
+        // In createGiftCardDOM, add a check for is_on_sale to display the price label
+        function createGiftCardDOM(gift) {
+            const card = document.createElement('div');
+            card.className = 'gift-card';
+            card.dataset.instanceId = gift.instance_id;
+            card.dataset.pinned = gift.is_pinned;
+        
+            if (gift.is_hidden) card.classList.add('is-hidden');
+        
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'image-container';
+            const lottieContainer = document.createElement('div');
+            lottieContainer.className = 'lottie-animation-container';
+            lottieContainer.style.display = 'none';
+            const staticImage = document.createElement('img');
+            staticImage.className = 'static-image-fallback';
+            staticImage.loading = 'lazy';
+            let lottiePathForCard = null;
+        
+            if (gift.is_collectible && gift.collectible_data) {
+                const cd = gift.collectible_data;
+                staticImage.src = cd.modelImage || gift.original_image_url;
+                staticImage.alt = cd.model?.name || gift.gift_name;
+                lottiePathForCard = cd.lottieModelPath;
+                
+                // --- UPDATED LOGIC to show price or number ---
+                if (gift.is_on_sale) {
+                    const saleLabel = document.createElement('div');
+                    saleLabel.className = 'top-right-label on-sale';
+                    saleLabel.textContent = 'resale';
+                    card.appendChild(saleLabel);
+        
+                    const priceLabel = document.createElement('div');
+                    priceLabel.className = 'bottom-price-label';
+                    priceLabel.innerHTML = `<img src="${STAR_ICON_URL}" alt="Star"/> ${gift.sale_price.toLocaleString()}`;
+                    card.appendChild(priceLabel);
+                } else {
+                     const labelDiv = document.createElement('div');
+                     labelDiv.className = 'top-right-label';
+                     if (cd.supply) {
+                         const supplyNum = cd.supply;
+                         labelDiv.textContent = `1 of ${supplyNum > 1000 ? `${(supplyNum / 1000).toFixed(1)}K` : supplyNum.toLocaleString()}`;
+                     } else if (gift.collectible_number) {
+                         labelDiv.textContent = `#${gift.collectible_number.toLocaleString()}`;
+                     } else {
+                         labelDiv.textContent = 'Limitless';
+                     }
+                     card.appendChild(labelDiv);
+                }
+        
+                const bgDiv = document.createElement('div');
+                bgDiv.className = 'gift-card-bg-pattern';
+                if (cd.backdropColors) {
+                    bgDiv.style.background = `radial-gradient(circle, ${cd.backdropColors.centerColor}, ${cd.backdropColors.edgeColor})`;
+                } else {
+                    bgDiv.style.background = 'linear-gradient(45deg, #2a3745, #17212b)';
+                }
+                card.appendChild(bgDiv);
+        
+                if (cd.patternImage) {
+                    const patternContainer = document.createElement('div');
+                    patternContainer.className = 'dynamic-pattern-container';
+                    card.appendChild(patternContainer);
+                    const patternConfig = [
+                        { count: 8, radius: 38, size: 12 }, 
+                        { count: 8, radius: 62, size: 10, rotationOffset: 22.5 }
+                    ];
+                    setTimeout(() => generateCircularPattern(patternContainer, cd.patternImage, patternConfig), 0);
+                }
+        
+            } else {
+                staticImage.src = gift.original_image_url;
+                staticImage.alt = gift.gift_name;
+                lottiePathForCard = gift.lottie_path;
+            }
+        
+            if (lottiePathForCard) card.dataset.lottiePath = lottiePathForCard;
+            staticImage.onerror = () => { staticImage.style.display='none'; lottieContainer.innerHTML = '🖼️'; };
+            
+            imageContainer.appendChild(lottieContainer);
+            imageContainer.appendChild(staticImage);
+            card.appendChild(imageContainer);
+            
+            if (gift.is_pinned && !selectionModeActive && !gift.is_on_sale) { // Hide pin when on sale
+                const pinDiv = document.createElement('div');
+                pinDiv.className = 'pin-indicator';
+                pinDiv.innerHTML = PIN_ICON_SVG;
+                card.appendChild(pinDiv);
+            }
+        
+            if (selectionModeActive) {
+                const checkbox = document.createElement('div');
+                checkbox.className = 'selection-checkbox';
+                card.appendChild(checkbox);
+                if (selectedGiftIds.has(gift.instance_id)) card.classList.add('selected');
+                card.onclick = () => toggleGiftSelection(gift.instance_id);
+            } else if (reorderModeActive) {
+                card.style.cursor = gift.is_pinned ? 'grab' : 'default';
+            } else {
+                card.onclick = () => openGiftDetailByInstanceId(gift.instance_id);
+                if (viewingOwnProfile) setupLongPress(card, gift);
+            }
+        
+            return card;
+        }
+
+        
         async function handleConfirmBuyMultiple() {
             if (!currentGiftToBuyMultiple) return;
             const quantity = parseInt(buyMultipleQuantityInput.value, 10);
@@ -4215,7 +4529,50 @@
                 upgradeGiftDetailModalButton.disabled = false;
             }
         }
-
+    
+        function openEditProfileModal() {
+            const account = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            if (!account) return;
+        
+            document.getElementById('edit-profile-name').value = account.full_name || '';
+            document.getElementById('edit-profile-bio').value = account.bio || '';
+            document.getElementById('edit-profile-music').value = account.music_status || '';
+            
+            openModal(document.getElementById('edit-profile-modal'));
+        }
+        
+        async function handleSaveProfile() {
+            const name = document.getElementById('edit-profile-name').value.trim();
+            const bio = document.getElementById('edit-profile-bio').value.trim();
+            const music = document.getElementById('edit-profile-music').value.trim();
+        
+            if (!name) {
+                tg.showAlert("Name cannot be empty.");
+                return;
+            }
+        
+            const saveBtn = document.getElementById('save-profile-button');
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Saving...";
+        
+            try {
+                await callBackend('/api/account', 'PUT', {
+                    tg_id: currentAccountTgId,
+                    full_name: name,
+                    bio: bio,
+                    music_status: music
+                });
+                await initializeTelegramUserAccount(); // Reload all data
+                tg.HapticFeedback.notificationOccurred('success');
+                closeModal(document.getElementById('edit-profile-modal'));
+            } catch (error) {
+                // Error handled by callBackend
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Save";
+            }
+        }
+        
         async function handleUpgradeAllGifts() {
             const giftsToUpgrade = ownedGifts.filter(g => !g.is_collectible);
             if (giftsToUpgrade.length === 0) { tg.showAlert("No gifts to upgrade."); return; }
@@ -6432,7 +6789,9 @@
             document.getElementById('close-usernames-modal').addEventListener('click', () => closeModal(usernamesModal));
             document.getElementById('cancel-giveaway-setup').addEventListener('click', () => closeModal(giveawaySetupModal));
             document.getElementById('custom-buy-cancel-button').addEventListener('click', () => closeModal(customBuyModal));
-            document.getElementById('profile-edit-btn').addEventListener('click', handleEditBio);
+            document.getElementById('profile-edit-btn').addEventListener('click', openEditProfileModal);
+            document.getElementById('save-profile-button').addEventListener('click', handleSaveProfile);
+            document.getElementById('cancel-edit-profile-button').addEventListener('click', () => closeModal(document.getElementById('edit-profile-modal')));
             document.getElementById('profile-level-bubble').addEventListener('click', showLevelInfoPopup);
             document.getElementById('close-level-modal').addEventListener('click', () => closeModal(document.getElementById('level-info-modal')));
             
