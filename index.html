@@ -3419,6 +3419,19 @@
                         collectibleUsernamesContainer.appendChild(unameSpan);
                     });
                 }
+
+                // --- START: Add this new code block ---
+                const musicStatusContainer = document.getElementById('profile-music-status');
+                const musicText = document.getElementById('profile-music-text');
+                if (profileData.music_status) {
+                    // If the user being viewed has a music status, show it.
+                    musicText.textContent = profileData.music_status;
+                    musicStatusContainer.classList.remove('hidden');
+                } else {
+                    // This is the crucial part: if they have no music, HIDE the container.
+                    musicStatusContainer.classList.add('hidden');
+                }
+                // --- END: Add this new code block ---
         
                 manageBackButton(true, () => initializeTelegramUserAccount());
         
