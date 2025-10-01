@@ -1658,7 +1658,7 @@
 
         #market-summary-grid {
             /* Give cards more space */
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 12px;
             padding: 12px;
         }
@@ -4280,9 +4280,8 @@
         
                 summaryData.forEach(item => {
                     const card = document.createElement('div');
-                    // --- THIS IS THE FIX ---
-                    // Use the correct class 'market-card' instead of 'buy-gift-item'
-                    card.className = 'market-card buy-gift-item'; // Keep both for potential style reuse
+                    // Use the new .market-card class for styling
+                    card.className = 'market-card buy-gift-item'; 
                     
                     card.innerHTML = `
                         <div class="resale-banner">resale</div>
@@ -6897,11 +6896,7 @@
             });
 
             collectibleActionWear.addEventListener('click', handleWearAction);
-            collectibleActionSell.addEventListener('click', () => {
-                const giftInstanceId = collectibleDetailModal.dataset.instanceId;
-                const gift = ownedGifts.find(g => g.instance_id === giftInstanceId);
-                openSellModal(gift);
-            });
+            collectibleActionSell.addEventListener('click', handleSellAction);
             collectibleActionTransfer.addEventListener('click', () => {
                 const giftInstanceId = collectibleDetailModal.dataset.instanceId;
                 const gift = ownedGifts.find(g => g.instance_id === giftInstanceId);
