@@ -1614,6 +1614,54 @@
             right: -34px;
             transform: rotate(45deg);
         }
+
+        .market-card .bottom-price-label {
+            position: absolute;
+            bottom: 8px; /* More padding from bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.9em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 4;
+        }
+        .market-card .bottom-price-label img {
+            width: 14px;
+            height: 14px;
+        }
+
+        .market-card {
+             position: relative;
+             overflow: hidden; /* This is the key to clipping the banner */
+        }
+        
+        .market-card .resale-banner {
+            position: absolute;
+            top: 10px;      /* Tweak to position vertically */
+            right: -38px;     /* Tweak to position horizontally */
+            transform: rotate(45deg);
+            background: #4caf50; /* Green color from your screenshot */
+            color: white;
+            font-size: 0.75em; /* Smaller font */
+            padding: 3px 40px; /* Adjust padding for length */
+            z-index: 3;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #market-summary-grid {
+            /* Give cards more space */
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            padding: 12px;
+        }
     </style>
 </head>
 <body>
@@ -4083,7 +4131,7 @@
             if (!gift) return;
         
             if (gift.is_on_sale) {
-                // --- Logic to CANCEL the sale ---
+                // --- Logic to UNLIST the gift ---
                 tg.showConfirm("Are you sure you want to remove this gift from the market?", async (confirmed) => {
                     if (confirmed) {
                         const originalState = { is_on_sale: gift.is_on_sale, sale_price: gift.sale_price };
@@ -4091,18 +4139,23 @@
                         // Optimistic UI update
                         gift.is_on_sale = false;
                         delete gift.sale_price;
+                        
+                        // Update the button text in the modal immediately before closing
+                        const sellBtnText = collectibleActionSell.querySelector('.text');
+                        if (sellBtnText) sellBtnText.textContent = 'Sell';
+                        
                         closeModal(collectibleDetailModal);
-                        renderProfileGifts();
+                        renderProfileGifts(); // Re-render the main grid
                         tg.HapticFeedback.notificationOccurred('success');
                 
                         // Backend call
                         try {
                             await callBackend(`/api/gifts/${gift.instance_id}`, 'PUT', {
                                 action: 'sell',
-                                value: false
+                                value: false // Explicitly tell backend to unlist
                             });
                         } catch (error) {
-                            // Revert on failure
+                            // Revert UI on failure
                             gift.is_on_sale = originalState.is_on_sale;
                             gift.sale_price = originalState.sale_price;
                             renderProfileGifts();
@@ -4115,6 +4168,7 @@
                 openSellModal(gift);
             }
         }
+
         
         function updateActionToolbarVisibility() {
             const hasNonCollectible = ownedGifts.some(g => !g.is_collectible);
@@ -4222,10 +4276,12 @@
         
                 summaryData.forEach(item => {
                     const card = document.createElement('div');
-                    card.className = 'buy-gift-item';
-                    card.style.overflow = 'hidden'; // Ensure rotated label is clipped
+                    // --- THIS IS THE FIX ---
+                    // Use the correct class 'market-card' instead of 'buy-gift-item'
+                    card.className = 'market-card buy-gift-item'; // Keep both for potential style reuse
+                    
                     card.innerHTML = `
-                        <div class="top-right-label on-sale">resale</div>
+                        <div class="resale-banner">resale</div>
                         <div class="image-container">
                             <img class="static-image-fallback" src="${item.original_image_url}" alt="${item.gift_name}" loading="lazy">
                         </div>
@@ -4249,7 +4305,6 @@
             grid.innerHTML = '<div class="spinner"></div>';
         
             try {
-                // For now, we fetch with default sorting. Filter implementation will come next.
                 const listings = await callBackend(`/api/market/listings/${giftTypeId}`);
                 grid.innerHTML = '';
         
@@ -4259,16 +4314,19 @@
                 }
         
                 listings.forEach(listing => {
-                    // We can reuse the createGiftCardDOM function with a small modification for market context
-                    const card = createGiftCardDOM({
-                        ...listing,
-                        is_on_sale: true, // Force display of sale info
+                    const giftDataForCard = {
+                        instance_id: listing.instance_id,
+                        is_collectible: true,
+                        collectible_data: listing.collectible_data,
+                        is_on_sale: true,
                         sale_price: listing.sale_price,
-                        is_collectible: true // All market items are collectible
-                    });
-                    // Override the default click action to open the buy modal
-                    card.onclick = () => openBuyConfirmationModal(listing.instance_id, giftName);
+                    };
+                    const card = createGiftCardDOM(giftDataForCard);
+                    // --- THIS IS THE FIX ---
+                    // The click handler now correctly calls the confirmation modal with only the instance_id
+                    card.onclick = () => openBuyConfirmationModal(listing.instance_id);
                     grid.appendChild(card);
+                    observeLottieElement(card);
                 });
         
             } catch (error) {
@@ -4276,25 +4334,33 @@
             }
         }
         
-        async function openBuyConfirmationModal(instanceId, giftName) {
-            // This function re-uses the collectible detail modal but changes its behavior
+        async function openBuyConfirmationModal(instanceId) {
             try {
-                // Fetch full gift details to show in the modal
-                const giftData = await callBackend(`/api/gift/${giftName.replace(/\s/g, '')}/${instanceId.split('-').pop()}`);
+                // --- THIS IS THE FIX ---
+                // Fetch full gift details from the NEW, CORRECT endpoint designed for a single listing
+                const giftData = await callBackend(`/api/market/listing/${instanceId}`);
         
-                // Temporarily change the modal's footer button
                 const closeButton = document.getElementById('close-collectible-detail-modal');
                 const originalText = closeButton.textContent;
-                const originalOnClick = closeButton.onclick;
+                // Stash the original event listener to restore it later
+                const originalOnClick = () => closeModal(collectibleDetailModal);
         
                 closeButton.textContent = `Buy for ⭐ ${giftData.sale_price.toLocaleString()}`;
                 closeButton.onclick = () => handleMarketPurchase(giftData, originalText, originalOnClick);
                 
-                // Show the modal
-                openModal(collectibleDetailModal, giftData);
+                // Populate the modal with the fetched data
+                populateCollectibleDetailModal(giftData);
+                // Explicitly show the modal
+                collectibleDetailModal.classList.add('active');
+                manageBackButton(true, () => {
+                    // Restore button before closing to prevent incorrect state
+                    closeButton.textContent = originalText;
+                    closeButton.onclick = originalOnClick;
+                    closeModal(collectibleDetailModal);
+                });
         
             } catch (error) {
-                tg.showAlert("Could not fetch gift details to purchase.");
+                // Error is handled by callBackend, which shows an alert
             }
         }
         
@@ -4331,8 +4397,7 @@
                 }
             });
         }
-        
-        // In createGiftCardDOM, add a check for is_on_sale to display the price label
+                
         function createGiftCardDOM(gift) {
             const card = document.createElement('div');
             card.className = 'gift-card';
@@ -4358,7 +4423,8 @@
                 lottiePathForCard = cd.lottieModelPath;
                 
                 // --- UPDATED LOGIC to show price or number ---
-                if (gift.is_on_sale) {
+                if (gift.is_on_sale && gift.sale_price) {
+                    card.style.overflow = 'hidden'; // Ensure banner is clipped
                     const saleLabel = document.createElement('div');
                     saleLabel.className = 'top-right-label on-sale';
                     saleLabel.textContent = 'resale';
@@ -4415,7 +4481,7 @@
             imageContainer.appendChild(staticImage);
             card.appendChild(imageContainer);
             
-            if (gift.is_pinned && !selectionModeActive && !gift.is_on_sale) { // Hide pin when on sale
+            if (gift.is_pinned && !selectionModeActive && !gift.is_on_sale) {
                 const pinDiv = document.createElement('div');
                 pinDiv.className = 'pin-indicator';
                 pinDiv.innerHTML = PIN_ICON_SVG;
