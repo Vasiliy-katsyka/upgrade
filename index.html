@@ -1657,13 +1657,13 @@
         }
 
         #market-summary-grid {
-            /* This value allows 3 cards to fit on most mobile screens */
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 12px;
-            padding: 12px;
+            /* Adjusted to ensure 3 columns on most mobile screens with slightly smaller cards */
+            grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+            gap: 10px;
+            padding: 10px;
         }
 
-        /* This is the key fix: It makes the market cards square, overriding other styles */
+        /* This rule ensures the cards are square, overriding other styles */
         #market-summary-grid .market-card {
             aspect-ratio: 1 / 1;
         }
