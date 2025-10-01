@@ -435,6 +435,43 @@ CUSTOM_GIFTS_DATA = {
     },
 }
 
+MAX_BUY_PER_LEVEL_MAP = {
+    1: 20, 2: 50, 3: 100, 4: 500, 5: 1000, 6: 5000, 7: 10000,
+    8: 15000, 9: 20000, 10: 30000, 11: 40000, 12: 50000, 13: 100000
+}
+# Constants for extending the top-up limit beyond the explicitly defined map.
+BASE_EXTENSION_LEVEL = 13
+EXTENSION_INCREMENT = 50000  # Add 50,000 to the limit for each level after 13.
+
+# Defines the number of gifts needed to reach each level.
+LEVEL_THRESHOLDS = [
+    {"level": 1, "min": 0, "max": 20}, {"level": 2, "min": 20, "max": 50},
+    {"level": 3, "min": 50, "max": 100}, {"level": 4, "min": 100, "max": 200},
+    {"level": 5, "min": 200, "max": 300}, {"level": 6, "min": 300, "max": 400},
+    {"level": 7, "min": 400, "max": 500}, {"level": 8, "min": 500, "max": 600},
+    {"level": 9, "min": 600, "max": 700}, {"level": 10, "min": 700, "max": 800},
+    {"level": 11, "min": 800, "max": 900}, {"level": 12, "min": 900, "max": 1000},
+]
+
+# Programmatically extend the LEVEL_THRESHOLDS list up to level 1000.
+# This makes the leveling system much more scalable.
+last_level_data = LEVEL_THRESHOLDS[-1]
+current_level = last_level_data['level'] + 1
+current_min = last_level_data['max']
+while current_level <= 1000:
+    step = 1000  # Each new level requires another 1000 gifts.
+    new_max = current_min + step
+    LEVEL_THRESHOLDS.append({"level": current_level, "min": current_min, "max": new_max})
+    current_min = new_max
+    current_level += 1
+
+def calculate_user_level(gift_count):
+    """Calculates user level based on the number of gifts they own."""
+    # This function works perfectly with the new extended LEVEL_THRESHOLDS list.
+    for level_data in reversed(LEVEL_THRESHOLDS):
+        if gift_count >= level_data["min"]:
+            return level_data["level"]
+    return 1
 
 # --- DATABASE HELPERS ---
 def init_db():
@@ -1706,23 +1743,29 @@ def api_topup_stars():
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     try:
         with conn.cursor() as cur:
-            # Get user level (gift count)
+            # Get user's gift count to determine their level
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (user_id,))
             gift_count = cur.fetchone()[0]
             
-            # This is a simplified level calculation; you would replace this with your full table
-            level = 1
-            if gift_count >= 50000: level = 12
-            elif gift_count >= 40000: level = 11
-            # ... and so on
+            # Use the helper function to calculate the correct level
+            level = calculate_user_level(gift_count)
             
-            # This is a simplified check for the limit; you would use the full table
-            max_buy = 50000 # Default for level 12+
-            if level == 1: max_buy = 10
-            elif level == 2: max_buy = 50
+            # --- NEW LOGIC to determine the max top-up amount ---
+            max_buy = 0
+            if level in MAX_BUY_PER_LEVEL_MAP:
+                # Use the specific value if the level is in our custom map
+                max_buy = MAX_BUY_PER_LEVEL_MAP[level]
+            elif level > BASE_EXTENSION_LEVEL:
+                # For levels higher than our map, calculate it with a formula
+                base_amount = MAX_BUY_PER_LEVEL_MAP[BASE_EXTENSION_LEVEL]
+                extra_levels = level - BASE_EXTENSION_LEVEL
+                max_buy = base_amount + (extra_levels * EXTENSION_INCREMENT)
+            else:
+                # A safe fallback in case of an unexpected level number
+                max_buy = 50000 
             
             if amount > max_buy:
-                return jsonify({"error": f"Amount exceeds your level limit of {max_buy} Stars."}), 403
+                return jsonify({"error": f"Amount exceeds your level {level} limit of {max_buy:,} Stars."}), 403
 
             cur.execute(
                 "UPDATE accounts SET stars_balance = stars_balance + %s WHERE tg_id = %s RETURNING stars_balance;",
@@ -1731,9 +1774,8 @@ def api_topup_stars():
             new_balance = cur.fetchone()[0]
             conn.commit()
             
-            # Send notification to user
             deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=Stars"
-            message_text = f"✅ Successful top up of <b>{amount} Stars</b>!\nCheck your <a href='{deep_link}'>balance</a>."
+            message_text = f"✅ Successful top up of <b>{amount:,.0f} Stars</b>!\nCheck your <a href='{deep_link}'>balance</a>."
             send_telegram_message(user_id, message_text)
             
             return jsonify({"new_balance": float(new_balance)}), 200
