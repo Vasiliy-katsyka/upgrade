@@ -2044,37 +2044,64 @@ def get_or_create_account():
 
 @app.route('/api/account', methods=['PUT'])
 def update_account():
-    data = request.get_json();
-    if not data or 'tg_id' not in data: return jsonify({"error": "Missing tg_id"}), 400
+    data = request.get_json()
+    if not data or 'tg_id' not in data: 
+        return jsonify({"error": "Missing tg_id"}), 400
+    
     tg_id = data['tg_id']
     conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database failed"}), 500
+    if not conn: 
+        return jsonify({"error": "Database connection failed."}), 500
+    
     try:
         with conn.cursor() as cur:
             update_fields, update_values = [], []
-            if 'username' in data: update_fields.append("username = %s"); update_values.append(data['username'])
-            if 'full_name' in data: update_fields.append("full_name = %s"); update_values.append(data['full_name'])
-            if 'avatar_url' in data: update_fields.append("avatar_url = %s"); update_values.append(data['avatar_url'])
-            if 'bio' in data: update_fields.append("bio = %s"); update_values.append(data['bio'])
+            
+            # Build a dynamic query to update only the fields provided
+            if 'username' in data: 
+                update_fields.append("username = %s")
+                update_values.append(data['username'])
+            if 'full_name' in data: 
+                update_fields.append("full_name = %s")
+                update_values.append(data['full_name'])
+            if 'avatar_url' in data: 
+                update_fields.append("avatar_url = %s")
+                update_values.append(data['avatar_url'])
+            if 'bio' in data: 
+                update_fields.append("bio = %s")
+                update_values.append(data['bio'])
+            
+            # --- THIS IS THE FIX for Bug #4 ---
+            if 'music_status' in data:
+                update_fields.append("music_status = %s")
+                update_values.append(data['music_status'])
+            
             if 'phone_number' in data: 
-                # Check for phone number uniqueness
                 cur.execute("SELECT 1 FROM accounts WHERE phone_number = %s AND tg_id != %s;", (data['phone_number'], tg_id))
                 if cur.fetchone():
                     return jsonify({"error": "This phone number is already in use."}), 409
-                update_fields.append("phone_number = %s"); update_values.append(data['phone_number'])
+                update_fields.append("phone_number = %s")
+                update_values.append(data['phone_number'])
 
-            if not update_fields: return jsonify({"error": "No fields for update"}), 400
+            if not update_fields: 
+                return jsonify({"error": "No fields provided for update."}), 400
             
             update_query = f"UPDATE accounts SET {', '.join(update_fields)} WHERE tg_id = %s;"
             update_values.append(tg_id)
+            
             cur.execute(update_query, tuple(update_values))
-            if cur.rowcount == 0: return jsonify({"error": "Account not found"}), 404
+            
+            if cur.rowcount == 0: 
+                return jsonify({"error": "Account not found or no changes made."}), 404
+            
             conn.commit()
-            return jsonify({"message": "Account updated"}), 200
+            return jsonify({"message": "Account updated successfully."}), 200
+            
     except psycopg2.IntegrityError as e:
         if conn: conn.rollback()
         app.logger.warning(f"Integrity error updating account {tg_id}: {e}")
-        if 'username' in str(e): return jsonify({"error": "This username is already taken."}), 409
+        if 'username' in str(e): 
+            return jsonify({"error": "This username is already taken."}), 409
         return jsonify({"error": "A database conflict occurred."}), 409
     except Exception as e:
         if conn: conn.rollback()
