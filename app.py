@@ -1675,6 +1675,41 @@ def check_customization_access():
 
     return jsonify({"access": False}), 200
 
+@app.route('/api/market/listing/<string:instance_id>', methods=['GET'])
+def api_get_single_market_listing(instance_id):
+    conn = get_db_connection()
+    if not conn: 
+        return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Fetch the gift details along with owner info for the modal display
+            cur.execute("""
+                SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar
+                FROM gifts g
+                JOIN accounts a ON g.owner_id = a.tg_id
+                WHERE g.instance_id = %s AND g.is_on_sale = TRUE AND g.is_collectible = TRUE;
+            """, (instance_id,))
+            
+            gift_data = cur.fetchone()
+            
+            # If no gift is found (it was sold, unlisted, or ID is wrong), return a 404
+            if not gift_data:
+                return jsonify({"error": "This gift is no longer for sale or does not exist."}), 404
+            
+            result = dict(gift_data)
+            # Ensure collectible_data is parsed JSON, not a string, before sending
+            if isinstance(result.get('collectible_data'), str):
+                result['collectible_data'] = json.loads(result['collectible_data'])
+                
+            return jsonify(result), 200
+            
+    except Exception as e:
+        app.logger.error(f"Error fetching single market listing for {instance_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: 
+            put_db_connection(conn)
+
 @app.route('/api/profile_by_collectible/<string:collectible>', methods=['GET'])
 def get_profile_by_collectible(collectible):
     conn = get_db_connection()
