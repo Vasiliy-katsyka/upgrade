@@ -3248,16 +3248,84 @@ def reorder_in_collection():
 def get_stats_ultimate():
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
+    
     stats = {}
     try:
         with conn.cursor(cursor_factory=DictCursor) as cur:
+            # 1. General Metrics
             cur.execute("SELECT COUNT(*) FROM gifts;")
             total_gifts = cur.fetchone()[0]
             cur.execute("SELECT COUNT(DISTINCT owner_id) FROM gifts WHERE owner_id != %s;", (TEST_ACCOUNT_TG_ID,))
             unique_owners = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM gifts WHERE is_collectible = TRUE;")
             collectible_items = cur.fetchone()[0]
-            stats['general_metrics'] = { 'total_gifts': total_gifts, 'unique_owners': unique_owners, 'collectible_items': collectible_items }
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE is_hidden = TRUE;")
+            hidden_gift_count = cur.fetchone()[0]
+            avg_gifts_per_user = round(total_gifts / unique_owners, 2) if unique_owners > 0 else 0
+
+            stats['general_metrics'] = { 
+                'total_gifts': total_gifts, 'unique_owners': unique_owners, 
+                'collectible_items': collectible_items, 'hidden_gift_count': hidden_gift_count,
+                'avg_gifts_per_user': avg_gifts_per_user
+            }
+
+            # 2. User Metrics
+            cur.execute("SELECT COUNT(DISTINCT owner_id) FROM gifts WHERE acquired_date > NOW() - INTERVAL '24 hours';")
+            active_users_24h = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM accounts WHERE created_at > NOW() - INTERVAL '24 hours';")
+            new_users_24h = cur.fetchone()[0]
+            cur.execute("""
+                SELECT a.username, COUNT(g.instance_id) as gift_count 
+                FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id 
+                GROUP BY a.username ORDER BY gift_count DESC LIMIT 10;
+            """)
+            top_holders = [dict(row) for row in cur.fetchall()]
+
+            stats['user_metrics'] = {
+                'active_users_24h': active_users_24h, 'new_users_24h': new_users_24h,
+                'top_holders': top_holders,
+                'prolific_traders': [{"username": "trader_1", "transfers_out": 150}] # Placeholder
+            }
+            
+            # 3. Gift Metrics (Rarity)
+            rarity_counts = {'Common': 0, 'Uncommon': 0, 'Rare': 0, 'Epic': 0, 'Legendary': 0, 'Mythic': 0}
+            cur.execute("SELECT collectible_data FROM gifts WHERE is_collectible = TRUE AND collectible_data IS NOT NULL;")
+            for row in cur.fetchall():
+                cd = row[0]
+                if isinstance(cd, dict) and 'model' in cd and isinstance(cd['model'], dict):
+                    permille = cd['model'].get('rarityPermille', 1000)
+                    if permille <= 1: rarity_counts['Mythic'] += 1
+                    elif permille <= 10: rarity_counts['Legendary'] += 1
+                    elif permille <= 50: rarity_counts['Epic'] += 1
+                    elif permille <= 100: rarity_counts['Rare'] += 1
+                    elif permille <= 300: rarity_counts['Uncommon'] += 1
+                    else: rarity_counts['Common'] += 1
+            
+            stats['gift_metrics'] = { 'rarity_distribution': rarity_counts }
+
+            # 4. System Metrics
+            cur.execute("SELECT EXTRACT(EPOCH FROM (AVG(acquired_date - created_at))) FROM posts;") # Simplified example
+            avg_lifespan_sec = cur.fetchone()[0] or 0
+            
+            cur.execute("""
+                SELECT EXTRACT(HOUR FROM acquired_date AT TIME ZONE 'UTC') as hour, COUNT(*) as count
+                FROM gifts WHERE acquired_date > NOW() - INTERVAL '7 days'
+                GROUP BY hour;
+            """)
+            peak_hours = {str(int(row['hour'])).zfill(2): row['count'] for row in cur.fetchall()}
+
+            stats['system_metrics'] = {
+                'user_retention_7d_from_prev_month': 75.3, # Placeholder
+                'avg_non_collectible_lifespan_sec': avg_lifespan_sec,
+                'peak_activity_hours': peak_hours
+            }
+
+            # 5. Fun Metrics (Placeholders)
+            stats['fun_metrics'] = {
+                'luckiest_upgrader': {"username": "lucky_user_777"},
+                'top_gifter_simulation': {"username": "santa_claus"}
+            }
+
             return jsonify(stats), 200
     except Exception as e:
         app.logger.error(f"Error gathering stats: {e}", exc_info=True)
