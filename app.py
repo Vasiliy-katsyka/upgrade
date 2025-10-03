@@ -3247,7 +3247,8 @@ def reorder_in_collection():
 @app.route('/api/stats', methods=['GET'])
 def get_stats_ultimate():
     conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    if not conn:
+        return jsonify({"error": "Database connection failed."}), 500
     
     stats = {}
     try:
@@ -3261,33 +3262,81 @@ def get_stats_ultimate():
             collectible_items = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM gifts WHERE is_hidden = TRUE;")
             hidden_gift_count = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE is_pinned = TRUE;")
+            total_pinned = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE is_worn = TRUE;")
+            total_worn = cur.fetchone()[0]
             avg_gifts_per_user = round(total_gifts / unique_owners, 2) if unique_owners > 0 else 0
 
             stats['general_metrics'] = { 
                 'total_gifts': total_gifts, 'unique_owners': unique_owners, 
                 'collectible_items': collectible_items, 'hidden_gift_count': hidden_gift_count,
-                'avg_gifts_per_user': avg_gifts_per_user
+                'avg_gifts_per_user': avg_gifts_per_user,
+                'total_pinned_gifts': total_pinned,
+                'total_worn_gifts': total_worn
             }
 
-            # 2. User Metrics
+            # 2. User & Community Metrics
             cur.execute("SELECT COUNT(DISTINCT owner_id) FROM gifts WHERE acquired_date > NOW() - INTERVAL '24 hours';")
             active_users_24h = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM accounts WHERE created_at > NOW() - INTERVAL '24 hours';")
             new_users_24h = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM posts;")
+            total_posts = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM post_reactions;")
+            total_reactions = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM giveaways WHERE status = 'active';")
+            active_giveaways = cur.fetchone()[0]
+
+            stats['user_metrics'] = {
+                'active_users_24h': active_users_24h, 'new_users_24h': new_users_24h,
+                'total_posts': total_posts, 'total_reactions': total_reactions,
+                'active_giveaways': active_giveaways
+            }
+
+            # 3. Leaderboards
             cur.execute("""
                 SELECT a.username, COUNT(g.instance_id) as gift_count 
                 FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id 
                 GROUP BY a.username ORDER BY gift_count DESC LIMIT 10;
             """)
             top_holders = [dict(row) for row in cur.fetchall()]
-
-            stats['user_metrics'] = {
-                'active_users_24h': active_users_24h, 'new_users_24h': new_users_24h,
-                'top_holders': top_holders,
-                'prolific_traders': [{"username": "trader_1", "transfers_out": 150}] # Placeholder
-            }
             
-            # 3. Gift Metrics (Rarity)
+            cur.execute("""
+                WITH UserGiftCounts AS (
+                    SELECT a.username, g.gift_name, COUNT(g.instance_id) as count_for_gift,
+                           ROW_NUMBER() OVER(PARTITION BY a.username ORDER BY COUNT(g.instance_id) DESC) as rn
+                    FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
+                    GROUP BY a.username, g.gift_name
+                )
+                SELECT username, gift_name, count_for_gift FROM UserGiftCounts
+                WHERE rn = 1 ORDER BY count_for_gift DESC LIMIT 5;
+            """)
+            specialists = [dict(row) for row in cur.fetchall()]
+
+            stats['leaderboards'] = {
+                'top_holders': top_holders,
+                'specialists': specialists,
+                'prolific_traders': [{"username": "trader_1", "transfers_out": 150}] # Placeholder - requires transfer logging
+            }
+
+            # 4. Economic & Market Metrics
+            cur.execute("SELECT COALESCE(SUM(sale_price), 0) FROM gifts WHERE is_on_sale = TRUE;")
+            market_cap = cur.fetchone()[0]
+            cur.execute("SELECT COALESCE(AVG(sale_price), 0) FROM gifts WHERE is_on_sale = TRUE;")
+            avg_listing_price = cur.fetchone()[0]
+            cur.execute("SELECT gift_name, collectible_number, sale_price FROM gifts WHERE is_on_sale = TRUE ORDER BY sale_price DESC LIMIT 5;")
+            top_listings = [dict(row) for row in cur.fetchall()]
+
+            stats['economic_metrics'] = {
+                'total_market_cap': market_cap,
+                'avg_listing_price': avg_listing_price,
+                'top_market_listings': top_listings,
+                'trading_volume_24h': 123456, # Placeholder - requires sales logging
+                'sell_through_rate_percent': 15.7 # Placeholder - requires sales logging
+            }
+
+            # 5. Gift & Collection Insights
             rarity_counts = {'Common': 0, 'Uncommon': 0, 'Rare': 0, 'Epic': 0, 'Legendary': 0, 'Mythic': 0}
             cur.execute("SELECT collectible_data FROM gifts WHERE is_collectible = TRUE AND collectible_data IS NOT NULL;")
             for row in cur.fetchall():
@@ -3301,34 +3350,41 @@ def get_stats_ultimate():
                     elif permille <= 300: rarity_counts['Uncommon'] += 1
                     else: rarity_counts['Common'] += 1
             
-            stats['gift_metrics'] = { 'rarity_distribution': rarity_counts }
-
-            # 4. System Metrics
-            # --- THIS IS THE CORRECTED QUERY ---
-            # It calculates the average age of non-collectible gifts.
             cur.execute("""
-                SELECT EXTRACT(EPOCH FROM AVG(NOW() - acquired_date)) 
-                FROM gifts WHERE is_collectible = FALSE;
+                SELECT gift_name, COUNT(*) as upgrade_count FROM gifts WHERE is_collectible = TRUE
+                GROUP BY gift_name ORDER BY upgrade_count DESC LIMIT 1;
             """)
+            most_popular_base = cur.fetchone()
+
+            stats['gift_metrics'] = { 
+                'rarity_distribution': rarity_counts,
+                'most_popular_upgrade_base': dict(most_popular_base) if most_popular_base else None
+            }
+
+            # 6. System & Fun Metrics
+            cur.execute("SELECT EXTRACT(EPOCH FROM AVG(NOW() - acquired_date)) FROM gifts WHERE is_collectible = FALSE;")
             avg_lifespan_sec = cur.fetchone()[0] or 0
             
             cur.execute("""
                 SELECT EXTRACT(HOUR FROM acquired_date AT TIME ZONE 'UTC') as hour, COUNT(*) as count
-                FROM gifts WHERE acquired_date > NOW() - INTERVAL '7 days'
-                GROUP BY hour;
+                FROM gifts WHERE acquired_date > NOW() - INTERVAL '7 days' GROUP BY hour;
             """)
             peak_hours = {str(int(row['hour'])).zfill(2): row['count'] for row in cur.fetchall()}
 
-            stats['system_metrics'] = {
-                'user_retention_7d_from_prev_month': 75.3, # Placeholder
-                'avg_non_collectible_lifespan_sec': avg_lifespan_sec,
-                'peak_activity_hours': peak_hours
-            }
+            cur.execute("""
+                SELECT g.gift_name, g.collectible_number, a.username
+                FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id
+                WHERE g.collectible_number = 1 AND g.gift_name IN ('Plush Pepe', 'Snoop Dogg', 'Toy Bear') LIMIT 3;
+            """)
+            first_of_kind = [dict(row) for row in cur.fetchall()]
 
-            # 5. Fun Metrics (Placeholders)
-            stats['fun_metrics'] = {
-                'luckiest_upgrader': {"username": "lucky_user_777"},
-                'top_gifter_simulation': {"username": "santa_claus"}
+            stats['system_metrics'] = {
+                'avg_non_collectible_lifespan_sec': avg_lifespan_sec,
+                'peak_activity_hours': peak_hours,
+                'fun_facts': {
+                    'luckiest_upgrader': {"username": "lucky_user_777"}, # Placeholder
+                    'first_of_its_kind': first_of_kind
+                }
             }
 
             return jsonify(stats), 200
