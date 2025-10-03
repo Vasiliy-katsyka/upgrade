@@ -3304,7 +3304,12 @@ def get_stats_ultimate():
             stats['gift_metrics'] = { 'rarity_distribution': rarity_counts }
 
             # 4. System Metrics
-            cur.execute("SELECT EXTRACT(EPOCH FROM (AVG(acquired_date - created_at))) FROM posts;") # Simplified example
+            # --- THIS IS THE CORRECTED QUERY ---
+            # It calculates the average age of non-collectible gifts.
+            cur.execute("""
+                SELECT EXTRACT(EPOCH FROM AVG(NOW() - acquired_date)) 
+                FROM gifts WHERE is_collectible = FALSE;
+            """)
             avg_lifespan_sec = cur.fetchone()[0] or 0
             
             cur.execute("""
