@@ -1748,38 +1748,6 @@ def api_get_single_market_listing(instance_id):
         if conn: 
             put_db_connection(conn)
 
-@app.route('/api/profile_by_collectible/<string:collectible>', methods=['GET'])
-def get_profile_by_collectible(collectible):
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database connection failed."}), 500
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            user_id = None
-            if collectible.startswith('@'):
-                username = collectible[1:]
-                cur.execute("SELECT owner_id FROM collectible_usernames WHERE LOWER(username) = LOWER(%s);", (username,))
-                result = cur.fetchone()
-                if result:
-                    user_id = result['owner_id']
-            elif collectible.startswith('+888'):
-                cur.execute("SELECT tg_id FROM accounts WHERE phone_number = %s;", (collectible,))
-                result = cur.fetchone()
-                if result:
-                    user_id = result['tg_id']
-
-            if not user_id:
-                return jsonify({"error": "No user found for this collectible."}), 404
-
-            cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (user_id,))
-            owner_username = cur.fetchone()['username']
-
-            return jsonify({"username": owner_username}), 200
-
-    except Exception as e:
-        app.logger.error(f"Error fetching profile for collectible {collectible}: {e}", exc_info=True)
-        return jsonify({"error": "An internal server error occurred."}), 500
-    finally:
-        if conn: put_db_connection(conn)
 
 @app.route('/api/request_test_env', methods=['POST'])
 def request_test_env():
