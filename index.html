@@ -3281,18 +3281,34 @@
         
             const startAppParam = tg.initDataUnsafe?.start_param;
             if (startAppParam) {
-                await initializeTelegramUserAccount();
+                await initializeTelegramUserAccount(); // Always init own account first
                 if (startAppParam.startsWith('user')) {
-                    const username = startAppParam.substring(4);
-                    await displayUserProfile(username);
+                    const collectibleIdentifier = startAppParam.substring(4);
+                    // Check for @username or +888... number format
+                    if (collectibleIdentifier.startsWith('@') || collectibleIdentifier.startsWith('+')) {
+                        try {
+                            const response = await callBackend(`/api/profile_by_collectible/${encodeURIComponent(collectibleIdentifier)}`);
+                            if (response.username) {
+                                await displayUserProfile(response.username);
+                            } else {
+                                tg.showAlert(`Could not find a profile for ${collectibleIdentifier}.`);
+                            }
+                        } catch (error) {
+                            tg.showAlert(`Could not find a profile for ${collectibleIdentifier}.`);
+                        }
+                    } else {
+                        // Fallback for old username format without @
+                        await displayUserProfile(collectibleIdentifier);
+                    }
                 } else if (startAppParam.startsWith('gift')) {
                     const giftString = startAppParam.substring(4);
                     const lastHyphenIndex = giftString.lastIndexOf('-');
                     if (lastHyphenIndex > -1) {
-                        const giftTypeId = giftString.substring(0, lastHyphenIndex);
+                        // This now correctly passes the name (e.g., "PlushPepe") instead of an ID
+                        const giftIdentifier = giftString.substring(0, lastHyphenIndex);
                         const collectibleNumber = parseInt(giftString.substring(lastHyphenIndex + 1), 10);
-                        if (giftTypeId && !isNaN(collectibleNumber)) {
-                            await displayDeepLinkedGift(giftTypeId, collectibleNumber);
+                        if (giftIdentifier && !isNaN(collectibleNumber)) {
+                            await displayDeepLinkedGift(giftIdentifier, collectibleNumber);
                         } else {
                             tg.showAlert("Invalid gift format in deep link.");
                         }
@@ -3370,7 +3386,8 @@
 
         async function displayDeepLinkedGift(giftTypeId, collectibleNumber) {
             try {
-                const giftData = await callBackend(`/api/gift/${giftTypeId}/${collectibleNumber}`, 'GET', null, { viewer_id: currentAccountTgId });
+                // The URL now uses the generic 'gift_identifier' which can be a name or ID
+                const giftData = await callBackend(`/api/gift/${giftIdentifier}/${collectibleNumber}`, 'GET', null, { viewer_id: currentAccountTgId });
                 if (giftData) {
                     openModal(collectibleDetailModal, giftData);
                 }
@@ -6097,18 +6114,22 @@
             numbersList.innerHTML = '';
             const allPossibleNumbers = [...coolNumbers];
             for (let i = 0; i < 20; i++) { allPossibleNumbers.push(generateRandom888Number()); }
-
+    
             const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
             const userPhoneNumber = currentAccount?.phone_number;
+            // The backend will enforce uniqueness, this just prevents showing owned number in list
             const availableNumbers = [...new Set(allPossibleNumbers)].filter(n => n !== userPhoneNumber);
-
+    
             if (availableNumbers.length === 0) {
                 numbersList.innerHTML = '<p class="empty-grid-message">No numbers available.</p>';
             } else {
                 availableNumbers.forEach(num => {
                     const li = document.createElement('li');
                     li.className = 'collectible-list-item';
-                    li.textContent = num;
+                    // --- NEW: Display price ---
+                    li.innerHTML = `${num} <span style="color:var(--tg-theme-hint-color); font-size: 0.8em; margin-left: auto;">(⭐ 25,000)</span>`;
+                    li.style.display = 'flex';
+                    li.style.alignItems = 'center';
                     li.addEventListener('click', () => buyNumber(num));
                     numbersList.appendChild(li);
                 });
@@ -6118,20 +6139,27 @@
         }
 
         async function buyNumber(number) {
-            tg.showConfirm(`Are you sure you want to purchase the number ${number}?`, async (confirmed) => {
+            const cost = 25000;
+            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+            if (!currentAccount || currentAccount.stars_balance < cost) {
+                tg.showAlert(`You need ${cost.toLocaleString()} Stars to buy this number. Your balance is ${parseFloat(currentAccount.stars_balance || 0).toLocaleString()}.`);
+                return;
+            }
+    
+            tg.showConfirm(`Buy the number ${number} for ${cost.toLocaleString()} Stars?`, async (confirmed) => {
                 if(confirmed) {
                     try {
                         await callBackend(`/api/account`, 'PUT', {
                             tg_id: currentAccountTgId,
                             phone_number: number
                         });
-
-                        await initializeTelegramUserAccount();
+    
+                        await initializeTelegramUserAccount(); // Refreshes data including new balance
                         tg.HapticFeedback.notificationOccurred('success');
                         tg.showAlert(`Number ${number} purchased successfully!`);
                         closeModal(numbersModal);
                     } catch (error) {
-                        tg.HapticFeedback.notificationOccurred('error');
+                        // Error is handled by callBackend
                     }
                 }
             });
@@ -6173,13 +6201,19 @@
         }
 
         async function buyUsername(username) {
+            const cost = 10000;
             const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-            if (!currentAccount || (currentAccount.collectible_usernames && currentAccount.collectible_usernames.length >= MAX_COLLECTIBLE_USERNAMES)) {
+            if (!currentAccount || currentAccount.stars_balance < cost) {
+                tg.showAlert(`You need ${cost.toLocaleString()} Stars to buy a username. Your balance is ${parseFloat(currentAccount.stars_balance || 0).toLocaleString()}.`);
+                return;
+            }
+    
+            if (currentAccount.collectible_usernames && currentAccount.collectible_usernames.length >= MAX_COLLECTIBLE_USERNAMES) {
                 tg.showAlert(`Username limit reached (${MAX_COLLECTIBLE_USERNAMES}).`);
                 return;
             }
-
-            tg.showConfirm(`Are you sure you want to purchase the username @${username}?`, async (confirmed) => {
+    
+            tg.showConfirm(`Buy the username @${username} for ${cost.toLocaleString()} Stars?`, async (confirmed) => {
                 if(confirmed) {
                     try {
                         await callBackend('/api/collectible_usernames', 'POST', {
