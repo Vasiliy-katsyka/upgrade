@@ -490,12 +490,22 @@ def init_db():
                     full_name VARCHAR(255),
                     avatar_url TEXT,
                     bio TEXT,
-                    phone_number VARCHAR(50),
+                    phone_number VARCHAR(50) UNIQUE,
                     bot_state VARCHAR(255),
                     music_status TEXT,
                     stars_balance NUMERIC(20, 2) DEFAULT 0.0,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
+            """)
+            # Add unique constraint if it doesn't exist
+            cur.execute("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_constraint WHERE conname = 'accounts_phone_number_key'
+                    ) THEN
+                        ALTER TABLE accounts ADD CONSTRAINT accounts_phone_number_key UNIQUE (phone_number);
+                    END IF;
+                END $$;
             """)
             # Add new columns to existing accounts table if they don't exist
             cur.execute("""
@@ -1559,6 +1569,34 @@ def webhook_handler():
                             ]
                         }
                         send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
+                elif text.startswith('@'):
+                    username = text[1:]
+                    cur.execute("SELECT 1 FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
+                    if cur.fetchone():
+                        profile_url = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=user@{username}"
+                        reply_markup = {"inline_keyboard": [[{"text": f"👤 View @{username}'s Profile", "web_app": {"url": profile_url}}]]}
+                        send_telegram_message(chat_id, f"Found user @{username}. Tap below to view their profile.", reply_markup=reply_markup)
+                    else:
+                        send_telegram_message(chat_id, f"Sorry, I couldn't find a user with the username @{username} in the app's database.")
+                    return jsonify({"status": "ok"}), 200
+
+                # --- NEW: Handle GiftName-Number format ---
+                else:
+                    gift_match = re.match(r'^([\w\s\']{3,25})-([0-9]{1,7})$', text)
+                    if gift_match:
+                        gift_name, collectible_number = gift_match.group(1).strip(), int(gift_match.group(2))
+                        # Check if a gift with that name and number exists
+                        cur.execute("SELECT gift_type_id FROM gifts WHERE gift_name ILIKE %s AND collectible_number = %s AND is_collectible = TRUE LIMIT 1;", (gift_name, collectible_number))
+                        gift_row = cur.fetchone()
+                        if gift_row:
+                            # Use name for the link, backend will resolve it
+                            gift_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=gift{gift_name}-{collectible_number}"
+                            reply_markup = {"inline_keyboard": [[{"text": f"🎁 View {gift_name} #{collectible_number}", "web_app": {"url": gift_link}}]]}
+                            send_telegram_message(chat_id, f"Found gift: {gift_name} #{collectible_number}. Tap below to view it.", reply_markup=reply_markup)
+                        else:
+                            send_telegram_message(chat_id, f"Sorry, I couldn't find the gift '{gift_name} #{collectible_number}'.")
+                        return jsonify({"status": "ok"}), 200
+    
     finally:
         if conn:
             put_db_connection(conn)
@@ -2147,7 +2185,14 @@ def update_account():
             if 'bio' in data: 
                 update_fields.append("bio = %s")
                 update_values.append(data['bio'])
-            
+            if 'phone_number' in data and data['phone_number'].startswith('+888'):
+                cost = 25000
+                cur.execute("SELECT stars_balance FROM accounts WHERE tg_id = %s;", (tg_id,))
+                balance = cur.fetchone()[0]
+                if balance < cost:
+                    return jsonify({"error": f"Insufficient balance. This number costs {cost:,} Stars."}), 402
+                
+                cur.execute("UPDATE accounts SET stars_balance = stars_balance - %s WHERE tg_id = %s;", (cost, tg_id))
             # --- THIS IS THE FIX for Bug #4 ---
             if 'music_status' in data:
                 update_fields.append("music_status = %s")
@@ -2614,15 +2659,26 @@ def get_limited_gift_stock():
         if conn:
             put_db_connection(conn)
 
-@app.route('/api/gift/<string:gift_type_id>/<int:collectible_number>', methods=['GET'])
-def get_gift_by_details(gift_type_id, collectible_number):
+@app.route('/api/gift/<string:gift_identifier>/<int:collectible_number>', methods=['GET'])
+def get_gift_by_details(gift_identifier, collectible_number):
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database failed"}), 500
     viewer_id = request.args.get('viewer_id')
     
     try:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("""SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE LOWER(g.gift_type_id) = LOWER(%s) AND g.collectible_number = %s AND g.is_collectible = TRUE;""", (gift_type_id, collectible_number))
+            # Check if the identifier is a name or a numeric-like ID
+            if not gift_identifier.isnumeric():
+                # It's a name, so we need to resolve it to a gift_type_id
+                cur.execute("SELECT gift_type_id FROM gifts WHERE gift_name ILIKE %s LIMIT 1;", (gift_identifier,))
+                id_row = cur.fetchone()
+                if not id_row:
+                    return jsonify({"error": "Gift name not found."}), 404
+                gift_type_id_resolved = id_row['gift_type_id']
+            else:
+                gift_type_id_resolved = gift_identifier
+
+            cur.execute("""SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar FROM gifts g JOIN accounts a ON g.owner_id = a.tg_id WHERE g.gift_type_id = %s AND g.collectible_number = %s AND g.is_collectible = TRUE;""", (gift_type_id_resolved, collectible_number))
             gift_data = cur.fetchone()
             if not gift_data: return jsonify({"error": "Collectible gift not found."}), 404
 
@@ -3069,10 +3125,18 @@ def add_collectible_username():
     if not conn: return jsonify({"error": "Database failed"}), 500
     try:
         with conn.cursor() as cur:
+            cost = 10000
+            cur.execute("SELECT stars_balance FROM accounts WHERE tg_id = %s;", (owner_id,))
+            balance_row = cur.fetchone()
+            if not balance_row or balance_row[0] < cost:
+                return jsonify({"error": f"Insufficient balance. A username costs {cost:,} Stars."}), 402
+
             cur.execute("SELECT 1 FROM collectible_usernames WHERE LOWER(username) = LOWER(%s);", (username,))
             if cur.fetchone(): return jsonify({"error": f"Username @{username} is already taken."}), 409
             cur.execute("SELECT COUNT(*) FROM collectible_usernames WHERE owner_id = %s;", (owner_id,))
             if cur.fetchone()[0] >= MAX_COLLECTIBLE_USERNAMES: return jsonify({"error": f"Username limit of {MAX_COLLECTIBLE_USERNAMES} reached."}), 403
+            
+            cur.execute("UPDATE accounts SET stars_balance = stars_balance - %s WHERE tg_id = %s;", (cost, owner_id))
             cur.execute("""INSERT INTO collectible_usernames (owner_id, username) VALUES (%s, %s);""", (owner_id, username))
             conn.commit()
             return jsonify({"message": "Username added"}), 201
@@ -3084,6 +3148,41 @@ def add_collectible_username():
         if conn: conn.rollback()
         app.logger.error(f"Error adding username {username}: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/profile_by_collectible/<string:collectible>', methods=['GET'])
+def get_profile_by_collectible(collectible):
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            user_id = None
+            if collectible.startswith('@'):
+                username = collectible[1:]
+                cur.execute("SELECT owner_id FROM collectible_usernames WHERE LOWER(username) = LOWER(%s);", (username,))
+                result = cur.fetchone()
+                if result:
+                    user_id = result['owner_id']
+            elif collectible.startswith('+888'):
+                cur.execute("SELECT tg_id FROM accounts WHERE phone_number = %s;", (collectible,))
+                result = cur.fetchone()
+                if result:
+                    user_id = result['tg_id']
+
+            if not user_id:
+                return jsonify({"error": "No user found for this collectible."}), 404
+
+            cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (user_id,))
+            owner_username_row = cur.fetchone()
+            if not owner_username_row or not owner_username_row['username']:
+                return jsonify({"error": "Owner of this collectible does not have a primary username."}), 404
+
+            return jsonify({"username": owner_username_row['username']}), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching profile for collectible {collectible}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
     finally:
         if conn: put_db_connection(conn)
 
