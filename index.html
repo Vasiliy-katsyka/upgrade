@@ -4565,12 +4565,40 @@
         function openGiftDetailByInstanceId(instanceId) {
             const gift = currentlySortedGifts.find(g => g.instance_id === instanceId) || ownedGifts.find(g => g.instance_id === instanceId);
             if (!gift) return;
-            tapCount = 0;
+            
+            // This tap counter is now used for the double-tap
+            let tapCount = 0;
+            let lastTap = 0;
 
             if (gift.is_collectible) {
                 openModal(collectibleDetailModal, gift);
             } else {
                 openModal(giftDetailModal, gift);
+                
+                // --- NEW CODE: Add the double-tap listener ---
+                const imageContainer = document.getElementById('modal-gift-image-container');
+                const chancesTapHandler = () => {
+                    const now = Date.now();
+                    const DURATION = 300; // Milliseconds between taps to count as a double-tap
+                    
+                    if (now - lastTap < DURATION) {
+                        tapCount++;
+                    } else {
+                        tapCount = 1;
+                    }
+                    lastTap = now;
+
+                    if (tapCount === 2) {
+                        tapCount = 0; // Reset counter
+                        tg.HapticFeedback.impactOccurred('light');
+                        openChancesModal(gift); // Open the calculator
+                    }
+                };
+                
+                // Remove any old listener before adding a new one
+                imageContainer.removeEventListener('click', imageContainer._chancesTapHandler);
+                imageContainer.addEventListener('click', chancesTapHandler);
+                imageContainer._chancesTapHandler = chancesTapHandler; // Store reference to remove it later
             }
         }
 
