@@ -99,6 +99,44 @@ def put_db_connection(conn):
     if db_pool and conn and not conn.closed:
         db_pool.putconn(conn)
 
+# --- IN app.py ---
+
+# --- NEW: Asset Source Override Map ---
+# This map allows regular (non-custom) gifts to use assets from another gift's folder on the CDN.
+# This is useful when Telegram groups assets, e.g., all artist-specific gifts share one asset pack.
+# NOTE: The source "Snoop Dogg" is used here as per your request and previous patterns.
+ASSET_SOURCE_OVERRIDES = {
+
+    # --- NEWLY ADDED GIFTS (as of late July 2024) ---
+    # These gifts also do not have their own pattern folders and need to be re-routed.
+    "Happy Brownie": {
+        "backdrops_source": "Snoop Dogg", # Assuming same source for consistency
+        "patterns_source": "Snoop Dogg"
+    },
+    "Ice Cream": {
+        "backdrops_source": "Snoop Dogg",
+        "patterns_source": "Snoop Dogg"
+    },
+    "Spring Basket": {
+        "backdrops_source": "Snoop Dogg",
+        "patterns_source": "Snoop Dogg"
+    },
+    "Instant Ramen": {
+        "backdrops_source": "Snoop Dogg",
+        "patterns_source": "Snoop Dogg"
+    },
+    "Faith Amulet": {
+        "backdrops_source": "Snoop Dogg",
+        "patterns_source": "Snoop Dogg"
+    },
+    "Mousse Cake": {
+        "backdrops_source": "Snoop Dogg",
+        "patterns_source": "Snoop Dogg"
+    }
+}
+
+collectible_parts_cache = {}
+CACHE_DURATION_SECONDS = 3600  # Cache for 1 hour
 
 # --- INLINE BOT CACHE ---
 inline_cache = {}
@@ -846,6 +884,8 @@ def select_weighted_random(items):
         random_num -= weight
     return items[-1]
 
+# --- IN app.py ---
+
 def fetch_collectible_parts(gift_name):
     if gift_name in collectible_parts_cache:
         cached_data, timestamp = collectible_parts_cache[gift_name]
@@ -855,22 +895,33 @@ def fetch_collectible_parts(gift_name):
 
     app.logger.info(f"CACHE MISS for collectible parts: {gift_name}")
 
+    # --- MODIFIED LOGIC: Determine asset sources ---
     gift_name_encoded = quote(gift_name)
-    models_url, backdrops_url, patterns_url = None, None, None
-    models_list = []
+    models_source_encoded = gift_name_encoded
+    backdrops_source_encoded = gift_name_encoded
+    patterns_source_encoded = gift_name_encoded
+    models_list = []  # Initialize here
 
-    if gift_name in CUSTOM_GIFTS_DATA:
+    # Priority 1: Check for a hardcoded override for regular gifts with special asset paths.
+    if gift_name in ASSET_SOURCE_OVERRIDES:
+        override = ASSET_SOURCE_OVERRIDES[gift_name]
+        # Models are usually unique, so we don't override the models_url itself,
+        # but we do respect backdrop/pattern source overrides.
+        backdrops_source_encoded = quote(override.get("backdrops_source", gift_name))
+        patterns_source_encoded = quote(override.get("patterns_source", gift_name))
+    
+    # Priority 2: Check if it's a custom gift with its own source definitions.
+    elif gift_name in CUSTOM_GIFTS_DATA:
         custom_data = CUSTOM_GIFTS_DATA[gift_name]
         models_list = custom_data.get("models", [])
         backdrops_source_encoded = quote(custom_data.get("backdrops_source", gift_name))
         patterns_source_encoded = quote(custom_data.get("patterns_source", gift_name))
-        
-        backdrops_url = f"{CDN_BASE_URL}backdrops/{backdrops_source_encoded}/backdrops.json"
-        patterns_url = f"{CDN_BASE_URL}patterns/{patterns_source_encoded}/patterns.json"
-    else:
-        models_url = f"{CDN_BASE_URL}models/{gift_name_encoded}/models.json"
-        backdrops_url = f"{CDN_BASE_URL}backdrops/{gift_name_encoded}/backdrops.json"
-        patterns_url = f"{CDN_BASE_URL}patterns/{gift_name_encoded}/patterns.json"
+
+    # --- CONSTRUCT URLs based on the determined sources ---
+    # Only fetch models.json if it's not a custom gift with a predefined models_list
+    models_url = f"{CDN_BASE_URL}models/{models_source_encoded}/models.json" if not models_list else None
+    backdrops_url = f"{CDN_BASE_URL}backdrops/{backdrops_source_encoded}/backdrops.json"
+    patterns_url = f"{CDN_BASE_URL}patterns/{patterns_source_encoded}/patterns.json"
 
     if models_url:
         try:
@@ -878,7 +929,7 @@ def fetch_collectible_parts(gift_name):
             response.raise_for_status()
             models_list = response.json()
         except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
-            app.logger.warning(f"Could not fetch or decode models for {gift_name}: {e}")
+            app.logger.warning(f"Could not fetch or decode models from {models_url}: {e}")
             models_list = []
 
     try:
@@ -886,7 +937,7 @@ def fetch_collectible_parts(gift_name):
         response.raise_for_status()
         backdrops_list = response.json()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
-        app.logger.warning(f"Could not fetch or decode backdrops for {gift_name}: {e}")
+        app.logger.warning(f"Could not fetch or decode backdrops from {backdrops_url}: {e}")
         backdrops_list = []
 
     try:
@@ -894,12 +945,14 @@ def fetch_collectible_parts(gift_name):
         response.raise_for_status()
         patterns_list = response.json()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
-        app.logger.warning(f"Could not fetch or decode patterns for {gift_name}: {e}")
+        app.logger.warning(f"Could not fetch or decode patterns from {patterns_url}: {e}")
         patterns_list = []
         
     all_parts = {"models": models_list, "backdrops": backdrops_list, "patterns": patterns_list}
     collectible_parts_cache[gift_name] = (all_parts, time.time())
     return all_parts
+    
+        
     
 def normalize_and_build_clone_url(input_str):
     input_str = input_str.strip()
