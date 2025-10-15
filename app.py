@@ -504,17 +504,6 @@ CUSTOM_GIFTS_DATA = {
         "backdrops_source": "Toy Bear",
         "patterns_source": "Toy Bear"
     },
-    "Babaka": {
-        "id": "custom_babuka",
-        "limit": 10, # New field for total stock
-        "models": [
-            {"name": "Robotic", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012112591.png"},
-            {"name": "Sapphire", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012236420.png"},
-            {"name": "Gray", "rarityPermille": 30, "image": "https://raw.githubusercontent.com/Vasiliy-katsyka/sheeranGifts/main/BackgroundEraser_20250911_012250549.png"}
-        ],
-        "backdrops_source": "Toy Bear", # Using existing assets for demo
-        "patterns_source": "Toy Bear"
-    },
 }
 
 MAX_BUY_PER_LEVEL_MAP = {
