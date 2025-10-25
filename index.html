@@ -5722,56 +5722,39 @@
         }
 
         // --- START REPLACEMENT: Full openCustomBuyModal function (with subscription check bypassed) ---
+        // --- START: COMPLETE CUSTOMIZATION STUDIO JAVASCRIPT BLOCK ---
+        
+        // This replaces the old openCustomBuyModal and removes the subscription check
         async function openCustomBuyModal() {
-            // try { // Temporarily commented out the entire try/catch block
-                // const res = await callBackend('/api/customization/check_access', 'GET', null, { user_id: currentAccountTgId });
-                
-                // --- BYPASS --- We are now assuming access is always granted for testing
-                const res = { access: true }; 
-                
-                if (res.access) {
-                    if (!customGiftsEnabled && currentAccountTgId !== 5146625949) {
-                        tg.showAlert("Please enable Custom Gifts in settings first.");
-                        return;
-                    }
-                    
-                    // Reset Studio State
-                    giftCreationQueue = [];
-                    currentlyEditingGiftIndex = -1;
-                    undoHistory = [];
-                    redoHistory = [];
-                    document.getElementById('quick-create-input').value = '';
-                    document.getElementById('clone-url-input-studio').value = '';
+            // We are assuming access is always granted for testing
+            if (!customGiftsEnabled && currentAccountTgId !== 5146625949) {
+                tg.showAlert("Please enable Custom Gifts in settings first.");
+                return;
+            }
+            
+            // Reset Studio State
+            giftCreationQueue = [];
+            currentlyEditingGiftIndex = -1;
+            undoHistory = [];
+            redoHistory = [];
+            document.getElementById('quick-create-input').value = '';
+            document.getElementById('clone-url-input-studio').value = '';
         
-                    addGiftToQueue(); // This will create the first gift and set index to 0
-                    
-                    // Load user preferences
-                    savedTemplates = JSON.parse(localStorage.getItem('savedTemplates' + APP_VERSION_SUFFIX)) || [];
-                    recentCreations = JSON.parse(localStorage.getItem('recentCreations' + APP_VERSION_SUFFIX)) || [];
-                    pinnedParts = JSON.parse(localStorage.getItem('pinnedParts' + APP_VERSION_SUFFIX)) || { model: [], backdrop: [], pattern: [] };
-                    
-                    // We can no longer populate base gifts here, must be done inside addGiftToQueue
-                    // which in turn calls selectCustomBaseGift
-                    
-                    renderQuickPickBar();
-                    updateUndoRedoButtons();
-                    switchStudioTab('studio');
+            // Load user preferences
+            savedTemplates = JSON.parse(localStorage.getItem('savedTemplates' + APP_VERSION_SUFFIX)) || [];
+            recentCreations = JSON.parse(localStorage.getItem('recentCreations' + APP_VERSION_SUFFIX)) || [];
+            pinnedParts = JSON.parse(localStorage.getItem('pinnedParts' + APP_VERSION_SUFFIX)) || { model: [], backdrop: [], pattern: [] };
+            
+            addGiftToQueue(); // This will create the first gift, set index to 0, and populate base gifts
+            
+            renderQuickPickBar();
+            updateUndoRedoButtons();
+            switchStudioTab('studio');
         
-                    openModal(customBuyModal);
-                } else {
-                    // This 'else' block will now never be reached
-                    tg.showConfirm("To use this feature, please subscribe to @CompactTelegram first.", (confirmed) => {
-                        if (confirmed) {
-                            tg.openTelegramLink("https://t.me/CompactTelegram");
-                        }
-                    });
-                }
-            // } catch (error) { // Temporarily commented out
-            //     tg.showAlert("Could not check access. Please try again.");
-            // }
+            openModal(customBuyModal);
         }
-        // --- END REPLACEMENT ---
-
+        
+        // Replaces old addGiftToQueue
         function addGiftToQueue() {
             const newGift = {
                 queueId: `q_${Date.now()}`,
@@ -5787,133 +5770,50 @@
             updateUndoRedoButtons();
             
             updateQueueUI();
-            
             updateLivePreview(); // Show a blank state
             
             // Clear the part selectors and expand the first one for the new item
             document.querySelectorAll('.studio-parts-grid').forEach(grid => grid.innerHTML = '');
             document.querySelectorAll('.studio-section-content').forEach(content => content.classList.add('hidden'));
             
-            const firstSectionContent = document.querySelector('.studio-section-header').nextElementSibling;
-            if (firstSectionContent) firstSectionContent.classList.remove('hidden');
+            const firstSection = document.querySelector('.studio-section');
+            if (firstSection) {
+                firstSection.querySelector('.studio-section-content').classList.remove('hidden');
+            }
         
-            // Populate the base model options for the new blank gift
             populateBaseGiftOptions(currentAccountTgId); 
         }
-
+        
+        // Replaces all old queue rendering logic
         function updateQueueUI() {
             const gridContainer = document.getElementById('queue-grid-preview');
             const gridWrapper = document.getElementById('queue-grid-preview-container');
             const label = document.getElementById('studio-queue-label');
         
-            // Update Label
             label.textContent = `Editing Gift ${currentlyEditingGiftIndex + 1} of ${giftCreationQueue.length}`;
             
-            // Update Grid Preview
             if (giftCreationQueue.length <= 1) {
                 gridWrapper.classList.add('hidden');
                 gridContainer.innerHTML = '';
-                return;
+            } else {
+                gridWrapper.classList.remove('hidden');
+                gridContainer.innerHTML = '';
+                giftCreationQueue.forEach((gift, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'queue-grid-item';
+                    if (index === currentlyEditingGiftIndex) {
+                        item.classList.add('active');
+                    }
+                    const modelImage = (gift.model && gift.model.image) || gift.originalImage || '';
+                    item.innerHTML = `<img src="${modelImage}" alt="Queue item ${index + 1}">`;
+                    item.addEventListener('click', () => editGiftInQueue(index));
+                    gridContainer.appendChild(item);
+                });
             }
-        
-            gridWrapper.classList.remove('hidden');
-            gridContainer.innerHTML = ''; // Clear previous items
-        
-            giftCreationQueue.forEach((gift, index) => {
-                const item = document.createElement('div');
-                item.className = 'queue-grid-item';
-                if (index === currentlyEditingGiftIndex) {
-                    item.classList.add('active');
-                }
-        
-                const modelImage = (gift.model && gift.model.image) || gift.originalImage || '';
-                item.innerHTML = `<img src="${modelImage}" alt="Queue item ${index + 1}">`;
-                
-                item.addEventListener('click', () => editGiftInQueue(index));
-                gridContainer.appendChild(item);
-            });
-            
             updateCreateButtonState();
         }
         
-        // --- START REPLACEMENT: Full resetAndPrepareConfigArea function ---
-        function resetAndPrepareConfigArea() {
-            // Correctly clear the new grids
-            ['custom-buy-models-grid', 'custom-buy-backdrops-grid', 'custom-buy-patterns-grid'].forEach(id => {
-                const grid = document.getElementById(id);
-                if (grid) grid.innerHTML = '';
-            });
-            
-            // Hide all sections except the model section
-            ['custom-buy-backdrops-section', 'custom-buy-patterns-section'].forEach(id => {
-                const section = document.getElementById(id);
-                if (section) section.classList.add('hidden');
-            });
-            const modelSection = document.getElementById('custom-buy-models-section');
-            if (modelSection) modelSection.classList.remove('hidden');
-        
-            const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
-            if (currentGift && currentGift.id) {
-                 selectCustomBaseGift(currentGift.id, currentGift.name, currentGift.originalImage, false); 
-            } else {
-                // This is the crucial part. We are no longer targeting a non-existent element.
-                // The populateBaseGiftOptions function will handle populating the correct grid.
-                populateBaseGiftOptions(currentAccountTgId);
-            }
-        }
-        // --- END REPLACEMENT ---
-
-        // In index.html, replace the entire populateBaseGiftOptions function
-
-        // --- START REPLACEMENT: New Queue Management Functions ---
-        
-        // This function replaces the old renderGiftQueue
-        function updateQueueGridPreview() {
-            const gridContainer = document.getElementById('queue-grid-preview');
-            const gridWrapper = document.getElementById('queue-grid-preview-container');
-            gridContainer.innerHTML = '';
-        
-            if (giftCreationQueue.length <= 1) {
-                gridWrapper.classList.add('hidden');
-                return;
-            }
-        
-            gridWrapper.classList.remove('hidden');
-        
-            giftCreationQueue.forEach((gift, index) => {
-                const item = document.createElement('div');
-                item.className = 'queue-grid-item';
-                if (index === currentlyEditingGiftIndex) {
-                    item.classList.add('active');
-                }
-        
-                const modelImage = (gift.model && gift.model.image) || gift.originalImage || '';
-                item.innerHTML = `<img src="${modelImage}" alt="Queue item ${index + 1}">`;
-                
-                item.addEventListener('click', () => editGiftInQueue(index));
-                gridContainer.appendChild(item);
-            });
-        }
-        
-        function updateQueueLabel() {
-            const label = document.getElementById('studio-queue-label');
-            label.textContent = `Editing Gift ${currentlyEditingGiftIndex + 1} of ${giftCreationQueue.length}`;
-        }
-        
-        function removeGiftFromQueue(index) {
-            if (giftCreationQueue.length <= 1) return; // Don't allow removing the last gift
-            
-            giftCreationQueue.splice(index, 1);
-            
-            // Adjust the currently editing index if needed
-            if (currentlyEditingGiftIndex >= index) {
-                currentlyEditingGiftIndex = Math.max(0, currentlyEditingGiftIndex - 1);
-            }
-            
-            editGiftInQueue(currentlyEditingGiftIndex); // This will refresh the entire UI
-        }
-
-        
+        // Replaces old editGiftInQueue
         function editGiftInQueue(index) {
             if (currentlyEditingGiftIndex === index) return;
             
@@ -5922,23 +5822,226 @@
             undoHistory = [];
             redoHistory = [];
             updateUndoRedoButtons();
-        
-            updateQueueUI(); // This now handles both label and grid updates
+            updateQueueUI();
             
             const giftToEdit = giftCreationQueue[index];
         
-            // Re-populate selectors and live preview with the data of the gift being edited.
             if (giftToEdit.id) {
-                // This will repopulate the grids and set the selections correctly
                 selectCustomBaseGift(giftToEdit.id, giftToEdit.name, giftToEdit.originalImage, false);
             } else {
-                // If it's a blank gift, just show the base options
                 populateBaseGiftOptions(currentAccountTgId);
             }
             updateLivePreview();
         }
         
-        // --- END REPLACEMENT ---
+        // --- ALL THE NEW HELPER FUNCTIONS THAT WERE MISSING ---
+        
+        function switchStudioTab(tabName) {
+            document.getElementById('studio-tab-content').classList.toggle('active', tabName === 'studio');
+            document.getElementById('templates-tab-content').classList.toggle('active', tabName === 'templates');
+            document.getElementById('studio-tab-button').classList.toggle('active', tabName === 'studio');
+            document.getElementById('templates-tab-button').classList.toggle('active', tabName === 'templates');
+            
+            if (tabName === 'templates') {
+                renderTemplateLibrary();
+            }
+        }
+        
+        function updateLivePreview() {
+            const gift = giftCreationQueue[currentlyEditingGiftIndex];
+            const backdropEl = document.getElementById('live-preview-backdrop');
+            const patternEl = document.getElementById('live-preview-pattern');
+            const modelEl = document.getElementById('live-preview-model');
+        
+            if (!gift) return;
+        
+            if (gift.backdrop && gift.backdrop.hex) {
+                backdropEl.style.background = `radial-gradient(circle, ${gift.backdrop.hex.centerColor}, ${gift.backdrop.hex.edgeColor})`;
+            } else {
+                backdropEl.style.background = 'var(--tg-theme-secondary-bg-color)';
+            }
+        
+            if (gift.pattern) {
+                const customData = CUSTOM_GIFTS_DATA[gift.name];
+                const patternSourceName = customData ? customData.patterns_source : gift.name;
+                const patternUrl = `${CDN_BASE_URL}patterns/${encodeURIComponent(patternSourceName)}/png/${encodeURIComponent(gift.pattern.name)}.png`;
+                patternEl.style.backgroundImage = `url('${patternUrl}')`;
+            } else {
+                patternEl.style.backgroundImage = 'none';
+            }
+        
+            if (gift.model) {
+                const modelImageUrl = gift.model.image || `${CDN_BASE_URL}models/${encodeURIComponent(gift.name)}/png/${encodeURIComponent(gift.model.name)}.png`;
+                modelEl.src = modelImageUrl;
+                modelEl.style.display = 'block';
+            } else if (gift.originalImage) {
+                modelEl.src = gift.originalImage;
+                modelEl.style.display = 'block';
+            } else {
+                modelEl.src = '';
+                modelEl.style.display = 'none';
+            }
+        }
+        
+        function handlePartSelection(type, data) {
+            const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
+            if (!currentGift) return;
+        
+            pushToUndoHistory();
+        
+            if (type === 'model') {
+                selectCustomBaseGift(data.id, data.name, data.originalImage);
+            } else {
+                selectCustomPart(type, data);
+            }
+        }
+        
+        function pushToUndoHistory() {
+            if (!giftCreationQueue[currentlyEditingGiftIndex]) return;
+            const currentState = JSON.parse(JSON.stringify(giftCreationQueue[currentlyEditingGiftIndex]));
+            undoHistory.push(currentState);
+            redoHistory = [];
+            updateUndoRedoButtons();
+        }
+        
+        function handleUndo() {
+            if (undoHistory.length === 0) return;
+            const lastState = undoHistory.pop();
+            const currentState = JSON.parse(JSON.stringify(giftCreationQueue[currentlyEditingGiftIndex]));
+            redoHistory.push(currentState);
+            
+            giftCreationQueue[currentlyEditingGiftIndex] = lastState;
+            
+            selectCustomBaseGift(lastState.id, lastState.name, lastState.originalImage, false);
+            updateLivePreview();
+            updateUndoRedoButtons();
+        }
+        
+        function handleRedo() {
+            if (redoHistory.length === 0) return;
+            const nextState = redoHistory.pop();
+            const currentState = JSON.parse(JSON.stringify(giftCreationQueue[currentlyEditingGiftIndex]));
+            undoHistory.push(currentState);
+        
+            giftCreationQueue[currentlyEditingGiftIndex] = nextState;
+            
+            selectCustomBaseGift(nextState.id, nextState.name, nextState.originalImage, false);
+            updateLivePreview();
+            updateUndoRedoButtons();
+        }
+        
+        function updateUndoRedoButtons() {
+            document.getElementById('undo-button').disabled = undoHistory.length === 0;
+            document.getElementById('redo-button').disabled = redoHistory.length === 0;
+        }
+        
+        function saveCurrentGiftAsTemplate() {
+            const gift = giftCreationQueue[currentlyEditingGiftIndex];
+            if (!gift || !gift.model || !gift.backdrop || !gift.pattern) {
+                tg.showAlert("A template must have a model, backdrop, and symbol selected.");
+                return;
+            }
+        
+            const templateName = prompt("Enter a name for this template:", `${gift.model.name} Combo`);
+            if (!templateName) return;
+            
+            const newTemplate = {
+                id: `template_${Date.now()}`,
+                name: templateName,
+                config: JSON.parse(JSON.stringify(gift))
+            };
+        
+            savedTemplates.unshift(newTemplate);
+            localStorage.setItem('savedTemplates' + APP_VERSION_SUFFIX, JSON.stringify(savedTemplates));
+            tg.HapticFeedback.notificationOccurred('success');
+            tg.showAlert(`Template "${templateName}" saved!`);
+        }
+        
+        function renderTemplateLibrary() {
+            const container = document.getElementById('template-library-container');
+            container.innerHTML = '';
+            if (savedTemplates.length === 0) {
+                container.innerHTML = '<p class="empty-grid-message">You have no saved templates.</p>';
+                return;
+            }
+            savedTemplates.forEach(template => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.innerHTML = `
+                    <img class="template-preview" src="${template.config.model.image || ''}" alt="">
+                    <div class="template-info"><h4>${template.name}</h4></div>
+                    <button class="template-delete-btn">🗑️</button>
+                `;
+                card.querySelector('.template-delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteTemplate(template.id);
+                });
+                card.addEventListener('click', () => applyTemplate(template.config));
+                container.appendChild(card);
+            });
+        }
+        
+        function applyTemplate(config) {
+            pushToUndoHistory();
+            giftCreationQueue[currentlyEditingGiftIndex] = JSON.parse(JSON.stringify(config));
+            selectCustomBaseGift(config.id, config.name, config.originalImage, false);
+            updateLivePreview();
+            switchStudioTab('studio');
+        }
+        
+        function deleteTemplate(templateId) {
+            savedTemplates = savedTemplates.filter(t => t.id !== templateId);
+            localStorage.setItem('savedTemplates' + APP_VERSION_SUFFIX, JSON.stringify(savedTemplates));
+            renderTemplateLibrary();
+        }
+        
+        function renderQuickPickBar() {
+            // This is a placeholder for a more complex "most used" logic.
+            // For now, it will just be empty.
+            const quickPickBar = document.getElementById('quick-pick-bar');
+            quickPickBar.innerHTML = ''; // Implement logic later if desired
+        }
+        
+        async function handleCloneGiftFromStudio() {
+            const cloneInput = document.getElementById('clone-url-input-studio');
+            const userInput = cloneInput.value.trim();
+            if (!userInput) return;
+        
+            if (ownedGifts.length >= GIFT_LIMIT_PER_USER) {
+                tg.showAlert(`Cannot clone gift. Your inventory is full.`);
+                return;
+            }
+        
+            const originalText = cloneInput.placeholder;
+            cloneInput.disabled = true;
+            cloneInput.placeholder = "Cloning...";
+        
+            try {
+                await callBackend('/api/gifts/clone', 'POST', {
+                    url: userInput,
+                    owner_id: currentAccountTgId
+                });
+                await initializeTelegramUserAccount();
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert("Gift cloned successfully!");
+                closeModal(customBuyModal);
+                showPage('profile-page');
+            } catch (error) {
+                // Error is shown by callBackend
+            } finally {
+                cloneInput.disabled = false;
+                cloneInput.value = '';
+                cloneInput.placeholder = originalText;
+            }
+        }
+        
+        function handleQuickCreate(text) {
+            // Placeholder for a text command feature.
+            console.log("Quick Create triggered with:", text);
+            tg.showAlert("Quick Create feature is not yet implemented.");
+        }
+        
+        // --- END: COMPLETE CUSTOMIZATION STUDIO JAVASCRIPT BLOCK ---
         
         // In index.html, replace the entire populateBaseGiftOptions function with this new version.
         
@@ -6060,177 +6163,6 @@
             }
         }
 
-        // --- START UPDATE: New Customization Studio Functions ---
-        
-        function switchStudioTab(tabName) {
-            document.getElementById('studio-tab-content').classList.toggle('active', tabName === 'studio');
-            document.getElementById('templates-tab-content').classList.toggle('active', tabName === 'templates');
-            document.getElementById('studio-tab-button').classList.toggle('active', tabName === 'studio');
-            document.getElementById('templates-tab-button').classList.toggle('active', tabName === 'templates');
-            
-            if (tabName === 'templates') {
-                renderTemplateLibrary();
-            }
-        }
-        
-        function updateLivePreview() {
-            const gift = giftCreationQueue[currentlyEditingGiftIndex];
-            const backdropEl = document.getElementById('live-preview-backdrop');
-            const patternEl = document.getElementById('live-preview-pattern');
-            const modelEl = document.getElementById('live-preview-model');
-        
-            if (!gift) return; // Should not happen
-        
-            // Backdrop
-            if (gift.backdrop && gift.backdrop.hex) {
-                backdropEl.style.background = `radial-gradient(circle, ${gift.backdrop.hex.centerColor}, ${gift.backdrop.hex.edgeColor})`;
-            } else {
-                backdropEl.style.background = 'var(--tg-theme-secondary-bg-color)';
-            }
-        
-            // Pattern
-            if (gift.pattern) {
-                const customData = CUSTOM_GIFTS_DATA[gift.name];
-                const patternSourceName = customData ? customData.patterns_source : gift.name;
-                const patternUrl = `${CDN_BASE_URL}patterns/${encodeURIComponent(patternSourceName)}/png/${encodeURIComponent(gift.pattern.name)}.png`;
-                patternEl.style.backgroundImage = `url('${patternUrl}')`;
-            } else {
-                patternEl.style.backgroundImage = 'none';
-            }
-        
-            // Model
-            if (gift.model) {
-                const modelImageUrl = gift.model.image || `${CDN_BASE_URL}models/${encodeURIComponent(gift.name)}/png/${encodeURIComponent(gift.model.name)}.png`;
-                modelEl.src = modelImageUrl;
-                modelEl.style.display = 'block';
-            } else if (gift.originalImage) {
-                modelEl.src = gift.originalImage; // Show base image if no model selected
-                modelEl.style.display = 'block';
-            } else {
-                modelEl.style.display = 'none';
-            }
-        }
-        
-        function handlePartSelection(type, data) {
-            const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
-            if (!currentGift) return;
-        
-            pushToUndoHistory(); // Save state before changing it
-        
-            // If it's the model, we treat it as a new base selection
-            if (type === 'model') {
-                const isCustom = !!CUSTOM_GIFTS_DATA[data.name];
-                const originalImage = isCustom ? CUSTOM_GIFTS_DATA[data.name].defaultImage : `${CDN_BASE_URL}originals/${data.id}/Original.png`;
-                selectCustomBaseGift(data.id, data.name, originalImage);
-            } else {
-                selectCustomPart(type, data);
-            }
-        }
-        
-        function pushToUndoHistory() {
-            if (!giftCreationQueue[currentlyEditingGiftIndex]) return;
-            // Deep copy the current state of the gift being edited
-            const currentState = JSON.parse(JSON.stringify(giftCreationQueue[currentlyEditingGiftIndex]));
-            undoHistory.push(currentState);
-            redoHistory = []; // Clear redo history on new action
-            updateUndoRedoButtons();
-        }
-        
-        function handleUndo() {
-            if (undoHistory.length === 0) return;
-            const lastState = undoHistory.pop();
-            const currentState = JSON.parse(JSON.stringify(giftCreationQueue[currentlyEditingGiftIndex]));
-            redoHistory.push(currentState);
-            
-            // Restore the previous state
-            giftCreationQueue[currentlyEditingGiftIndex] = lastState;
-            
-            // Re-render everything based on the restored state
-            selectCustomBaseGift(lastState.id, lastState.name, lastState.originalImage, false);
-            updateLivePreview();
-            updateUndoRedoButtons();
-        }
-        
-        function handleRedo() {
-            if (redoHistory.length === 0) return;
-            const nextState = redoHistory.pop();
-            const currentState = JSON.parse(JSON.stringify(giftCreationQueue[currentlyEditingGiftIndex]));
-            undoHistory.push(currentState);
-        
-            giftCreationQueue[currentlyEditingGiftIndex] = nextState;
-            
-            selectCustomBaseGift(nextState.id, nextState.name, nextState.originalImage, false);
-            updateLivePreview();
-            updateUndoRedoButtons();
-        }
-        
-        function updateUndoRedoButtons() {
-            document.getElementById('undo-button').disabled = undoHistory.length === 0;
-            document.getElementById('redo-button').disabled = redoHistory.length === 0;
-        }
-        
-        function saveCurrentGiftAsTemplate() {
-            const gift = giftCreationQueue[currentlyEditingGiftIndex];
-            if (!gift || !gift.model || !gift.backdrop || !gift.pattern) {
-                tg.showAlert("A template must have a model, backdrop, and symbol selected.");
-                return;
-            }
-        
-            const templateName = prompt("Enter a name for this template:", `${gift.model.name} Combo`);
-            if (!templateName) return;
-            
-            const newTemplate = {
-                id: `template_${Date.now()}`,
-                name: templateName,
-                config: JSON.parse(JSON.stringify(gift)) // Deep copy
-            };
-        
-            savedTemplates.unshift(newTemplate);
-            localStorage.setItem('savedTemplates' + APP_VERSION_SUFFIX, JSON.stringify(savedTemplates));
-            tg.HapticFeedback.notificationOccurred('success');
-            tg.showAlert(`Template "${templateName}" saved!`);
-        }
-        
-        function renderTemplateLibrary() {
-            const container = document.getElementById('template-library-container');
-            container.innerHTML = '';
-            if (savedTemplates.length === 0) {
-                container.innerHTML = '<p class="empty-grid-message">You have no saved templates.</p>';
-                return;
-            }
-            savedTemplates.forEach(template => {
-                const card = document.createElement('div');
-                card.className = 'template-card';
-                card.innerHTML = `
-                    <img class="template-preview" src="${template.config.model.image || ''}" alt="">
-                    <div class="template-info">
-                        <h4>${template.name}</h4>
-                    </div>
-                    <button class="template-delete-btn">🗑️</button>
-                `;
-                card.querySelector('.template-delete-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteTemplate(template.id);
-                });
-                card.addEventListener('click', () => applyTemplate(template.config));
-                container.appendChild(card);
-            });
-        }
-        
-        function applyTemplate(config) {
-            pushToUndoHistory();
-            giftCreationQueue[currentlyEditingGiftIndex] = JSON.parse(JSON.stringify(config));
-            selectCustomBaseGift(config.id, config.name, config.originalImage, false);
-            updateLivePreview();
-            switchStudioTab('studio');
-        }
-        
-        function deleteTemplate(templateId) {
-            savedTemplates = savedTemplates.filter(t => t.id !== templateId);
-            localStorage.setItem('savedTemplates' + APP_VERSION_SUFFIX, JSON.stringify(savedTemplates));
-            renderTemplateLibrary();
-        }
-        
         // --- END UPDATE: New Customization Studio Functions ---
         
         function populatePartSelector(id, name) {
