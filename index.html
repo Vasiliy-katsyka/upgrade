@@ -5775,15 +5775,68 @@
 
         function addGiftToQueue() {
             const newGift = {
+                queueId: `q_${Date.now()}`,
                 id: null, name: null, originalImage: null, lottiePath: null,
                 model: null, backdrop: null, pattern: null, quantity: 1
             };
+        
             giftCreationQueue.push(newGift);
             currentlyEditingGiftIndex = giftCreationQueue.length - 1;
-            renderGiftQueue();
-            resetAndPrepareConfigArea();
+            
+            undoHistory = [];
+            redoHistory = [];
+            updateUndoRedoButtons();
+            
+            updateQueueUI();
+            
+            updateLivePreview(); // Show a blank state
+            
+            // Clear the part selectors and expand the first one for the new item
+            document.querySelectorAll('.studio-parts-grid').forEach(grid => grid.innerHTML = '');
+            document.querySelectorAll('.studio-section-content').forEach(content => content.classList.add('hidden'));
+            
+            const firstSectionContent = document.querySelector('.studio-section-header').nextElementSibling;
+            if (firstSectionContent) firstSectionContent.classList.remove('hidden');
+        
+            // Populate the base model options for the new blank gift
+            populateBaseGiftOptions(currentAccountTgId); 
         }
 
+        function updateQueueUI() {
+            const gridContainer = document.getElementById('queue-grid-preview');
+            const gridWrapper = document.getElementById('queue-grid-preview-container');
+            const label = document.getElementById('studio-queue-label');
+        
+            // Update Label
+            label.textContent = `Editing Gift ${currentlyEditingGiftIndex + 1} of ${giftCreationQueue.length}`;
+            
+            // Update Grid Preview
+            if (giftCreationQueue.length <= 1) {
+                gridWrapper.classList.add('hidden');
+                gridContainer.innerHTML = '';
+                return;
+            }
+        
+            gridWrapper.classList.remove('hidden');
+            gridContainer.innerHTML = ''; // Clear previous items
+        
+            giftCreationQueue.forEach((gift, index) => {
+                const item = document.createElement('div');
+                item.className = 'queue-grid-item';
+                if (index === currentlyEditingGiftIndex) {
+                    item.classList.add('active');
+                }
+        
+                const modelImage = (gift.model && gift.model.image) || gift.originalImage || '';
+                item.innerHTML = `<img src="${modelImage}" alt="Queue item ${index + 1}">`;
+                
+                item.addEventListener('click', () => editGiftInQueue(index));
+                gridContainer.appendChild(item);
+            });
+            
+            updateCreateButtonState();
+        }
+        
         function resetAndPrepareConfigArea() {
             ['custom-buy-models-grid', 'custom-buy-backdrops-grid', 'custom-buy-patterns-grid'].forEach(id => document.getElementById(id).innerHTML = '');
             ['custom-buy-models-section', 'custom-buy-backdrops-section', 'custom-buy-patterns-section'].forEach(id => document.getElementById(id).classList.add('hidden'));
@@ -5835,33 +5888,38 @@
         }
         
         function removeGiftFromQueue(index) {
-            // This function is no longer needed as the new UI doesn't have individual remove buttons
-            // The logic is simpler now: just add more gifts.
-            // If we wanted to add it back, we would add a 'x' button to the queue-grid-item.
-            // For now, we keep it simple as requested.
+            if (giftCreationQueue.length <= 1) return; // Don't allow removing the last gift
+            
+            giftCreationQueue.splice(index, 1);
+            
+            // Adjust the currently editing index if needed
+            if (currentlyEditingGiftIndex >= index) {
+                currentlyEditingGiftIndex = Math.max(0, currentlyEditingGiftIndex - 1);
+            }
+            
+            editGiftInQueue(currentlyEditingGiftIndex); // This will refresh the entire UI
         }
+
         
         function editGiftInQueue(index) {
-            if (currentlyEditingGiftIndex === index) return; // No change
+            if (currentlyEditingGiftIndex === index) return;
             
             currentlyEditingGiftIndex = index;
             
-            // Clear history for the newly selected item
             undoHistory = [];
             redoHistory = [];
             updateUndoRedoButtons();
         
-            // Update UI to reflect the selected gift
-            updateQueueGridPreview(); // To highlight the new active item
-            updateQueueLabel();
+            updateQueueUI(); // This now handles both label and grid updates
             
             const giftToEdit = giftCreationQueue[index];
         
-            // This is the crucial part: re-populate the selectors and live preview
-            // with the data of the gift we are now editing.
+            // Re-populate selectors and live preview with the data of the gift being edited.
             if (giftToEdit.id) {
+                // This will repopulate the grids and set the selections correctly
                 selectCustomBaseGift(giftToEdit.id, giftToEdit.name, giftToEdit.originalImage, false);
             } else {
+                // If it's a blank gift, just show the base options
                 populateBaseGiftOptions(currentAccountTgId);
             }
             updateLivePreview();
