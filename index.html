@@ -3124,7 +3124,6 @@
         const customBuyModal = document.getElementById('custom-buy-modal');
         const giftQueueContainer = document.getElementById('gift-queue-container');
         const giftConfigArea = document.getElementById('gift-config-area');
-        const customBuyBaseGiftsGrid = document.getElementById('custom-buy-base-gifts-grid');
         const customBuyModelsSection = document.getElementById('custom-buy-models-section');
         const customBuyModelsGrid = document.getElementById('custom-buy-models-grid');
         const customBuyBackdropsSection = document.getElementById('custom-buy-backdrops-section');
@@ -5837,18 +5836,32 @@
             updateCreateButtonState();
         }
         
+        // --- START REPLACEMENT: Full resetAndPrepareConfigArea function ---
         function resetAndPrepareConfigArea() {
-            ['custom-buy-models-grid', 'custom-buy-backdrops-grid', 'custom-buy-patterns-grid'].forEach(id => document.getElementById(id).innerHTML = '');
-            ['custom-buy-models-section', 'custom-buy-backdrops-section', 'custom-buy-patterns-section'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            // Correctly clear the new grids
+            ['custom-buy-models-grid', 'custom-buy-backdrops-grid', 'custom-buy-patterns-grid'].forEach(id => {
+                const grid = document.getElementById(id);
+                if (grid) grid.innerHTML = '';
+            });
             
+            // Hide all sections except the model section
+            ['custom-buy-backdrops-section', 'custom-buy-patterns-section'].forEach(id => {
+                const section = document.getElementById(id);
+                if (section) section.classList.add('hidden');
+            });
+            const modelSection = document.getElementById('custom-buy-models-section');
+            if (modelSection) modelSection.classList.remove('hidden');
+        
             const currentGift = giftCreationQueue[currentlyEditingGiftIndex];
             if (currentGift && currentGift.id) {
                  selectCustomBaseGift(currentGift.id, currentGift.name, currentGift.originalImage, false); 
             } else {
-                populateBaseGiftOptions();
-                document.getElementById('custom-buy-base-gifts-grid').classList.remove('hidden');
+                // This is the crucial part. We are no longer targeting a non-existent element.
+                // The populateBaseGiftOptions function will handle populating the correct grid.
+                populateBaseGiftOptions(currentAccountTgId);
             }
         }
+        // --- END REPLACEMENT ---
 
         // In index.html, replace the entire populateBaseGiftOptions function
 
@@ -5929,9 +5942,13 @@
         
         // In index.html, replace the entire populateBaseGiftOptions function with this new version.
         
+        // --- START REPLACEMENT: Full populateBaseGiftOptions function ---
         function populateBaseGiftOptions(currentUserId) {
-            customBuyBaseGiftsGrid.innerHTML = '';
-            const ADMIN_USER_ID = 5146625949; // Define the special user ID here
+            // This is the corrected line:
+            const modelsGrid = document.getElementById('custom-buy-models-grid');
+            modelsGrid.innerHTML = ''; 
+            
+            const ADMIN_USER_ID = 5146625949;
         
             for (const id in allAvailableGifts) {
                 const name = allAvailableGifts[id];
@@ -5939,12 +5956,9 @@
                 
                 if (customGiftData && !customGiftsEnabled) continue;
                 
-                // --- UPDATED LOGIC: Allow admin to customize limited gifts ---
-                // If the gift has a limit AND the current user is NOT the admin, skip it.
                 if (customGiftData && customGiftData.limit && currentUserId !== ADMIN_USER_ID) {
                     continue; 
                 }
-                // --- END UPDATE ---
         
                 const originalImageUrl = customGiftData
                     ? customGiftData.defaultImage
@@ -5954,10 +5968,14 @@
                 item.className = 'filter-option';
                 item.dataset.id = id;
                 item.innerHTML = `<img src="${originalImageUrl}" alt="${name}" loading="lazy"><div class="label">${name}</div>`;
-                item.addEventListener('click', () => selectCustomBaseGift(id, name, originalImageUrl));
-                customBuyBaseGiftsGrid.appendChild(item);
+                
+                // This now calls the correct function to handle the next step
+                item.addEventListener('click', () => handlePartSelection('model', {id: id, name: name}));
+        
+                modelsGrid.appendChild(item);
             }
         }
+        // --- END REPLACEMENT ---
 
         function renderGiftQueue() {
             giftQueueContainer.innerHTML = '';
