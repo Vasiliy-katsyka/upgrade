@@ -5722,14 +5722,20 @@
             });
         }
 
+        // --- START REPLACEMENT: Full openCustomBuyModal function (with subscription check bypassed) ---
         async function openCustomBuyModal() {
-            try {
-                const res = await callBackend('/api/customization/check_access', 'GET', null, { user_id: currentAccountTgId });
+            // try { // Temporarily commented out the entire try/catch block
+                // const res = await callBackend('/api/customization/check_access', 'GET', null, { user_id: currentAccountTgId });
+                
+                // --- BYPASS --- We are now assuming access is always granted for testing
+                const res = { access: true }; 
+                
                 if (res.access) {
                     if (!customGiftsEnabled && currentAccountTgId !== 5146625949) {
                         tg.showAlert("Please enable Custom Gifts in settings first.");
                         return;
                     }
+                    
                     // Reset Studio State
                     giftCreationQueue = [];
                     currentlyEditingGiftIndex = -1;
@@ -5745,23 +5751,27 @@
                     recentCreations = JSON.parse(localStorage.getItem('recentCreations' + APP_VERSION_SUFFIX)) || [];
                     pinnedParts = JSON.parse(localStorage.getItem('pinnedParts' + APP_VERSION_SUFFIX)) || { model: [], backdrop: [], pattern: [] };
                     
-                    populateBaseGiftOptions(currentAccountTgId); // Now populates the model grid directly
+                    // We can no longer populate base gifts here, must be done inside addGiftToQueue
+                    // which in turn calls selectCustomBaseGift
+                    
                     renderQuickPickBar();
                     updateUndoRedoButtons();
                     switchStudioTab('studio');
         
                     openModal(customBuyModal);
                 } else {
+                    // This 'else' block will now never be reached
                     tg.showConfirm("To use this feature, please subscribe to @CompactTelegram first.", (confirmed) => {
                         if (confirmed) {
                             tg.openTelegramLink("https://t.me/CompactTelegram");
                         }
                     });
                 }
-            } catch (error) {
-                tg.showAlert("Could not check access. Please try again.");
-            }
+            // } catch (error) { // Temporarily commented out
+            //     tg.showAlert("Could not check access. Please try again.");
+            // }
         }
+        // --- END REPLACEMENT ---
 
         function addGiftToQueue() {
             const newGift = {
