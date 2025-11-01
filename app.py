@@ -504,6 +504,43 @@ CUSTOM_GIFTS_DATA = {
         "backdrops_source": "Toy Bear",
         "patterns_source": "Toy Bear"
     },
+    "Precious Toilet": {
+        "id": "custom_precious_toilet",
+        "price": 200,
+        "limit": 500,
+        "defaultImage": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_170327637.png?raw=true",
+        "models": [
+            {"name": "Skibidi Toilet", "rarityPermille": 1, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162519102.png?raw=true"},
+            {"name": "Frogs", "rarityPermille": 2, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162953946.png?raw=true"},
+            {"name": "Ducks", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163305571.png?raw=true"},
+            {"name": "Bitcoin", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163357228.png?raw=true"},
+            {"name": "Ton", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163421791.png?raw=true"},
+            {"name": "Pickachu", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163444319.png?raw=true"},
+            {"name": "Sapphire", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162435851.png?raw=true"},
+            {"name": "Wooden", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162712404.png?raw=true"},
+            {"name": "Witch", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162930035.png?raw=true"},
+            {"name": "Poopy", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163552921.png?raw=true"},
+            {"name": "Deathly", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163614265.png?raw=true"},
+            {"name": "Sharp", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163637245.png?raw=true"},
+            {"name": "Beach Toilet", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163707253.png?raw=true"},
+            {"name": "Spiders", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163732843.png?raw=true"},
+            {"name": "Dirty", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163817901.png?raw=true"},
+            {"name": "Easter", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163841820.png?raw=true"},
+            {"name": "Subway", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163932812.png?raw=true"},
+            {"name": "Black & White", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_164030257.png?raw=true"},
+            {"name": "Light Blue", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162533757.png?raw=true"},
+            {"name": "Tropical Toilet", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162546519.png?raw=true"},
+            {"name": "Cyberpunk", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162611345.png?raw=true"},
+            {"name": "Marble", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162858374.png?raw=true"},
+            {"name": "Ferrari", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163020303.png?raw=true"},
+            {"name": "Red Bull", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163050578.png?raw=true"},
+            {"name": "Ancient", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163755259.png?raw=true"},
+            {"name": "Grave Toilet", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163906810.png?raw=true"},
+            {"name": "Emo Toilet", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163953834.png?raw=true"}
+        ],
+        "backdrops_source": "Snoop Dogg",
+        "patterns_source": "Snoop Dogg"
+    },
 }
 
 MAX_BUY_PER_LEVEL_MAP = {
@@ -2332,7 +2369,7 @@ def add_gift():
         return jsonify({"error": "Database failed"}), 500
     
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
             # Check for custom gift permissions first
             if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
                 return jsonify({"error": "You must enable Custom Gifts in settings to acquire this item."}), 403
@@ -2342,7 +2379,24 @@ def add_gift():
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
                 return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
 
-            # --- UPDATED: Limited Gift Stock Logic ---
+            # --- NEW PRICING LOGIC ---
+            price = 0
+            if is_custom_gift(gift_name):
+                price = CUSTOM_GIFTS_DATA[gift_name].get('price', 0)
+            
+            if price > 0:
+                # Lock the user's account row to prevent race conditions on balance
+                cur.execute("SELECT stars_balance FROM accounts WHERE tg_id = %s FOR UPDATE;", (owner_id,))
+                balance_row = cur.fetchone()
+                if not balance_row or balance_row[0] < price:
+                    conn.rollback()
+                    return jsonify({"error": f"Insufficient Stars balance. This gift costs {price} Stars."}), 402
+                
+                # Deduct the price
+                cur.execute("UPDATE accounts SET stars_balance = stars_balance - %s WHERE tg_id = %s;", (price, owner_id))
+            # --- END NEW PRICING LOGIC ---
+
+            # --- Limited Gift Stock Logic ---
             is_limited = gift_type_id in [g['id'] for g in CUSTOM_GIFTS_DATA.values() if 'limit' in g]
             if is_limited:
                 # Lock the row for update to prevent race conditions
@@ -2354,7 +2408,6 @@ def add_gift():
                 
                 # Decrement stock
                 cur.execute("UPDATE limited_gifts_stock SET remaining_stock = remaining_stock - 1 WHERE gift_type_id = %s;", (gift_type_id,))
-            # --- END OF UPDATE ---
 
             # Insert the gift
             cur.execute("""
