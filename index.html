@@ -2751,6 +2751,43 @@
                 "backdrops_source": "Toy Bear",
                 "patterns_source": "Toy Bear"
             },
+            "Precious Toilet": {
+                "id": "custom_precious_toilet",
+                "price": 200,
+                "limit": 500,
+                "defaultImage": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_170327637.png?raw=true",
+                "models": [
+                    {"name": "Skibidi Toilet", "rarityPermille": 1, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162519102.png?raw=true"},
+                    {"name": "Frogs", "rarityPermille": 2, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162953946.png?raw=true"},
+                    {"name": "Ducks", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163305571.png?raw=true"},
+                    {"name": "Bitcoin", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163357228.png?raw=true"},
+                    {"name": "Ton", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163421791.png?raw=true"},
+                    {"name": "Pickachu", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163444319.png?raw=true"},
+                    {"name": "Sapphire", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162435851.png?raw=true"},
+                    {"name": "Wooden", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162712404.png?raw=true"},
+                    {"name": "Witch", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162930035.png?raw=true"},
+                    {"name": "Poopy", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163552921.png?raw=true"},
+                    {"name": "Deathly", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163614265.png?raw=true"},
+                    {"name": "Sharp", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163637245.png?raw=true"},
+                    {"name": "Beach Toilet", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163707253.png?raw=true"},
+                    {"name": "Spiders", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163732843.png?raw=true"},
+                    {"name": "Dirty", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163817901.png?raw=true"},
+                    {"name": "Easter", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163841820.png?raw=true"},
+                    {"name": "Subway", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163932812.png?raw=true"},
+                    {"name": "Black & White", "rarityPermille": 20, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_164030257.png?raw=true"},
+                    {"name": "Light Blue", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162533757.png?raw=true"},
+                    {"name": "Tropical Toilet", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162546519.png?raw=true"},
+                    {"name": "Cyberpunk", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162611345.png?raw=true"},
+                    {"name": "Marble", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_162858374.png?raw=true"},
+                    {"name": "Ferrari", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163020303.png?raw=true"},
+                    {"name": "Red Bull", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163050578.png?raw=true"},
+                    {"name": "Ancient", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163755259.png?raw=true"},
+                    {"name": "Grave Toilet", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163906810.png?raw=true"},
+                    {"name": "Emo Toilet", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/toilets/blob/main/BackgroundEraser_20251101_163953834.png?raw=true"}
+                ],
+                "backdrops_source": "Snoop Dogg",
+                "patterns_source": "Snoop Dogg"
+            },
         };
 
 
@@ -3870,31 +3907,32 @@
                     lottiePath = `${CDN_BASE_URL}originals/${id}/Original.json`;
                 }
         
-                // --- NEW/UPDATED LOGIC for stock ---
                 const isLimited = customGiftData && customGiftData.limit;
                 const stockInfo = isLimited ? limitedGiftStock[id] : null;
                 const isSoldOut = isLimited && stockInfo && stockInfo.remaining <= 0;
         
-                let availabilityLabel = '<div class="limited-label">Limited</div>';
+                let availabilityLabel = '';
                 if (isLimited) {
                     if (isSoldOut) {
                         availabilityLabel = '<div class="limited-label" style="background-color: var(--app-wall-demonic-red);">Sold Out</div>';
                     } else if (stockInfo) {
                         availabilityLabel = `<div class="limited-label" style="background-color: var(--tg-theme-accent-blue);">${stockInfo.remaining} of ${stockInfo.total} left</div>`;
+                    } else {
+                         availabilityLabel = '<div class="limited-label">Limited</div>';
                     }
                 }
-                // --- END OF UPDATE ---
         
-                const price = giftPrices[name];
+                // --- MODIFIED PRICE LOGIC ---
+                const price = customGiftData?.price || giftPrices[name];
+                const priceHTML = price
+                    ? `<div class="gift-price has-price"><img src="${STAR_ICON_URL}" class="star-icon" alt="Star"/> ${price.toLocaleString()}</div>`
+                    : `<div class="gift-price">Free</div>`;
+        
                 const item = document.createElement('div');
                 item.className = 'buy-gift-item';
                 item.dataset.id = id; item.dataset.name = name;
                 item.dataset.originalImage = originalImageUrl;
                 if (lottiePath) item.dataset.lottiePath = lottiePath;
-        
-                const priceHTML = price
-                    ? `<div class="gift-price has-price"><img src="${STAR_ICON_URL}" class="star-icon" alt="Star"/> ${price}</div>`
-                    : `<div class="gift-price">Free</div>`;
         
                 item.innerHTML = `
                     <div class="image-container">
@@ -4273,20 +4311,29 @@
 
         // --- Replace your existing buyGift function ---
         async function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
-            // --- UPDATED: Check local stock first for immediate feedback ---
+            // --- NEW PRICING LOGIC ---
+            const customGiftData = CUSTOM_GIFTS_DATA[name];
+            const price = customGiftData?.price || 0;
+            const totalPrice = price * quantity;
+            const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
+
+            if (totalPrice > 0 && (!currentAccount || currentAccount.stars_balance < totalPrice)) {
+                tg.showAlert(`You need ${totalPrice.toLocaleString()} Stars to buy this. Your balance is ${parseFloat(currentAccount?.stars_balance || 0).toLocaleString()}.`);
+                return;
+            }
+            // --- END NEW PRICING LOGIC ---
+
             const stockInfo = limitedGiftStock[id];
             if (stockInfo && stockInfo.remaining < quantity) {
                 tg.showAlert(`Not enough stock available. Only ${stockInfo.remaining} left.`);
                 return;
             }
-            // --- END UPDATE ---
         
             if (ownedGifts.length + quantity > GIFT_LIMIT_PER_USER) {
                 tg.showAlert(`Cannot buy ${quantity} gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
                 return;
             }
         
-            // --- OPTIMISTIC UI UPDATE ---
             const newGifts = [];
             for (let i = 0; i < quantity; i++) {
                 const tempInstanceId = `temp_${generateUniqueId()}`;
@@ -4299,13 +4346,14 @@
                 newGifts.push(newGift);
             }
         
+            if (totalPrice > 0 && currentAccount) {
+                currentAccount.stars_balance -= totalPrice;
+            }
             ownedGifts.unshift(...newGifts);
         
-            // --- NEW: Optimistically update local stock count ---
             if (stockInfo) {
                 limitedGiftStock[id].remaining -= quantity;
             }
-            // --- END NEW ---
         
             showPage('profile-page');
             switchTab('gifts');
@@ -4324,14 +4372,14 @@
                 } catch (error) {
                     tg.HapticFeedback.notificationOccurred('error');
                     ownedGifts = ownedGifts.filter(g => g.instance_id !== gift.instance_id);
-                    // Revert stock count on failure
+                    if (totalPrice > 0 && currentAccount) {
+                        currentAccount.stars_balance += price;
+                    }
                     if (stockInfo) limitedGiftStock[id].remaining += 1; 
                     renderProfileGifts(); 
-                    // The error message for sold out items is handled by the backend
                     if (error.reason !== 'This limited gift is sold out.') {
-                        tg.showAlert(`Failed to save one "${name}" gift. Please try again.`);
+                         tg.showAlert(`Failed to save one "${name}" gift. Please try again.`);
                     }
-                    // If it failed, refresh stock from server to be sure
                     await fetchLimitedGiftStock();
                 }
             }
