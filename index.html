@@ -1672,6 +1672,7 @@
         </div>
         <ul class="accounts-list" id="accounts-list"></ul>
         <div class="sidebar-footer">
+            <button id="open-friends-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 17V19H2V17S2 13 9 13 16 17 16 17M12.5 7.5A3.5 3.5 0 1 0 9 11A3.5 3.5 0 0 0 12.5 7.5M15.94 13A5.32 5.32 0 0 1 18 17V19H22V17S22 13.37 15.94 13M15 4.5A3.5 3.5 0 1 0 11.5 8A3.5 3.5 0 0 0 15 4.5Z"/></svg>Friends</button>
             <button id="open-filters-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" /></svg>Filters</button>
             <button id="open-numbers-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>Numbers</button>
             <button id="open-usernames-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.33 4,18V20H20V18C20,15.33 14.67,14 12,14Z" /></svg>Usernames</button>
@@ -2269,6 +2270,24 @@
                 </div>
             </div>
         </div>
+        
+        <div id="friends-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header-bar"><h3>Friends</h3></div>
+                <div id="add-friend-section" style="padding: 10px 20px; display: flex; gap: 10px;">
+                    <input type="text" id="friend-search-input" placeholder="Enter @username or TG ID" style="width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color);">
+                    <button id="add-friend-btn" class="modal-button" style="width: auto; padding: 0 20px;">Add</button>
+                </div>
+                <div class="modal-scrollable-content" style="padding: 0;">
+                    <ul class="collectible-list" id="friends-list">
+                        <!-- Friend list will be rendered here -->
+                    </ul>
+                </div>
+                <div class="modal-buttons-footer">
+                    <button id="close-friends-modal" class="modal-button secondary">Close</button>
+                </div>
+            </div>
+        </div>
 
         <div id="stars-modal" class="modal-overlay">
             <div class="modal-content">
@@ -2382,6 +2401,9 @@
         const LABEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>label</title><path d="M17.63,5.84C17.27,5.33 16.67,5 16,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H16C16.67,19 17.27,18.66 17.63,18.15L22,12L17.63,5.84Z" /></svg>`;
         const MENU_DOTS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>dots-vertical</title><path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" /></svg>`;
 
+        let friendsList = [];
+        let giftingTarget = null;
+        
         // --- CUSTOM GIFT DATA ---
         const CUSTOM_GIFTS_DATA = {
             "Skebob": {
@@ -2788,6 +2810,63 @@
                 "backdrops_source": "Snoop Dogg",
                 "patterns_source": "Snoop Dogg"
             },
+            "Lovely Bottle": {
+                "id": "custom_lovely_bottle",
+                "price": 500000,
+                "limit": 100,
+                "defaultImage": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_013117076.png?raw=true",
+                "models": [
+                    {"name": "Cryptoking", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011940129.png?raw=true"},
+                    {"name": "Golden", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012052637.png?raw=true"},
+                    {"name": "Aquarium", "rarityPermille": 5, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_165843462.png?raw=true"},
+                    {"name": "Devil Heart", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011245257.png?raw=true"},
+                    {"name": "Heaven", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011309728.png?raw=true"},
+                    {"name": "Froggy Heart", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011443155.png?raw=true"},
+                    {"name": "JBL Speaker", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011918718.png?raw=true"},
+                    {"name": "Circus", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012124462.png?raw=true"},
+                    {"name": "Catty", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012231268.png?raw=true"},
+                    {"name": "Jackpot", "rarityPermille": 10, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012326319.png?raw=true"},
+                    {"name": "Emo Heart", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011219423.png?raw=true"},
+                    {"name": "Halloween", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011332491.png?raw=true"},
+                    {"name": "Aztec Heart", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011356537.png?raw=true"},
+                    {"name": "Frozen Love", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011533200.png?raw=true"},
+                    {"name": "Rocky", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011558060.png?raw=true"},
+                    {"name": "Cyberpunk", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011745125.png?raw=true"},
+                    {"name": "Swamp", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011813760.png?raw=true"},
+                    {"name": "Soviet Love", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012026952.png?raw=true"},
+                    {"name": "Pickme", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012258274.png?raw=true"},
+                    {"name": "Silver", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012352140.png?raw=true"},
+                    {"name": "Talk Dirty", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012440735.png?raw=true"},
+                    {"name": "Pink", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012504913.png?raw=true"},
+                    {"name": "Electric Love", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012528059.png?raw=true"},
+                    {"name": "Honeycomb", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012551391.png?raw=true"},
+                    {"name": "Slime", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012642262.png?raw=true"},
+                    {"name": "Witch", "rarityPermille": 25, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012723059.png?raw=true"},
+                    {"name": "Beach", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011420726.png?raw=true"},
+                    {"name": "Hawaii Love", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011509869.png?raw=true"},
+                    {"name": "Chinese", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011623214.png?raw=true"},
+                    {"name": "Egypt", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011720439.png?raw=true"},
+                    {"name": "Submarine", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_011855527.png?raw=true"},
+                    {"name": "Rainbow", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012004148.png?raw=true"},
+                    {"name": "BBQ", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012154250.png?raw=true"},
+                    {"name": "Formula 1", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012416485.png?raw=true"},
+                    {"name": "Asphalt", "rarityPermille": 30, "image": "https://github.com/Vasiliy-katsyka/13-gifts/blob/main/BackgroundEraser_20251112_012613417.png?raw=true"}
+                ],
+                "backdrops_source": "Snoop Dogg",
+                "patterns_source": "Snoop Dogg"
+            },
+            "Rocky Present": {
+                "id": "custom_rocky_present",
+                "price": 5000,
+                "limit": 500,
+                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/13-gifts/refs/heads/main/MadEmoji_AgADCj4AAovVoEk.png"
+            },
+            "Lovely Letter": {
+                "id": "custom_lovely_letter",
+                "price": 500,
+                "limit": 5000,
+                "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/13-gifts/refs/heads/main/BirthdayCollection_AgADMj0AAksZ-Eg.png"
+            }
         };
 
 
@@ -3213,6 +3292,125 @@
             return `${percentage.toFixed(1)}% <span class="one-in-x">(1 of ${oneInX.toLocaleString('en-US')})</span>`;
         }
 
+        function openFriendsModal() {
+            closeSidebar();
+            openModal(document.getElementById('friends-modal'));
+            fetchAndRenderFriends();
+        }
+        
+        async function fetchAndRenderFriends() {
+            const listEl = document.getElementById('friends-list');
+            listEl.innerHTML = '<div class="spinner"></div>';
+            try {
+                friendsList = await callBackend(`/api/friends/${currentAccountTgId}`);
+                renderFriendsList();
+            } catch (error) {
+                listEl.innerHTML = '<p class="empty-grid-message">Could not load friends.</p>';
+            }
+        }
+        
+        function renderFriendsList() {
+            const listEl = document.getElementById('friends-list');
+            listEl.innerHTML = '';
+            if (friendsList.length === 0) {
+                listEl.innerHTML = '<p class="empty-grid-message">You have no friends yet. Add one above!</p>';
+                return;
+            }
+            friendsList.forEach(friend => {
+                const li = document.createElement('li');
+                li.className = 'collectible-list-item';
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.justifyContent = 'space-between';
+                li.innerHTML = `
+                    <div style="display: flex; align-items: center; cursor: pointer;" onclick="displayUserProfile('${friend.username}')">
+                        <img src="${friend.avatar_url}" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 15px;">
+                        <span>${friend.full_name} (@${friend.username})</span>
+                    </div>
+                    <button class="modal-button" style="width: auto; padding: 8px 15px; font-size: 0.9em;">Send Gift</button>
+                `;
+                li.querySelector('button').addEventListener('click', () => startGiftingFlow(friend));
+                listEl.appendChild(li);
+            });
+        }
+        
+        async function handleAddFriend() {
+            const searchInput = document.getElementById('friend-search-input');
+            const query = searchInput.value.trim();
+            if (!query) return;
+        
+            try {
+                const userFound = await callBackend('/api/friends/search', 'GET', null, { q: query, user_id: currentAccountTgId });
+                tg.showConfirm(`Add ${userFound.full_name} (@${userFound.username}) as a friend?`, async (confirmed) => {
+                    if (confirmed) {
+                        await callBackend('/api/friends', 'POST', { user_id: currentAccountTgId, friend_id: userFound.tg_id });
+                        searchInput.value = '';
+                        await fetchAndRenderFriends();
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
+                });
+            } catch (error) {
+                // Error alert handled by callBackend
+            }
+        }
+        
+        function startGiftingFlow(friend) {
+            giftingTarget = { id: friend.tg_id, username: friend.username };
+            closeModal(document.getElementById('friends-modal'));
+            showPage('buy-gifts-page'); // Switch to the buy gifts tab
+            
+            // Add a banner to indicate gifting mode
+            const header = document.querySelector('#buy-gifts-page .page-header');
+            let banner = document.getElementById('gifting-banner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'gifting-banner';
+                banner.style.cssText = 'width: 100%; background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); padding: 8px; text-align: center; font-size: 0.9em;';
+                header.after(banner);
+            }
+            banner.innerHTML = `Sending gift to <b>@${friend.username}</b>. <span style="text-decoration: underline; cursor: pointer;" onclick="cancelGiftingFlow()">Cancel</span>`;
+        }
+        
+        function cancelGiftingFlow() {
+            giftingTarget = null;
+            document.getElementById('gifting-banner')?.remove();
+            renderAvailableGifts(); // Re-render to restore original click handlers
+        }
+        
+        async function sendGiftToFriend(giftId, giftName, originalImage, lottiePath) {
+            if (!giftingTarget) return;
+        
+            const price = CUSTOM_GIFTS_DATA[giftName]?.price || giftPrices[giftName] || 0;
+            const priceText = price > 0 ? ` for ${price.toLocaleString()} Stars` : '';
+        
+            tg.showConfirm(`Send "${giftName}" to @${giftingTarget.username}${priceText}?`, async (confirmed) => {
+                if (confirmed) {
+                    try {
+                        await callBackend('/api/gifts/send_to_friend', 'POST', {
+                            sender_id: currentAccountTgId,
+                            receiver_id: giftingTarget.id,
+                            gift_type_id: giftId,
+                            gift_name: giftName,
+                            original_image_url: originalImage,
+                            lottie_path: lottiePath
+                        });
+                        tg.HapticFeedback.notificationOccurred('success');
+                        tg.showAlert(`Successfully sent "${giftName}" to @${giftingTarget.username}!`);
+                        
+                        // Refresh sender's balance if they paid
+                        if (price > 0) {
+                            await initializeTelegramUserAccount();
+                        }
+        
+                    } catch (error) {
+                        // Error handled by callBackend
+                    } finally {
+                        cancelGiftingFlow();
+                    }
+                }
+            });
+        }
+        
         function playLottieAnimation(container, path, loop = true, isGridItem = false) {
             if (!animationsEnabled) {
                 destroyLottieAnimation(container);
@@ -3890,7 +4088,7 @@
             }
         
             if (Object.keys(giftsToRender).length === 0) {
-                buyGiftsGrid.innerHTML = `<p class="empty-grid-message" style="width:100%;">No gifts available right now.</p>`;
+                buyGiftsGrid.innerHTML = `<p class="empty-grid-message">No gifts available right now.</p>`;
                 return;
             }
         
@@ -3916,14 +4114,13 @@
                     if (isSoldOut) {
                         availabilityLabel = '<div class="limited-label" style="background-color: var(--app-wall-demonic-red);">Sold Out</div>';
                     } else if (stockInfo) {
-                        availabilityLabel = `<div class="limited-label" style="background-color: var(--tg-theme-accent-blue);">${stockInfo.remaining} of ${stockInfo.total} left</div>`;
+                        availabilityLabel = `<div class="limited-label">${stockInfo.remaining} of ${stockInfo.total} left</div>`;
                     } else {
                          availabilityLabel = '<div class="limited-label">Limited</div>';
                     }
                 }
         
-                // --- MODIFIED PRICE LOGIC ---
-                const price = customGiftData?.price || giftPrices[name];
+                const price = customGiftData?.price || giftPrices[name] || 0;
                 const priceHTML = price
                     ? `<div class="gift-price has-price"><img src="${STAR_ICON_URL}" class="star-icon" alt="Star"/> ${price.toLocaleString()}</div>`
                     : `<div class="gift-price">Free</div>`;
@@ -3937,7 +4134,7 @@
                 item.innerHTML = `
                     <div class="image-container">
                         <div class="lottie-animation-container" style="display:none;"></div>
-                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.innerHTML = '🖼️';">
+                        <img class="static-image-fallback" src="${originalImageUrl}" alt="${name}" loading="lazy" onerror="this.style.display='none';">
                     </div>
                     <div class="gift-name">${name}</div>
                     ${priceHTML}
@@ -3948,12 +4145,18 @@
                     item.style.opacity = '0.5';
                     item.style.cursor = 'not-allowed';
                 } else {
-                    item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
-                    let buyItemLongPressTimer;
-                    item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
-                    item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
-                    item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
-                    item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
+                    // --- MODIFIED: Check for gifting mode ---
+                    if (giftingTarget) {
+                        item.addEventListener('click', () => sendGiftToFriend(id, name, originalImageUrl, lottiePath));
+                    } else {
+                        item.addEventListener('click', () => buyGift(id, name, originalImageUrl, lottiePath, 1));
+                        // Long press for buying multiple only works when not in gifting mode
+                        let buyItemLongPressTimer;
+                        item.addEventListener('touchstart', (e) => { buyItemLongPressTimer = setTimeout(() => openBuyMultipleModal(id, name, originalImageUrl, lottiePath), 700); }, { passive: true });
+                        item.addEventListener('touchend', () => clearTimeout(buyItemLongPressTimer));
+                        item.addEventListener('touchmove', () => clearTimeout(buyItemLongPressTimer));
+                        item.addEventListener('contextmenu', (e) => { e.preventDefault(); openBuyMultipleModal(id, name, originalImageUrl, lottiePath); });
+                    }
                 }
                 observeLottieElement(item);
                 buyGiftsGrid.appendChild(item);
@@ -4287,15 +4490,26 @@
 
         
         function updateActionToolbarVisibility() {
-            const hasNonCollectible = ownedGifts.some(g => !g.is_collectible);
+            // --- MODIFIED LOGIC ---
+            // Instead of just checking for non-collectibles, we check for *upgradable* non-collectibles.
+            // A gift is upgradable if it's not a custom gift OR if it's a custom gift that has a 'models' array.
+            const hasUpgradableGifts = ownedGifts.some(g =>
+                !g.is_collectible && // It must be a basic, non-collectible gift
+                (
+                    !CUSTOM_GIFTS_DATA[g.gift_name] || // It's a standard gift (always upgradable)
+                    (CUSTOM_GIFTS_DATA[g.gift_name] && CUSTOM_GIFTS_DATA[g.gift_name].models) // It's a custom gift that has models
+                )
+            );
+            // --- END MODIFIED LOGIC ---
+        
             const hasActiveFilter = Object.values(activeFilters).some(f => f !== null);
-
-            const showUpgradeAll = hasNonCollectible && viewingOwnProfile && !reorderModeActive && !selectionModeActive;
+        
+            const showUpgradeAll = hasUpgradableGifts && viewingOwnProfile && !reorderModeActive && !selectionModeActive;
             const showFilterExit = hasActiveFilter && !reorderModeActive && !selectionModeActive;
-
+        
             upgradeAllGiftsButton.classList.toggle('hidden', !showUpgradeAll);
             exitFilterModeButton.classList.toggle('hidden', !showFilterExit);
-
+        
             const isAnyButtonVisible = showUpgradeAll || showFilterExit || reorderModeActive || selectionModeActive;
             profileGiftsActionsWrapper.classList.toggle('hidden', !isAnyButtonVisible);
         }
@@ -4860,25 +5074,43 @@
         }
 
         function populateGiftDetailModal(gift) {
-            modalGiftName.textContent = "Saved Gift";
+            modalGiftName.textContent = gift.gift_name; // Use the actual gift name
             destroyLottieAnimation(modalLottieGiftOriginal);
-            modalGiftImageStatic.style.display = 'block'; modalLottieGiftOriginal.style.display = 'none';
+            modalGiftImageStatic.style.display = 'block';
+            modalLottieGiftOriginal.style.display = 'none';
+        
             if (animationsEnabled && gift.lottie_path) {
                 playLottieAnimation(modalLottieGiftOriginal, gift.lottie_path, true);
-                modalGiftImageStatic.style.display = 'none'; modalLottieGiftOriginal.style.display = 'flex';
+                modalGiftImageStatic.style.display = 'none';
+                modalLottieGiftOriginal.style.display = 'flex';
             } else {
                 modalGiftImageStatic.src = gift.original_image_url;
-                modalGiftImageStatic.onerror = function() { this.src = `https://i.pravatar.cc/100?u=err${generateUniqueId()}`; };
             }
-            modalGiftDescription1.textContent = `Add "${gift.gift_name}" to your profile or upgrade it.`;
-            modalGiftDescription2.textContent = "Only you can see the sender's name.";
-            modalGiftInfo.innerHTML = `
-                <div class="info-row"><span class="info-label">Date</span><span class="info-value">${new Date(gift.acquired_date).toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}</span></div>
-                <div class="info-row"><span class="info-label">Price</span><span class="info-value">Free</span></div>
-                <div class="info-row"><span class="info-label">Availability</span><span class="info-value">Limited</span></div>`;
+        
+            modalGiftDescription1.textContent = `This is a simple gift. You can keep it or upgrade it to a unique collectible.`;
             
-            upgradeGiftDetailModalButton.dataset.instanceId = gift.instance_id;
-            upgradeGiftDetailModalButton.disabled = gift.owner_id !== currentAccountTgId;
+            // --- MODIFIED: Show sender information ---
+            let senderInfo = '';
+            const isSelfGifted = !gift.sender_id || gift.sender_id === gift.owner_id;
+            if (isSelfGifted) {
+                senderInfo = `<div class="info-row"><span class="info-label">From</span><span class="info-value">You</span></div>`;
+            } else {
+                senderInfo = `<div class="info-row"><span class="info-label">From</span><span class="info-value">@${gift.sender_username || 'Unknown'}</span></div>`;
+            }
+        
+            modalGiftInfo.innerHTML = `
+                <div class="info-row"><span class="info-label">Date</span><span class="info-value">${new Date(gift.acquired_date).toLocaleDateString()}</span></div>
+                ${senderInfo}
+            `;
+        
+            // --- MODIFIED: Check if upgradable ---
+            const isUpgradable = !!CUSTOM_GIFTS_DATA[gift.gift_name]?.models;
+            upgradeGiftDetailModalButton.classList.toggle('hidden', !isUpgradable);
+            
+            if(isUpgradable){
+                upgradeGiftDetailModalButton.dataset.instanceId = gift.instance_id;
+                upgradeGiftDetailModalButton.disabled = gift.owner_id !== currentAccountTgId;
+            }
         }
         
         function openTelegramProfile(event, username) {
@@ -7062,6 +7294,13 @@
                 document.getElementById('confirm-topup-button').disabled = !e.target.value || parseInt(e.target.value) <= 0;
             });
 
+            document.getElementById('open-friends-button').addEventListener('click', openFriendsModal);
+            document.getElementById('add-friend-btn').addEventListener('click', handleAddFriend);
+            document.getElementById('friend-search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleAddFriend();
+            });
+            document.getElementById('close-friends-modal').addEventListener('click', () => closeModal(document.getElementById('friends-modal')));
+            
             collectibleActionWear.addEventListener('click', handleWearAction);
             collectibleActionSell.addEventListener('click', handleSellAction);
             collectibleActionTransfer.addEventListener('click', () => {
