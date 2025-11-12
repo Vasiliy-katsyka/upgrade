@@ -879,10 +879,10 @@ def send_telegram_message(chat_id, text, reply_markup=None, disable_web_page_pre
     url = f"{TELEGRAM_API_URL}/sendMessage"
     payload = {'chat_id': chat_id, 'text': text, 'parse_mode': 'HTML', 'disable_web_page_preview': disable_web_page_preview}
     if reply_markup:
-        # --- FIX: Pass the dictionary directly, don't use json.dumps() ---
+        # CORRECT: Pass the dictionary directly.
         payload['reply_markup'] = reply_markup
     try:
-        # Using json=payload handles the serialization automatically
+        # The `json=payload` argument handles the conversion from Python dict to JSON string.
         response = requests.post(url, json=payload, timeout=5)
         response.raise_for_status()
         return response.json()
@@ -932,10 +932,10 @@ def edit_telegram_message_text(chat_id, message_id, text, reply_markup=None, dis
     url = f"{TELEGRAM_API_URL}/editMessageText"
     payload = {'chat_id': chat_id, 'message_id': message_id, 'text': text, 'parse_mode': 'HTML', 'disable_web_page_preview': disable_web_page_preview}
     if reply_markup:
-        # --- FIX: Pass the dictionary directly, don't use json.dumps() ---
+        # CORRECT: Pass the dictionary directly.
         payload['reply_markup'] = reply_markup
     try:
-        # Using json=payload handles the serialization automatically
+        # The `json=payload` argument handles the conversion.
         response = requests.post(url, json=payload, timeout=5)
         response.raise_for_status()
         return response.json()
