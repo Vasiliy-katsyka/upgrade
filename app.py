@@ -585,7 +585,7 @@ CUSTOM_GIFTS_DATA = {
         ],
         "backdrops_source": "Snoop Dogg",
         "patterns_source": "Snoop Dogg"
-    }
+    },
     "Rocky Present": {
         "id": "custom_rocky_present",
         "price": 5000,
