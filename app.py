@@ -541,6 +541,18 @@ CUSTOM_GIFTS_DATA = {
         "backdrops_source": "Snoop Dogg",
         "patterns_source": "Snoop Dogg"
     },
+    "Rocky Present": {
+        "id": "custom_rocky_present",
+        "price": 5000,
+        "limit": 500,
+        "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/13-gifts/refs/heads/main/MadEmoji_AgADCj4AAovVoEk.png"
+    },
+    "Lovely Letter": {
+        "id": "custom_lovely_letter",
+        "price": 500,
+        "limit": 5000,
+        "defaultImage": "https://raw.githubusercontent.com/Vasiliy-katsyka/13-gifts/refs/heads/main/BirthdayCollection_AgADMj0AAksZ-Eg.png"
+    }
 }
 
 MAX_BUY_PER_LEVEL_MAP = {
@@ -632,15 +644,28 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS gifts (
                     instance_id VARCHAR(50) PRIMARY KEY,
                     owner_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                    sender_id BIGINT REFERENCES accounts(tg_id) ON DELETE SET NULL, -- NEW
                     gift_type_id VARCHAR(255) NOT NULL, gift_name VARCHAR(255) NOT NULL,
                     original_image_url TEXT, lottie_path TEXT, is_collectible BOOLEAN DEFAULT FALSE,
                     collectible_data JSONB, collectible_number INT,
                     acquired_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     is_hidden BOOLEAN DEFAULT FALSE, is_pinned BOOLEAN DEFAULT FALSE, is_worn BOOLEAN DEFAULT FALSE,
-                    pin_order INT,
-                    is_on_sale BOOLEAN DEFAULT FALSE,
-                    sale_price INT
+                    pin_order INT, is_on_sale BOOLEAN DEFAULT FALSE, sale_price INT
                 );
+            """)
+            # Add new columns to existing gifts table if they don't exist
+            cur.execute("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='is_on_sale') THEN
+                        ALTER TABLE gifts ADD COLUMN is_on_sale BOOLEAN DEFAULT FALSE;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='sale_price') THEN
+                        ALTER TABLE gifts ADD COLUMN sale_price INT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gifts' AND column_name='sender_id') THEN
+                        ALTER TABLE gifts ADD COLUMN sender_id BIGINT REFERENCES accounts(tg_id) ON DELETE SET NULL;
+                    END IF;
+                END $$;
             """)
             # Add new columns to existing gifts table if they don't exist
             cur.execute("""
@@ -653,6 +678,17 @@ def init_db():
                     END IF;
                 END $$;
             """)
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS friends (
+                    id SERIAL PRIMARY KEY,
+                    user_one_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                    user_two_id BIGINT REFERENCES accounts(tg_id) ON DELETE CASCADE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_one_id, user_two_id)
+                );
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_friends_user_one ON friends (user_one_id);")
             
             # --- Indexes for gifts table ---
             cur.execute("CREATE INDEX IF NOT EXISTS idx_gifts_owner_id ON gifts (owner_id);")
@@ -2094,6 +2130,7 @@ def api_buy_market_gift(instance_id):
         if conn: put_db_connection(conn)
 
 @app.route('/api/profile/<string:username>', methods=['GET'])
+@app.route('/api/profile/<string:username>', methods=['GET'])
 def get_user_profile(username):
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
@@ -2103,17 +2140,20 @@ def get_user_profile(username):
         with conn.cursor(cursor_factory=DictCursor) as cur:
             viewer_can_see_custom = has_custom_gifts_enabled(cur, viewer_id)
 
-            cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
+            cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number, music_status FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
             user_profile = cur.fetchone()
             if not user_profile: return jsonify({"error": "User profile not found."}), 404
 
             profile_data = dict(user_profile)
             user_id = profile_data['tg_id']
 
+            # --- MODIFIED QUERY TO INCLUDE SENDER USERNAME ---
             cur.execute("""
-                SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar
+                SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar,
+                       sender_acc.username as sender_username
                 FROM gifts g
                 JOIN accounts a ON g.owner_id = a.tg_id
+                LEFT JOIN accounts sender_acc ON g.sender_id = sender_acc.tg_id
                 WHERE g.owner_id = %s AND g.is_hidden = FALSE
                 ORDER BY g.is_pinned DESC, g.pin_order ASC NULLS LAST, g.acquired_date DESC;
             """, (user_id,))
@@ -2370,61 +2410,48 @@ def add_gift():
     
     try:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            # Check for custom gift permissions first
             if is_custom_gift(gift_name) and not has_custom_gifts_enabled(cur, owner_id):
                 return jsonify({"error": "You must enable Custom Gifts in settings to acquire this item."}), 403
 
-            # Check general gift limit
             cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
             if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
                 return jsonify({"error": f"Gift limit of {GIFT_LIMIT_PER_USER} reached."}), 403
 
-            # --- NEW PRICING LOGIC ---
             price = 0
             if is_custom_gift(gift_name):
                 price = CUSTOM_GIFTS_DATA[gift_name].get('price', 0)
             
             if price > 0:
-                # Lock the user's account row to prevent race conditions on balance
                 cur.execute("SELECT stars_balance FROM accounts WHERE tg_id = %s FOR UPDATE;", (owner_id,))
                 balance_row = cur.fetchone()
                 if not balance_row or balance_row[0] < price:
                     conn.rollback()
                     return jsonify({"error": f"Insufficient Stars balance. This gift costs {price} Stars."}), 402
-                
-                # Deduct the price
                 cur.execute("UPDATE accounts SET stars_balance = stars_balance - %s WHERE tg_id = %s;", (price, owner_id))
-            # --- END NEW PRICING LOGIC ---
 
-            # --- Limited Gift Stock Logic ---
             is_limited = gift_type_id in [g['id'] for g in CUSTOM_GIFTS_DATA.values() if 'limit' in g]
             if is_limited:
-                # Lock the row for update to prevent race conditions
                 cur.execute("SELECT remaining_stock FROM limited_gifts_stock WHERE gift_type_id = %s FOR UPDATE;", (gift_type_id,))
                 stock_row = cur.fetchone()
                 if not stock_row or stock_row[0] <= 0:
-                    conn.rollback() # Release the lock
+                    conn.rollback()
                     return jsonify({"error": "This limited gift is sold out."}), 403
-                
-                # Decrement stock
                 cur.execute("UPDATE limited_gifts_stock SET remaining_stock = remaining_stock - 1 WHERE gift_type_id = %s;", (gift_type_id,))
 
-            # Insert the gift
+            # --- MODIFIED INSERT: sets sender_id to owner_id ---
             cur.execute("""
-                INSERT INTO gifts (instance_id, owner_id, gift_type_id, gift_name, original_image_url, lottie_path) 
-                VALUES (%s, %s, %s, %s, %s, %s);
-            """, (data['instance_id'], owner_id, gift_type_id, gift_name, data['original_image_url'], data.get('lottie_path')))
+                INSERT INTO gifts (instance_id, owner_id, sender_id, gift_type_id, gift_name, original_image_url, lottie_path) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
+            """, (data['instance_id'], owner_id, owner_id, gift_type_id, gift_name, data['original_image_url'], data.get('lottie_path')))
             
             conn.commit()
             return jsonify({"message": "Gift added"}), 201
     except Exception as e:
-        if conn:
-            conn.rollback()
+        if conn: conn.rollback()
         app.logger.error(f"Error adding gift for {owner_id}: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
     finally:
-        if conn:
-            put_db_connection(conn)
+        if conn: put_db_connection(conn)
 
 @app.route('/api/gifts/upgrade', methods=['POST'])
 def upgrade_gift():
@@ -2534,6 +2561,151 @@ def _update_gifts_with_live_supply(cur, gifts_list):
                 gift['collectible_data']['supply'] = supply_map[gift['gift_type_id']]
     return gifts_list
 # In app.py, add this new endpoint function.
+
+@app.route('/api/friends/<int:user_id>', methods=['GET'])
+def get_friends(user_id):
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("""
+                SELECT a.tg_id, a.username, a.full_name, a.avatar_url
+                FROM accounts a
+                JOIN friends f ON a.tg_id = f.user_two_id
+                WHERE f.user_one_id = %s
+                ORDER BY a.full_name;
+            """, (user_id,))
+            friends = [dict(row) for row in cur.fetchall()]
+            return jsonify(friends), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching friends for {user_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/friends/search', methods=['GET'])
+def search_friend():
+    query = request.args.get('q', '').strip()
+    user_id = request.args.get('user_id')
+    if not query or not user_id:
+        return jsonify({"error": "Query 'q' and 'user_id' are required."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            if query.isdigit():
+                cur.execute(
+                    "SELECT tg_id, username, full_name, avatar_url FROM accounts WHERE tg_id = %s AND tg_id != %s;",
+                    (int(query), user_id)
+                )
+            else:
+                cur.execute(
+                    "SELECT tg_id, username, full_name, avatar_url FROM accounts WHERE LOWER(username) = LOWER(%s) AND tg_id != %s;",
+                    (query.lstrip('@'), user_id)
+                )
+            user_found = cur.fetchone()
+            if user_found:
+                return jsonify(dict(user_found)), 200
+            else:
+                return jsonify({"error": "User not found."}), 404
+    except Exception as e:
+        app.logger.error(f"Error searching for friend '{query}': {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/friends', methods=['POST'])
+def add_friend():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    friend_id = data.get('friend_id')
+    if not user_id or not friend_id:
+        return jsonify({"error": "user_id and friend_id are required."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO friends (user_one_id, user_two_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
+                (user_id, friend_id)
+            )
+            conn.commit()
+            return jsonify({"message": "Friend added successfully."}), 201
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error adding friend for {user_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/gifts/send_to_friend', methods=['POST'])
+def send_gift_to_friend():
+    data = request.get_json()
+    sender_id = data.get('sender_id')
+    receiver_id = data.get('receiver_id')
+    gift_type_id = data.get('gift_type_id')
+    # ... (other gift details from data)
+
+    if not all([sender_id, receiver_id, gift_type_id]):
+        return jsonify({"error": "sender_id, receiver_id, and gift details are required."}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database connection failed."}), 500
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Check receiver's gift limit
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (receiver_id,))
+            if cur.fetchone()[0] >= GIFT_LIMIT_PER_USER:
+                return jsonify({"error": "Receiver's gift box is full."}), 403
+
+            gift_name = data['gift_name']
+            price = CUSTOM_GIFTS_DATA.get(gift_name, {}).get('price', 0)
+            
+            if price > 0:
+                cur.execute("SELECT stars_balance FROM accounts WHERE tg_id = %s FOR UPDATE;", (sender_id,))
+                balance = cur.fetchone()['stars_balance']
+                if balance < price:
+                    conn.rollback()
+                    return jsonify({"error": f"Insufficient Stars. This gift costs {price}."}), 402
+                cur.execute("UPDATE accounts SET stars_balance = stars_balance - %s WHERE tg_id = %s;", (price, sender_id))
+
+            is_limited = 'limit' in CUSTOM_GIFTS_DATA.get(gift_name, {})
+            if is_limited:
+                cur.execute("SELECT remaining_stock FROM limited_gifts_stock WHERE gift_type_id = %s FOR UPDATE;", (gift_type_id,))
+                stock = cur.fetchone()
+                if not stock or stock['remaining_stock'] <= 0:
+                    conn.rollback()
+                    return jsonify({"error": "This limited gift is now sold out."}), 403
+                cur.execute("UPDATE limited_gifts_stock SET remaining_stock = remaining_stock - 1 WHERE gift_type_id = %s;", (gift_type_id,))
+
+            # Create the new gift in the receiver's inventory
+            new_instance_id = str(uuid.uuid4())
+            cur.execute("""
+                INSERT INTO gifts (instance_id, owner_id, sender_id, gift_type_id, gift_name, original_image_url, lottie_path) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
+            """, (new_instance_id, receiver_id, sender_id, gift_type_id, gift_name, data['original_image_url'], data.get('lottie_path')))
+            
+            conn.commit()
+
+            # Send notification to receiver
+            cur.execute("SELECT username FROM accounts WHERE tg_id = %s;", (sender_id,))
+            sender_username = cur.fetchone()['username']
+            price_text = f" for {price}⭐" if price > 0 else ""
+            
+            receiver_text = f"🎁 @{sender_username} sent you a gift: <b>{gift_name}</b>{price_text}!"
+            deep_link = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}" # Generic link to open app
+            receiver_markup = {"inline_keyboard": [[{"text": "Open Gift App", "web_app": {"url": deep_link}}]]}
+            send_telegram_message(receiver_id, receiver_text, receiver_markup)
+
+            return jsonify({"message": "Gift sent successfully."}), 200
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error sending gift from {sender_id} to {receiver_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
 
 @app.route('/api/public/gift_models', methods=['GET'])
 def get_public_gift_models():
