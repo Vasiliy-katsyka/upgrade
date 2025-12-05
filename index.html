@@ -1662,6 +1662,98 @@
             gap: 5px;
             padding: 10px;
         }
+
+        /* --- LIQUID GLASS LOADING SCREEN --- */
+        
+        #loading-overlay {
+            /* Base background - keeping it dark but slightly translucent to blend */
+            background: radial-gradient(circle at center, #1a232e 0%, var(--tg-theme-bg-color) 100%);
+            overflow: hidden; /* Keep moving blobs inside */
+            z-index: 9999;
+        }
+        
+        /* The Glass Card Container */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03); /* Very transparent white */
+            backdrop-filter: blur(16px); /* The "Frosted" effect */
+            -webkit-backdrop-filter: blur(16px); /* Safari support */
+            border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle top/left light */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            border-right: 1px solid rgba(255, 255, 255, 0.02);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2); /* Depth shadow */
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            z-index: 2; /* Sit on top of blobs */
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: glassFloat 6s ease-in-out infinite;
+        }
+        
+        /* The Liquid Blobs in the background */
+        .liquid-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px); /* Soften the edges heavily */
+            opacity: 0.6;
+            z-index: 1;
+            animation: blobFloat 10s infinite alternate;
+        }
+        
+        .blob-1 {
+            width: 200px; height: 200px;
+            background: var(--tg-theme-button-color); /* Blue */
+            top: 20%; left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .blob-2 {
+            width: 250px; height: 250px;
+            background: #9c27b0; /* Purple */
+            bottom: 20%; right: 10%;
+            animation-delay: -2s;
+        }
+        
+        .blob-3 {
+            width: 150px; height: 150px;
+            background: #ff3b30; /* Red/Pink accent */
+            bottom: 40%; left: 40%;
+            animation-delay: -4s;
+            opacity: 0.4;
+        }
+        
+        /* Animations */
+        @keyframes blobFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        
+        @keyframes glassFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); } /* Gentle hovering effect */
+        }
+        
+        /* Typography Enhancements */
+        .glass-panel h2 {
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #fff, #ccc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .glass-panel p {
+            color: rgba(255, 255, 255, 0.6) !important;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -2351,11 +2443,20 @@
         </div>
         
         <!-- Add this new modal for the loading screen -->
-        <div id="loading-overlay" class="modal-overlay active" style="align-items: center; justify-content: center; background-color: var(--tg-theme-bg-color); z-index: 9999;">
-            <div style="text-align: center; color: var(--tg-theme-text-color);">
-                <div id="loading-animation-container" style="width: 150px; height: 150px; margin: 0 auto;"></div>
-                <h2 style="font-weight: 500; margin-top: 15px;">Gift Upgrade Bot</h2>
-                <p style="color: var(--tg-theme-hint-color);">@giftUpgradeRU</p>
+        <!-- LIQUID GLASS LOADING SCREEN -->
+        <div id="loading-overlay" class="modal-overlay active" style="align-items: center; justify-content: center;">
+            
+            <!-- Background Moving Blobs -->
+            <div class="liquid-blob blob-1"></div>
+            <div class="liquid-blob blob-2"></div>
+            <div class="liquid-blob blob-3"></div>
+        
+            <!-- The Frosted Glass Card -->
+            <div class="glass-panel">
+                <div id="loading-animation-container" style="width: 120px; height: 120px;"></div>
+                
+                <h2>Gift Upgrade</h2>
+                <p>@giftUpgradeRU</p>
             </div>
         </div>
 
@@ -4524,80 +4625,84 @@
         }
 
         // --- Replace your existing buyGift function ---
+        // REPLACE THE EXISTING buyGift FUNCTION WITH THIS:
         async function buyGift(id, name, originalImage, lottiePath, quantity = 1) {
-            // --- NEW PRICING LOGIC ---
             const customGiftData = CUSTOM_GIFTS_DATA[name];
             const price = customGiftData?.price || 0;
             const totalPrice = price * quantity;
             const currentAccount = accounts.find(acc => acc.tg_id === currentAccountTgId);
-
+        
             if (totalPrice > 0 && (!currentAccount || currentAccount.stars_balance < totalPrice)) {
-                tg.showAlert(`You need ${totalPrice.toLocaleString()} Stars to buy this. Your balance is ${parseFloat(currentAccount?.stars_balance || 0).toLocaleString()}.`);
+                tg.showAlert(`You need ${totalPrice.toLocaleString()} Stars. Balance: ${parseFloat(currentAccount?.stars_balance || 0).toLocaleString()}.`);
                 return;
             }
-            // --- END NEW PRICING LOGIC ---
-
+        
             const stockInfo = limitedGiftStock[id];
             if (stockInfo && stockInfo.remaining < quantity) {
-                tg.showAlert(`Not enough stock available. Only ${stockInfo.remaining} left.`);
+                tg.showAlert(`Not enough stock. Only ${stockInfo.remaining} left.`);
                 return;
             }
         
             if (ownedGifts.length + quantity > GIFT_LIMIT_PER_USER) {
-                tg.showAlert(`Cannot buy ${quantity} gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
+                tg.showAlert(`Limit reached. Cannot add ${quantity} gifts.`);
                 return;
             }
         
-            const newGifts = [];
+            // 1. Prepare Batch Data
+            const newGiftsPayload = [];
+            const localPreviews = [];
+        
             for (let i = 0; i < quantity; i++) {
-                const tempInstanceId = `temp_${generateUniqueId()}`;
-                const newGift = {
-                    instance_id: tempInstanceId, owner_id: currentAccountTgId, gift_type_id: id,
-                    gift_name: name, original_image_url: originalImage, lottie_path: lottiePath,
-                    is_collectible: false, acquired_date: new Date().toISOString(),
-                    is_hidden: false, is_pinned: false, is_worn: false, is_pending: true 
+                const tempId = `temp_${generateUniqueId()}_${i}`;
+                const instanceId = generateUniqueId() + `-${i}`; // Generate real ID here for speed
+                
+                const giftObj = {
+                    instance_id: instanceId,
+                    gift_type_id: id,
+                    gift_name: name,
+                    original_image_url: originalImage,
+                    lottie_path: lottiePath
                 };
-                newGifts.push(newGift);
+                newGiftsPayload.push(giftObj);
+        
+                // Optimistic UI Object
+                localPreviews.push({
+                    ...giftObj,
+                    owner_id: currentAccountTgId,
+                    is_collectible: false,
+                    acquired_date: new Date().toISOString(),
+                    is_hidden: false, is_pinned: false, is_worn: false
+                });
             }
         
-            if (totalPrice > 0 && currentAccount) {
-                currentAccount.stars_balance -= totalPrice;
-            }
-            ownedGifts.unshift(...newGifts);
-        
-            if (stockInfo) {
-                limitedGiftStock[id].remaining -= quantity;
-            }
-        
+            // 2. Optimistic UI Update
+            if (totalPrice > 0 && currentAccount) currentAccount.stars_balance -= totalPrice;
+            if (stockInfo) limitedGiftStock[id].remaining -= quantity;
+            
+            ownedGifts.unshift(...localPreviews);
+            
             showPage('profile-page');
             switchTab('gifts');
-            renderProfileGifts(); 
+            renderProfileGifts();
             tg.HapticFeedback.notificationOccurred('success');
-            
-            for (const gift of newGifts) {
-                try {
-                    await callBackend('/api/gifts', 'POST', {
-                        instance_id: gift.instance_id, owner_id: gift.owner_id,
-                        gift_type_id: gift.gift_type_id, gift_name: gift.gift_name,
-                        original_image_url: gift.original_image_url, lottie_path: gift.lottie_path
-                    });
-                    const confirmedGift = ownedGifts.find(g => g.instance_id === gift.instance_id);
-                    if(confirmedGift) delete confirmedGift.is_pending;
-                } catch (error) {
-                    tg.HapticFeedback.notificationOccurred('error');
-                    ownedGifts = ownedGifts.filter(g => g.instance_id !== gift.instance_id);
-                    if (totalPrice > 0 && currentAccount) {
-                        currentAccount.stars_balance += price;
-                    }
-                    if (stockInfo) limitedGiftStock[id].remaining += 1; 
-                    renderProfileGifts(); 
-                    if (error.reason !== 'This limited gift is sold out.') {
-                         tg.showAlert(`Failed to save one "${name}" gift. Please try again.`);
-                    }
-                    await fetchLimitedGiftStock();
-                }
+        
+            // 3. One Network Call
+            try {
+                await callBackend('/api/gifts/batch_add', 'POST', {
+                    owner_id: currentAccountTgId,
+                    gifts: newGiftsPayload
+                });
+                tg.showAlert(`Added ${quantity} "${name}" gift(s)!`);
+                await fetchLimitedGiftStock(); // Refresh stock in background
+            } catch (error) {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert("Failed to save gifts. Reverting.");
+                // Revert changes
+                const idsToRemove = newGiftsPayload.map(g => g.instance_id);
+                ownedGifts = ownedGifts.filter(g => !idsToRemove.includes(g.instance_id));
+                if (totalPrice > 0 && currentAccount) currentAccount.stars_balance += totalPrice;
+                renderProfileGifts();
             }
-            tg.showAlert(`Added ${quantity} "${name}" gift(s)!`);
         }
 
         async function openMarket() {
@@ -5006,51 +5111,48 @@
             }
         }
         
+        // REPLACE THE EXISTING handleUpgradeAllGifts FUNCTION WITH THIS:
         async function handleUpgradeAllGifts() {
+            // 1. Identify upgradeable gifts
             const giftsToUpgrade = ownedGifts.filter(g => {
-                // Must not be collectible yet
                 if (g.is_collectible) return false;
-                
                 const customData = CUSTOM_GIFTS_DATA[g.gift_name];
-                
-                // Include if:
-                // 1. It is a basic gift (no custom data)
-                // 2. OR it is a custom gift that specifically has models
-                if (!customData) return true;
+                // Allow basic gifts OR custom gifts that have models
+                if (!customData) return true; 
                 if (customData && customData.models && customData.models.length > 0) return true;
-                
                 return false;
             });
+        
             if (giftsToUpgrade.length === 0) { tg.showAlert("No gifts to upgrade."); return; }
-
-            if (ownedGifts.length > GIFT_LIMIT_PER_USER) {
-                tg.showAlert(`Cannot upgrade all gifts. You have ${ownedGifts.length} gifts and the limit is ${GIFT_LIMIT_PER_USER}.`);
-                return;
-            }
-
+        
             const originalButtonText = upgradeAllGiftsButton.textContent;
             upgradeAllGiftsButton.disabled = true;
-            let successCount = 0, failureCount = 0;
-            for (let i = 0; i < giftsToUpgrade.length; i++) {
-                const gift = giftsToUpgrade[i];
-                upgradeAllGiftsButton.textContent = `Upgrading (${i + 1}/${giftsToUpgrade.length})...`;
-                const cardElement = giftsGrid.querySelector(`.gift-card[data-instance-id="${gift.instance_id}"]`);
-                if (cardElement) cardElement.classList.add('is-updating');
-                const result = await upgradeSingleGiftLogic(gift);
-                if (cardElement) cardElement.classList.remove('is-updating');
-                if (result.status === 'success') {
-                    successCount++;
-                    renderProfileGifts();
-                } else if (result.status === 'failed') failureCount++;
-                if (giftsToUpgrade.length > 1 && i < giftsToUpgrade.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
+            upgradeAllGiftsButton.textContent = `Upgrading ${giftsToUpgrade.length} gifts...`;
+        
+            // 2. Prepare list of IDs
+            const instanceIds = giftsToUpgrade.map(g => g.instance_id);
+        
+            try {
+                // 3. Single Backend Call
+                await callBackend('/api/gifts/batch_upgrade', 'POST', {
+                    instance_ids: instanceIds
+                });
+        
+                // 4. Refresh Data
+                await initializeTelegramUserAccount();
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert(`Successfully upgraded ${giftsToUpgrade.length} gifts!`);
+        
+            } catch (error) {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert("Batch upgrade failed. Please try again.");
+            } finally {
+                updateActionToolbarVisibility();
+                if (upgradeAllGiftsButton) { 
+                    upgradeAllGiftsButton.textContent = originalButtonText; 
+                    upgradeAllGiftsButton.disabled = false; 
+                }
             }
-
-            let summaryMessage = `Upgrade complete.\nSucceeded: ${successCount}`;
-            if (failureCount > 0) summaryMessage += `\nFailed: ${failureCount}`;
-            tg.showAlert(summaryMessage);
-            tg.HapticFeedback.notificationOccurred(successCount > 0 ? 'success' : (failureCount > 0 ? 'error' : 'warning'));
-            updateActionToolbarVisibility();
-            if (upgradeAllGiftsButton) { upgradeAllGiftsButton.textContent = originalButtonText; upgradeAllGiftsButton.disabled = false; }
         }
 
         function openModal(modalElement, data = null) {
@@ -6069,56 +6171,68 @@
             }
         }
         
+        // REPLACE THE EXISTING handleCustomBuyConfirm FUNCTION WITH THIS:
         async function handleCustomBuyConfirm() {
             if (customBuyConfirmButton.disabled) return;
             
             if (currentlyEditingGiftIndex > -1) {
                 giftCreationQueue[currentlyEditingGiftIndex].quantity = parseInt(customBuyQuantityInput.value, 10) || 1;
             }
-
+        
             const totalToCreate = giftCreationQueue.reduce((sum, gift) => sum + gift.quantity, 0);
             if (ownedGifts.length + totalToCreate > GIFT_LIMIT_PER_USER) {
-                tg.showAlert(`Cannot create ${totalToCreate} gifts. Your inventory is full.`);
+                tg.showAlert(`Inventory full.`);
                 return;
             }
-
+        
             customBuyConfirmButton.disabled = true;
             customBuyConfirmButton.textContent = 'Creating...';
-
-            try {
-                for (const giftConfig of giftCreationQueue) {
-                    for (let i = 0; i < giftConfig.quantity; i++) {
-                        const newInstanceId = generateUniqueId();
-                        await callBackend('/api/gifts', 'POST', {
-                            instance_id: newInstanceId,
-                            owner_id: currentAccountTgId,
-                            gift_type_id: giftConfig.id,
-                            gift_name: giftConfig.name,
-                            original_image_url: giftConfig.originalImage,
-                            lottie_path: giftConfig.lottiePath,
-                        });
-                        
-                        const upgradePayload = {
-                            instance_id: newInstanceId,
-                            custom_model: giftConfig.model,
-                            custom_backdrop: giftConfig.backdrop,
+        
+            // Prepare Batch Payload
+            const batchPayload = [];
+            
+            // NOTE: This logic assumes user creates the gift AND applies parts immediately
+            // The backend `batch_add` needs to handle the `custom_parts` key we add here
+            
+            for (const giftConfig of giftCreationQueue) {
+                for (let i = 0; i < giftConfig.quantity; i++) {
+                    const instanceId = generateUniqueId() + `-${i}`;
+                    
+                    const payloadItem = {
+                        instance_id: instanceId,
+                        gift_type_id: giftConfig.id,
+                        gift_name: giftConfig.name,
+                        original_image_url: giftConfig.originalImage,
+                        lottie_path: giftConfig.lottiePath
+                    };
+        
+                    // If user selected parts, add them to payload so backend inserts as collectible directly
+                    if (giftConfig.model && giftConfig.backdrop && giftConfig.pattern) {
+                        payloadItem.custom_parts = {
+                            model: giftConfig.model,
+                            backdrop: giftConfig.backdrop,
+                            pattern: giftConfig.pattern
                         };
-                        
-                        if (giftConfig.quantity === 1) {
-                            upgradePayload.custom_pattern = giftConfig.pattern;
-                        }
-
-                        await callBackend('/api/gifts/upgrade', 'POST', upgradePayload);
                     }
+                    
+                    batchPayload.push(payloadItem);
                 }
+            }
+        
+            try {
+                await callBackend('/api/gifts/batch_add', 'POST', {
+                    owner_id: currentAccountTgId,
+                    gifts: batchPayload
+                });
                 
-                await initializeTelegramUserAccount();
+                await initializeTelegramUserAccount(); // Refresh to get the fully generated images/data
                 tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`${totalToCreate} gift(s) created successfully!`);
+                tg.showAlert(`${totalToCreate} custom gift(s) created!`);
                 closeModal(customBuyModal); 
                 showPage('profile-page');
-
+        
             } catch (error) {
+                tg.showAlert(`Error: ${error.message}`);
             } finally {
                 customBuyConfirmButton.disabled = false;
                 updateCreateButtonState();
