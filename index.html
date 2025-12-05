@@ -5225,12 +5225,18 @@
             const numberForLink = gift.collectible_number;
             const snoopGifts = ['Snoop Dogg', 'Swag Bag', 'Snoop Cigar', 'Low Rider', 'Westside Sign'];
             const vasiliyGifts = ['Dildo', 'Skebob', "Baggin' Cat"];
+            const habibGifts = ['Khabib's Papakha'];
+            const ufcGifts = ['UFC Mystery Box'];
         
             let subtextHTML;
             if (snoopGifts.includes(gift.gift_name)) {
                 subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'snoopdogg')">@snoopdogg</a>`;
             } else if (vasiliyGifts.includes(gift.gift_name)) {
                 subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'Vasiliy939')">@Vasiliy939</a>`;
+            } else if (habibGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'khabib_nurmagomedov')">@khabib_nurmagomedov</a>`;
+            } else if (ufcGifts.includes(gift.gift_name)) {
+                subtextHTML = `Collectible #${numberForLink.toLocaleString()} by <a href="#" onclick="openTelegramProfile(event, 'ufc')">@ufc</a>`;
             } else {
                 subtextHTML = `Collectible #${numberForLink.toLocaleString()}`;
             }
