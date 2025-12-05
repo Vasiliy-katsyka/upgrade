@@ -5007,7 +5007,20 @@
         }
         
         async function handleUpgradeAllGifts() {
-            const giftsToUpgrade = ownedGifts.filter(g => !g.is_collectible);
+            const giftsToUpgrade = ownedGifts.filter(g => {
+                // Must not be collectible yet
+                if (g.is_collectible) return false;
+                
+                const customData = CUSTOM_GIFTS_DATA[g.gift_name];
+                
+                // Include if:
+                // 1. It is a basic gift (no custom data)
+                // 2. OR it is a custom gift that specifically has models
+                if (!customData) return true;
+                if (customData && customData.models && customData.models.length > 0) return true;
+                
+                return false;
+            });
             if (giftsToUpgrade.length === 0) { tg.showAlert("No gifts to upgrade."); return; }
 
             if (ownedGifts.length > GIFT_LIMIT_PER_USER) {
@@ -5104,7 +5117,9 @@
             `;
         
             // --- MODIFIED: Check if upgradable ---
-            const isUpgradable = !!CUSTOM_GIFTS_DATA[gift.gift_name]?.models;
+            const customData = CUSTOM_GIFTS_DATA[gift.gift_name];
+            const isUpgradable = !customData || (customData && customData.models && customData.models.length > 0);
+        
             upgradeGiftDetailModalButton.classList.toggle('hidden', !isUpgradable);
             
             if(isUpgradable){
