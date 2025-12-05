@@ -3269,11 +3269,12 @@ def batch_add_gifts():
                         "model": parts['model'],
                         "backdrop": parts['backdrop'],
                         "pattern": parts['pattern'],
-                        "modelImage": parts['model']['image'] or f"{CDN_BASE_URL}models/{quote(gift['gift_name'])}/png/{quote(parts['model']['name'])}.png",
+                        # FIX: Use .get('image') to avoid 500 error if key is missing
+                        "modelImage": parts['model'].get('image') or f"{CDN_BASE_URL}models/{quote(gift['gift_name'])}/png/{quote(parts['model']['name'])}.png",
                         "lottieModelPath": parts['model'].get('lottie') or f"{CDN_BASE_URL}models/{quote(gift['gift_name'])}/lottie/{quote(parts['model']['name'])}.json",
                         "patternImage": f"{CDN_BASE_URL}patterns/{quote(pattern_source)}/png/{quote(parts['pattern']['name'])}.png",
                         "backdropColors": parts['backdrop']['hex'],
-                        "supply": 5000, # Placeholder for batch speed
+                        "supply": 5000, 
                         "author": get_gift_author(gift['gift_name'])
                     }
                     col_data = json.dumps(c_data)
