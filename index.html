@@ -1663,94 +1663,76 @@
             padding: 10px;
         }
 
-        /* --- LIQUID GLASS LOADING SCREEN --- */
-        
         #loading-overlay {
-            /* Base background - keeping it dark but slightly translucent to blend */
-            background: radial-gradient(circle at center, #1a232e 0%, var(--tg-theme-bg-color) 100%);
-            overflow: hidden; /* Keep moving blobs inside */
+            background: var(--tg-theme-bg-color); /* Clean background */
+            overflow: hidden;
             z-index: 9999;
         }
         
-        /* The Glass Card Container */
+        /* Container for content - Transparent/Invisible now */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.03); /* Very transparent white */
-            backdrop-filter: blur(16px); /* The "Frosted" effect */
-            -webkit-backdrop-filter: blur(16px); /* Safari support */
-            border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle top/left light */
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-            border-right: 1px solid rgba(255, 255, 255, 0.02);
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2); /* Depth shadow */
-            border-radius: 24px;
-            padding: 40px;
-            text-align: center;
+            /* Removed background, border, shadow, backdrop-filter */
             position: relative;
-            z-index: 2; /* Sit on top of blobs */
-            width: 280px;
+            z-index: 2;
             display: flex;
             flex-direction: column;
             align-items: center;
-            animation: glassFloat 6s ease-in-out infinite;
+            /* Optional: subtle float animation for the text/icon */
+            animation: glassFloat 4s ease-in-out infinite; 
         }
         
-        /* The Liquid Blobs in the background */
+        /* The Liquid Blobs */
         .liquid-blob {
             position: absolute;
             border-radius: 50%;
-            filter: blur(40px); /* Soften the edges heavily */
+            filter: blur(60px); /* Increased blur for smoother background */
             opacity: 0.6;
             z-index: 1;
             animation: blobFloat 10s infinite alternate;
         }
         
+        /* ALL BLUE SPHERES */
         .blob-1 {
-            width: 200px; height: 200px;
-            background: var(--tg-theme-button-color); /* Blue */
+            width: 250px; height: 250px;
+            background: #007AFF; /* Bright Telegram Blue */
             top: 20%; left: 10%;
             animation-delay: 0s;
         }
         
         .blob-2 {
-            width: 250px; height: 250px;
-            background: #9c27b0; /* Purple */
+            width: 300px; height: 300px;
+            background: #5ac8fa; /* Lighter Blue/Cyan */
             bottom: 20%; right: 10%;
             animation-delay: -2s;
         }
         
         .blob-3 {
-            width: 150px; height: 150px;
-            background: #ff3b30; /* Red/Pink accent */
+            width: 200px; height: 200px;
+            background: #007AFF; /* Blue again */
             bottom: 40%; left: 40%;
             animation-delay: -4s;
-            opacity: 0.4;
+            opacity: 0.5;
         }
         
-        /* Animations */
         @keyframes blobFloat {
             0% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(40px, -40px) scale(1.1); }
+            100% { transform: translate(-20px, 20px) scale(0.9); }
         }
         
         @keyframes glassFloat {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); } /* Gentle hovering effect */
+            50% { transform: translateY(-10px); }
         }
         
-        /* Typography Enhancements */
         .glass-panel h2 {
             font-weight: 600;
             margin-top: 20px;
-            letter-spacing: 0.5px;
-            background: linear-gradient(to right, #fff, #ccc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            color: var(--tg-theme-text-color);
         }
         
         .glass-panel p {
-            color: rgba(255, 255, 255, 0.6) !important;
+            color: var(--tg-theme-hint-color);
             font-size: 0.9em;
             margin-top: 5px;
         }
@@ -3644,7 +3626,7 @@
         
             playLottieAnimation(
                 document.getElementById('loading-animation-container'),
-                'https://cdn.changes.tg/gifts/models/Voodoo%20Doll/lottie/Fingerprint.json'
+                'https://cdn.changes.tg/gifts/models/Artisan%20Brick/lottie/Ice%20Mammoth.json'
             );
             
             // The problematic lines that set the old SVG icons have been REMOVED from here.
@@ -4692,7 +4674,7 @@
                     owner_id: currentAccountTgId,
                     gifts: newGiftsPayload
                 });
-                tg.showAlert(`Added ${quantity} "${name}" gift(s)!`);
+                // tg.showAlert(`Added ${quantity} "${name}" gift(s)!`);
                 await fetchLimitedGiftStock(); // Refresh stock in background
             } catch (error) {
                 tg.HapticFeedback.notificationOccurred('error');
@@ -6227,7 +6209,7 @@
                 
                 await initializeTelegramUserAccount(); // Refresh to get the fully generated images/data
                 tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`${totalToCreate} custom gift(s) created!`);
+                // tg.showAlert(`${totalToCreate} custom gift(s) created!`);
                 closeModal(customBuyModal); 
                 showPage('profile-page');
         
