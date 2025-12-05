@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from psycopg2.extras import DictCursor
 from psycopg2 import pool
 from portalsmp import giftsFloors, search, filterFloors
+from psycopg2.extras import execute_values
 
 # --- CONFIGURATION ---
 
@@ -3180,6 +3181,193 @@ def reorder_pinned_gifts():
         if conn: conn.rollback()
         app.logger.error(f"Error reordering pinned gifts for user {owner_id}: {e}", exc_info=True)
         return jsonify({"error": "An internal server error occurred."}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/gifts/batch_add', methods=['POST'])
+def batch_add_gifts():
+    data = request.get_json()
+    owner_id = data.get('owner_id')
+    gifts_list = data.get('gifts') # Array of gift objects
+
+    if not owner_id or not gifts_list:
+        return jsonify({"error": "Missing owner_id or gifts list"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database failed"}), 500
+
+    try:
+        with conn.cursor() as cur:
+            # 1. Check limits once
+            cur.execute("SELECT COUNT(*) FROM gifts WHERE owner_id = %s;", (owner_id,))
+            current_count = cur.fetchone()[0]
+            if current_count + len(gifts_list) > GIFT_LIMIT_PER_USER:
+                return jsonify({"error": f"Batch add would exceed limit of {GIFT_LIMIT_PER_USER}."}), 403
+
+            # 2. Check Balance and Stock (Aggregate)
+            total_price = 0
+            stock_updates = {} # gift_type_id -> count
+
+            for gift in gifts_list:
+                g_name = gift['gift_name']
+                g_type = gift['gift_type_id']
+                
+                # Calculate Price
+                price = CUSTOM_GIFTS_DATA.get(g_name, {}).get('price', 0)
+                total_price += price
+
+                # Calculate Stock
+                if g_name in CUSTOM_GIFTS_DATA and 'limit' in CUSTOM_GIFTS_DATA[g_name]:
+                    stock_updates[g_type] = stock_updates.get(g_type, 0) + 1
+
+            # Deduct Balance
+            if total_price > 0:
+                cur.execute("SELECT stars_balance FROM accounts WHERE tg_id = %s FOR UPDATE;", (owner_id,))
+                row = cur.fetchone()
+                if not row or row[0] < total_price:
+                    return jsonify({"error": f"Insufficient Stars. Total cost: {total_price}"}), 402
+                cur.execute("UPDATE accounts SET stars_balance = stars_balance - %s WHERE tg_id = %s;", (total_price, owner_id))
+
+            # Deduct Stock
+            for g_type, count in stock_updates.items():
+                cur.execute("SELECT remaining_stock FROM limited_gifts_stock WHERE gift_type_id = %s FOR UPDATE;", (g_type,))
+                row = cur.fetchone()
+                if not row or row[0] < count:
+                    return jsonify({"error": f"Not enough stock for {g_type}"}), 403
+                cur.execute("UPDATE limited_gifts_stock SET remaining_stock = remaining_stock - %s WHERE gift_type_id = %s;", (count, g_type))
+
+            # 3. Batch Insert
+            # Prepare data for execute_values
+            # Columns: instance_id, owner_id, sender_id, gift_type_id, gift_name, original_image_url, lottie_path, is_collectible, collectible_data, collectible_number
+            
+            insert_values = []
+            
+            # If we need to assign collectible numbers for Custom/Pre-upgraded gifts in this batch
+            for gift in gifts_list:
+                col_data = None
+                col_num = None
+                is_col = False
+                
+                # If the frontend sent specific parts (Custom Buy), generate data now
+                if gift.get('custom_parts'):
+                    parts = gift['custom_parts']
+                    # We trust the frontend or parts fetch logic here to save time, or reconstruct basic data
+                    # Ideally, fetch parts again to be safe, but for speed we construct basic data
+                    
+                    # Get next number
+                    cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift['gift_type_id'],))
+                    next_num = cur.fetchone()[0]
+                    
+                    # Recalculate supply for this type? For extreme speed we might skip live supply update per item
+                    # or do a rough estimate. Let's do a quick count.
+                    # Optimization: Just use a placeholder supply or 10000 for batch speed
+                    
+                    pattern_source = CUSTOM_GIFTS_DATA.get(gift['gift_name'], {}).get("patterns_source", gift['gift_name'])
+                    
+                    # Reconstruct the collectible object
+                    c_data = {
+                        "model": parts['model'],
+                        "backdrop": parts['backdrop'],
+                        "pattern": parts['pattern'],
+                        "modelImage": parts['model']['image'] or f"{CDN_BASE_URL}models/{quote(gift['gift_name'])}/png/{quote(parts['model']['name'])}.png",
+                        "lottieModelPath": parts['model'].get('lottie') or f"{CDN_BASE_URL}models/{quote(gift['gift_name'])}/lottie/{quote(parts['model']['name'])}.json",
+                        "patternImage": f"{CDN_BASE_URL}patterns/{quote(pattern_source)}/png/{quote(parts['pattern']['name'])}.png",
+                        "backdropColors": parts['backdrop']['hex'],
+                        "supply": 5000, # Placeholder for batch speed
+                        "author": get_gift_author(gift['gift_name'])
+                    }
+                    col_data = json.dumps(c_data)
+                    col_num = next_num
+                    is_col = True
+
+                insert_values.append((
+                    gift['instance_id'], owner_id, owner_id, 
+                    gift['gift_type_id'], gift['gift_name'], 
+                    gift['original_image_url'], gift.get('lottie_path'),
+                    is_col, col_data, col_num
+                ))
+
+            execute_values(cur, """
+                INSERT INTO gifts (
+                    instance_id, owner_id, sender_id, gift_type_id, gift_name, 
+                    original_image_url, lottie_path, is_collectible, collectible_data, collectible_number
+                ) VALUES %s
+            """, insert_values)
+
+            conn.commit()
+            return jsonify({"message": f"Successfully added {len(gifts_list)} gifts"}), 201
+
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error in batch add: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn: put_db_connection(conn)
+
+@app.route('/api/gifts/batch_upgrade', methods=['POST'])
+def batch_upgrade_gifts():
+    data = request.get_json()
+    instance_ids = data.get('instance_ids') # List of IDs to upgrade
+    
+    if not instance_ids: return jsonify({"error": "No IDs provided"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database failed"}), 500
+
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            # Fetch all gifts to be upgraded
+            cur.execute("SELECT * FROM gifts WHERE instance_id = ANY(%s) AND is_collectible = FALSE;", (instance_ids,))
+            gifts_to_upgrade = [dict(row) for row in cur.fetchall()]
+            
+            if not gifts_to_upgrade:
+                return jsonify({"message": "No eligible gifts found to upgrade."}), 200
+
+            # Process upgrades in memory
+            for gift in gifts_to_upgrade:
+                gift_name = gift['gift_name']
+                # Determine parts (Randomize)
+                parts = fetch_collectible_parts(gift_name)
+                
+                # Skip if no parts found (un-upgradable)
+                if not parts['models'] or not parts['backdrops'] or not parts['patterns']:
+                    continue
+
+                model = select_weighted_random(parts['models'])
+                backdrop = select_weighted_random(parts['backdrops'])
+                pattern = select_weighted_random(parts['patterns'])
+                
+                # Get next number
+                cur.execute("SELECT COALESCE(MAX(collectible_number), 0) + 1 FROM gifts WHERE gift_type_id = %s;", (gift['gift_type_id'],))
+                next_number = cur.fetchone()[0]
+
+                pattern_source = CUSTOM_GIFTS_DATA.get(gift_name, {}).get("patterns_source", gift_name)
+                
+                # Construct data
+                c_data = {
+                    "model": model, "backdrop": backdrop, "pattern": pattern,
+                    "modelImage": model.get('image') or f"{CDN_BASE_URL}models/{quote(gift_name)}/png/{quote(model['name'])}.png",
+                    "lottieModelPath": model.get('lottie') or f"{CDN_BASE_URL}models/{quote(gift_name)}/lottie/{quote(model['name'])}.json",
+                    "patternImage": f"{CDN_BASE_URL}patterns/{quote(pattern_source)}/png/{quote(pattern['name'])}.png",
+                    "backdropColors": backdrop['hex'],
+                    "supply": 5000, # Placeholder
+                    "author": get_gift_author(gift_name)
+                }
+                
+                # Update DB row
+                cur.execute("""
+                    UPDATE gifts 
+                    SET is_collectible = TRUE, collectible_data = %s, collectible_number = %s, lottie_path = NULL 
+                    WHERE instance_id = %s;
+                """, (json.dumps(c_data), next_number, gift['instance_id']))
+
+            conn.commit()
+            return jsonify({"message": "Batch upgrade complete"}), 200
+
+    except Exception as e:
+        if conn: conn.rollback()
+        app.logger.error(f"Error in batch upgrade: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
     finally:
         if conn: put_db_connection(conn)
 
