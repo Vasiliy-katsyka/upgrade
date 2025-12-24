@@ -1815,9 +1815,9 @@ def webhook_handler():
                             ]]
                         }
                         # Use safe_full_name in the text
-                        send_telegram_message(chat_id, f"Found user: <b>{safe_full_name}</b>\nTap the button to view their profile.", reply_markup=reply_markup)
+                        send_telegram_message(chat_id, f"Found user!\nTap the button to view their profile.", reply_markup=reply_markup)
                     else:
-                        send_telegram_message(chat_id, f"Sorry, I couldn't find a user with the identifier '{text}' in the app's database.")
+                        send_telegram_message(chat_id, f"Sorry, I couldn't find a user with the identifier in the app's database.")
                     
                     return jsonify({"status": "ok"}), 200
 
