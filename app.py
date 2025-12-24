@@ -1778,15 +1778,44 @@ def webhook_handler():
                             ]
                         }
                         send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
-                elif text.startswith('@'):
-                    username = text[1:]
-                    cur.execute("SELECT 1 FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
-                    if cur.fetchone():
-                        profile_url = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp=user@{username}"
-                        reply_markup = {"inline_keyboard": [[{"text": f"👤 View @{username}'s Profile", "web_app": {"url": profile_url}}]]}
-                        send_telegram_message(chat_id, f"Found user @{username}. Tap below to view their profile.", reply_markup=reply_markup)
+                # --- NEW: Handle Username (@vasya) OR User ID (123456) ---
+                elif text.startswith('@') or text.isdigit():
+                    target_identifier = text
+                    user_found = None
+                    start_param = ""
+
+                    # Case 1: Username
+                    if text.startswith('@'):
+                        username = text[1:] # Remove @
+                        cur.execute("SELECT tg_id, full_name FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
+                        user_found = cur.fetchone()
+                        if user_found:
+                            # Frontend expects "user@username" for usernames
+                            start_param = f"user@{username}"
+
+                    # Case 2: Numeric ID
+                    elif text.isdigit():
+                        tg_id = int(text)
+                        cur.execute("SELECT tg_id, full_name FROM accounts WHERE tg_id = %s;", (tg_id,))
+                        user_found = cur.fetchone()
+                        if user_found:
+                            # Frontend expects "user12345" for IDs
+                            start_param = f"user{tg_id}"
+
+                    if user_found:
+                        full_name = user_found['full_name']
+                        # Construct the deep link to open the Mini App
+                        profile_url = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp={start_param}"
+                        
+                        reply_markup = {
+                            "inline_keyboard": [[
+                                {"text": f"👤 Open {full_name}'s Profile", "web_app": {"url": profile_url}}
+                            ]]
+                        }
+                        send_telegram_message(chat_id, f"Found user: <b>{full_name}</b>\nTap the button to view their profile.", reply_markup=reply_markup)
                     else:
-                        send_telegram_message(chat_id, f"Sorry, I couldn't find a user with the username @{username} in the app's database.")
+                        send_telegram_message(chat_id, f"Sorry, I couldn't find a user with the identifier '{text}' in the app's database.")
+                    
                     return jsonify({"status": "ok"}), 200
 
                 # --- NEW: Handle GiftName-Number format ---
@@ -2175,9 +2204,8 @@ def api_buy_market_gift(instance_id):
     finally:
         if conn: put_db_connection(conn)
 
-@app.route('/api/profile/<string:username>', methods=['GET'])
-@app.route('/api/profile/<string:username>', methods=['GET'])
-def get_user_profile(username):
+@app.route('/api/profile/<string:identifier>', methods=['GET'])
+def get_user_profile(identifier):
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database connection failed."}), 500
     viewer_id = request.args.get('viewer_id')
@@ -2186,14 +2214,22 @@ def get_user_profile(username):
         with conn.cursor(cursor_factory=DictCursor) as cur:
             viewer_can_see_custom = has_custom_gifts_enabled(cur, viewer_id)
 
-            cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number, music_status FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
+            # --- CHANGED: Logic to support both Username and ID ---
+            if identifier.isdigit():
+                # If identifier is all numbers, search by tg_id
+                cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number, music_status FROM accounts WHERE tg_id = %s;", (int(identifier),))
+            else:
+                # Otherwise search by username (remove @ if present)
+                clean_username = identifier.lstrip('@')
+                cur.execute("SELECT tg_id, username, full_name, avatar_url, bio, phone_number, music_status FROM accounts WHERE LOWER(username) = LOWER(%s);", (clean_username,))
+            
             user_profile = cur.fetchone()
             if not user_profile: return jsonify({"error": "User profile not found."}), 404
 
             profile_data = dict(user_profile)
             user_id = profile_data['tg_id']
 
-            # --- MODIFIED QUERY TO INCLUDE SENDER USERNAME ---
+            # --- (Rest of the function remains exactly the same) ---
             cur.execute("""
                 SELECT g.*, a.username as owner_username, a.full_name as owner_name, a.avatar_url as owner_avatar,
                        sender_acc.username as sender_username
@@ -2242,14 +2278,13 @@ def get_user_profile(username):
 
             profile_data['posts'] = posts
 
-            # Fetch user's subscription status to this profile
             if viewer_id:
                 cur.execute("SELECT notification_type FROM user_subscriptions WHERE subscriber_id = %s AND target_user_id = %s;", (viewer_id, user_id))
                 profile_data['subscription_status'] = {row['notification_type']: True for row in cur.fetchall()}
             
             return jsonify(profile_data), 200
     except Exception as e:
-        app.logger.error(f"Error fetching profile for {username}: {e}", exc_info=True)
+        app.logger.error(f"Error fetching profile for {identifier}: {e}", exc_info=True)
         return jsonify({"error": "An internal server error occurred."}), 500
     finally: 
         if conn: put_db_connection(conn)
