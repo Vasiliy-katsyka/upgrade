@@ -1779,40 +1779,43 @@ def webhook_handler():
                         }
                         send_telegram_photo(chat_id, photo_url, caption=caption, reply_markup=reply_markup)
                 # --- NEW: Handle Username (@vasya) OR User ID (123456) ---
+                # --- NEW: Handle Username (@vasya) OR User ID (123456) ---
                 elif text.startswith('@') or text.isdigit():
                     target_identifier = text
                     user_found = None
                     start_param = ""
 
-                    # Case 1: Username
-                    if text.startswith('@'):
-                        username = text[1:] # Remove @
-                        cur.execute("SELECT tg_id, full_name FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
-                        user_found = cur.fetchone()
-                        if user_found:
-                            # Frontend expects "user@username" for usernames
-                            start_param = f"user@{username}"
+                    with conn.cursor(cursor_factory=DictCursor) as cur: # Ensure cursor is active here
+                        # Case 1: Username
+                        if text.startswith('@'):
+                            username = text[1:] # Remove @
+                            cur.execute("SELECT tg_id, full_name FROM accounts WHERE LOWER(username) = LOWER(%s);", (username,))
+                            user_found = cur.fetchone()
+                            if user_found:
+                                start_param = f"user@{username}"
 
-                    # Case 2: Numeric ID
-                    elif text.isdigit():
-                        tg_id = int(text)
-                        cur.execute("SELECT tg_id, full_name FROM accounts WHERE tg_id = %s;", (tg_id,))
-                        user_found = cur.fetchone()
-                        if user_found:
-                            # Frontend expects "user12345" for IDs
-                            start_param = f"user{tg_id}"
+                        # Case 2: Numeric ID
+                        elif text.isdigit():
+                            tg_id = int(text)
+                            cur.execute("SELECT tg_id, full_name FROM accounts WHERE tg_id = %s;", (tg_id,))
+                            user_found = cur.fetchone()
+                            if user_found:
+                                start_param = f"user{tg_id}"
 
                     if user_found:
-                        full_name = user_found['full_name']
-                        # Construct the deep link to open the Mini App
+                        import html # Import html escape function
+                        # Escape the name to handle special chars like <, >, &
+                        safe_full_name = html.escape(user_found['full_name'])
+                        
                         profile_url = f"https://t.me/{BOT_USERNAME}/{WEBAPP_SHORT_NAME}?startapp={start_param}"
                         
                         reply_markup = {
                             "inline_keyboard": [[
-                                {"text": f"👤 Open {full_name}'s Profile", "web_app": {"url": profile_url}}
+                                {"text": f"👤 Open Profile", "web_app": {"url": profile_url}}
                             ]]
                         }
-                        send_telegram_message(chat_id, f"Found user: <b>{full_name}</b>\nTap the button to view their profile.", reply_markup=reply_markup)
+                        # Use safe_full_name in the text
+                        send_telegram_message(chat_id, f"Found user: <b>{safe_full_name}</b>\nTap the button to view their profile.", reply_markup=reply_markup)
                     else:
                         send_telegram_message(chat_id, f"Sorry, I couldn't find a user with the identifier '{text}' in the app's database.")
                     
